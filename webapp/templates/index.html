@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block main_content %}
+
+    <!-- {% if g.user %}
+        <h2>Welcome back, {{ g.user }}! We missed you!</h2>
+    {% else %}
+        <h2>Welcome to the Black Tape E-shop!</h2>
+    {% endif %} -->
+
+    <!-- <p id="index_shop">
+        <a href="{{ url_for('shop') }}">Check out our cool taped stuff!</a>
+    </p>
+
+    <a id="img" href="{{ url_for('shop') }}">
+        <img id="index_img" src="{{ url_for('static', filename = 'clothes_wide2.jpg') }}" alt="T-shirt on a rack" />
+    </a> -->
+    <h1>Dashboard</h1>
+    <section class = "readings">
+        <h2>Sensor Data</h2>
+        <p>Soil Moisture:</p>
+        <p>Temperature:</p>
+        <p>Humidity:</p>
+        <p>Brightness:</p>
+        <button onclick="refresh()">Refresh data</button>
+    </section>
+
+    <section class = "weather">
+        <h2>Weather API</h2>
+    </section>
+
+    <section class = "controls">
+        <button onclick="pump('on')">Turn Pump ON</button>
+        <button onclick="pump('off')">Turn Pump OFF</button>
+    </section>
+
+{% endblock %}
