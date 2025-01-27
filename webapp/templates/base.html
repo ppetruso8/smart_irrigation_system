@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <title>Smart Irrigation System</title>
+        <!-- <link rel="icon" href="{{ url_for('static', filename='fav.ico') }}" /> -->
+        <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
+        {% block stylesheets %}{% endblock %}
+    </head>
+
+    <body>
+        <header>
+            <h1>Smart Irriation System</h1>
+        </header>
+
+        <nav>
+            <ul>
+                <!-- <li><a href="{{ url_for('index') }}">Home</a></li>
+                <li><a href="{{ url_for('shop') }}">Shop all</a></li>
+                <li><a href="{{ url_for('shop_hoodies') }}">Hoodies</a></li>
+                <li><a href="{{ url_for('shop_tshirts') }}">T-Shirts</a></li>
+                <li><a href="{{ url_for('shop_limited') }}">Limited Edition</a></li>
+                {% if g.user %} 
+                    <li><a href="{{ url_for('cart') }}">Cart</a></li>
+                    <li><a href="{{ url_for ('user_profile') }}">My Profile</a></li>
+                    <li><a href="{{ url_for('logout') }}">Logout</a></li>
+                {% else %}
+                    <li><a href="{{ url_for('register') }}">Sign up</a></li>
+                    <li><a href="{{ url_for('login') }}">Sign in</a></li>
+            {% endif %} -->
+                <li>Dashboard</li>
+                <li>Settings</li>
+                <li>Charts</li>
+            </ul> 
+        </nav>
+
+        <main>
+            {% block main_content %}{% endblock %}
+        </main>
+
+        <footer>
+            <p>
+                <small>The website was created by <i>Petra Petrusova</i> for the Computer Science Final Year Project.</small>
+            </p>
+            <p>
+                <small>The font is made available for free use on <a href="https://fonts.google.com/">https://fonts.google.com/</a>.</small>
+            </p>            
+        </footer>
+
+    </body>
+</html>
