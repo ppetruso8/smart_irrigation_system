@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block main_content %}
+
+    <h2>Error 404</h2>
+
+    <p>{{ error }}</p>
+
+    <p><a href="{{ url_for('index') }}"><b>Back to the main page</b></a></p>
+
+{% endblock %}

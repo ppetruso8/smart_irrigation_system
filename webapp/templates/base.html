@@ -3,9 +3,6 @@
     <head>
         <meta charset="utf-8" />
         <title>Smart Irrigation System</title>
-        <!-- <link rel="icon" href="{{ url_for('static', filename='fav.ico') }}" /> -->
-        <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}" />
-        {% block stylesheets %}{% endblock %}
     </head>
 
     <body>
@@ -15,22 +12,10 @@
 
         <nav>
             <ul>
-                <!-- <li><a href="{{ url_for('index') }}">Home</a></li>
-                <li><a href="{{ url_for('shop') }}">Shop all</a></li>
-                <li><a href="{{ url_for('shop_hoodies') }}">Hoodies</a></li>
-                <li><a href="{{ url_for('shop_tshirts') }}">T-Shirts</a></li>
-                <li><a href="{{ url_for('shop_limited') }}">Limited Edition</a></li>
-                {% if g.user %} 
-                    <li><a href="{{ url_for('cart') }}">Cart</a></li>
-                    <li><a href="{{ url_for ('user_profile') }}">My Profile</a></li>
-                    <li><a href="{{ url_for('logout') }}">Logout</a></li>
-                {% else %}
-                    <li><a href="{{ url_for('register') }}">Sign up</a></li>
-                    <li><a href="{{ url_for('login') }}">Sign in</a></li>
-            {% endif %} -->
-                <li>Dashboard</li>
-                <li>Settings</li>
-                <li>Statistics</li>
+                <li><a href="{{ url_for('index') }}">Dashboard</a></li>
+                <li><a href="{{ url_for('settings') }}">Settings</a></li>
+                <li><a href="{{ url_for('statistics') }}">Statistics</a></li>
+                <li><a href="{{ url_for('profile') }}">My Account</a></li>
             </ul> 
         </nav>
 
