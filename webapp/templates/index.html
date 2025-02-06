@@ -4,16 +4,18 @@
     <h1>Dashboard</h1>
     <section class = "readings">
         <h2>Sensor Data</h2>
-        <p>Soil Moisture:</p>
-        <p>Temperature:</p>
-        <p>Humidity:</p>
-        <p>Brightness:</p>
+        <p>Soil Moisture: {{ reading.moisture }}</p>
+        <p>Temperature: {{ reading.temperature }}</p>
+        <p>Humidity: {{ reading.humidity }}</p>
+        <p>Brightness: {{ reading.brightness }}</p>
         <button onclick="refresh()">Refresh data</button>
     </section>
 
     <section class = "weather">
         <h2>Weather API</h2>
-    </section>
+        <p>Temperature: {{ weather.temperature or "N/A" }}°C</p>
+        <p>Humidity: {{ weather.humidity or "N/A" }} %</p>
+        </section>
 
     <section class = "controls">
         <button onclick="pump('on')">Turn Pump ON</button>
