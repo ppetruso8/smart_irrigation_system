@@ -2,20 +2,29 @@
 
 {% block main_content %}
     <h1>Dashboard</h1>
-    <section class = "readings">
+    <section class = "reading">
         <h2>Sensor Data</h2>
         <p>Soil Moisture: {{ reading.moisture }}</p>
-        <p>Temperature: {{ reading.temperature }}</p>
-        <p>Humidity: {{ reading.humidity }}</p>
-        <p>Brightness: {{ reading.brightness }}</p>
+        
         <button onclick="refresh()">Refresh data</button>
     </section>
 
     <section class = "weather">
-        <h2>Weather API</h2>
-        <p>Temperature: {{ weather.temperature or "N/A" }}°C</p>
-        <p>Humidity: {{ weather.humidity or "N/A" }} %</p>
-        </section>
+        <h2>Weather</h2>
+        <h3>Current Weather</h3>
+        <p>Temperature: {{ reading.temperature }} °C</p>
+        <p>Humidity: {{ reading.humidity }} %</p>
+        <p>Windspeed: {{ weather.windspeed or "N/A" }} km/h</p>
+        <p>Wind Direction: {{ weather.winddirection or "N/A" }} °</p>
+        <p>Weather Code: {{ weather.weathercode }}</p>
+        <p>Brightness: {{ reading.brightness }}</p>
+
+        <h3>2 Day Hourly Forecast</h3>
+        <div>{{ hourly|safe }}</div>
+        <h3>5 Day Weather Forecast</h3> 
+        <div>{{ daily|safe }}</div>
+
+    </section>
 
     <section class = "controls">
         <button onclick="pump('on')">Turn Pump ON</button>
