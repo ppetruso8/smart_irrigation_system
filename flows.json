@@ -2,42 +2,186 @@
     {
         "id": "d27ff7acba5e037e",
         "type": "tab",
-        "label": "Flow 1",
+        "label": "Main",
         "disabled": false,
         "info": "",
         "env": []
     },
     {
-        "id": "cc581b2fd7c71407",
-        "type": "inject",
-        "z": "d27ff7acba5e037e",
+        "id": "f39649b35540991f",
+        "type": "serial-port",
         "name": "",
-        "props": [
-            {
-                "p": "payload"
+        "serialport": "/dev/ttyUSB0",
+        "serialbaud": "9600",
+        "databits": 8,
+        "parity": "none",
+        "stopbits": 1,
+        "waitfor": "",
+        "dtr": "none",
+        "rts": "none",
+        "cts": "none",
+        "dsr": "none",
+        "newline": "\\n",
+        "bin": "false",
+        "out": "char",
+        "addchar": "",
+        "responsetimeout": 10000
+    },
+    {
+        "id": "93adbbc9bc8eeabe",
+        "type": "ui_base",
+        "theme": {
+            "name": "theme-light",
+            "lightTheme": {
+                "default": "#0094CE",
+                "baseColor": "#0094CE",
+                "baseFont": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif",
+                "edited": true,
+                "reset": false
             },
-            {
-                "p": "topic",
-                "vt": "str"
+            "darkTheme": {
+                "default": "#097479",
+                "baseColor": "#097479",
+                "baseFont": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif",
+                "edited": false
+            },
+            "customTheme": {
+                "name": "Untitled Theme 1",
+                "default": "#4B7930",
+                "baseColor": "#4B7930",
+                "baseFont": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif"
+            },
+            "themeState": {
+                "base-color": {
+                    "default": "#0094CE",
+                    "value": "#0094CE",
+                    "edited": false
+                },
+                "page-titlebar-backgroundColor": {
+                    "value": "#0094CE",
+                    "edited": false
+                },
+                "page-backgroundColor": {
+                    "value": "#fafafa",
+                    "edited": false
+                },
+                "page-sidebar-backgroundColor": {
+                    "value": "#ffffff",
+                    "edited": false
+                },
+                "group-textColor": {
+                    "value": "#1bbfff",
+                    "edited": false
+                },
+                "group-borderColor": {
+                    "value": "#ffffff",
+                    "edited": false
+                },
+                "group-backgroundColor": {
+                    "value": "#ffffff",
+                    "edited": false
+                },
+                "widget-textColor": {
+                    "value": "#111111",
+                    "edited": false
+                },
+                "widget-backgroundColor": {
+                    "value": "#0094ce",
+                    "edited": false
+                },
+                "widget-borderColor": {
+                    "value": "#ffffff",
+                    "edited": false
+                },
+                "base-font": {
+                    "value": "-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Oxygen-Sans,Ubuntu,Cantarell,Helvetica Neue,sans-serif"
+                }
+            },
+            "angularTheme": {
+                "primary": "indigo",
+                "accents": "blue",
+                "warn": "red",
+                "background": "grey",
+                "palette": "light"
             }
-        ],
-        "repeat": "",
-        "crontab": "",
-        "once": false,
-        "onceDelay": 0.1,
-        "topic": "",
-        "payload": "",
-        "payloadType": "date",
+        },
+        "site": {
+            "name": "Node-RED Dashboard",
+            "hideToolbar": "false",
+            "allowSwipe": "false",
+            "lockMenu": "false",
+            "allowTempTheme": "true",
+            "dateFormat": "DD/MM/YYYY",
+            "sizes": {
+                "sx": 48,
+                "sy": 48,
+                "gx": 6,
+                "gy": 6,
+                "cx": 6,
+                "cy": 6,
+                "px": 0,
+                "py": 0
+            }
+        }
+    },
+    {
+        "id": "9822daba911d8846",
+        "type": "ui_tab",
+        "name": "Monitoring",
+        "icon": "dashboard",
+        "order": 1,
+        "disabled": false,
+        "hidden": false
+    },
+    {
+        "id": "89221f1b3e1e0dd1",
+        "type": "ui_group",
+        "name": "Sensor Data",
+        "tab": "9822daba911d8846",
+        "order": 1,
+        "disp": true,
+        "width": 6,
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "32058175d5771dde",
+        "type": "ui_group",
+        "name": "Controls",
+        "tab": "9822daba911d8846",
+        "order": 2,
+        "disp": true,
+        "width": 6,
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "56688f1969147e9e",
+        "type": "ui_group",
+        "name": "Weather API",
+        "tab": "9822daba911d8846",
+        "order": 3,
+        "disp": true,
+        "width": 6,
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "c8f8a9b50670e8ae",
+        "type": "serial in",
+        "z": "d27ff7acba5e037e",
+        "name": "Arduino In",
+        "serial": "f39649b35540991f",
         "x": 80,
-        "y": 60,
+        "y": 140,
         "wires": [
             [
-                "af68c47c4182158e"
+                "0f25c96d5a604298"
             ]
         ]
     },
     {
-        "id": "af68c47c4182158e",
+        "id": "2c5e21c2cb152ca5",
         "type": "debug",
         "z": "d27ff7acba5e037e",
         "name": "debug 1",
@@ -45,11 +189,397 @@
         "tosidebar": true,
         "console": false,
         "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 440,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "0f25c96d5a604298",
+        "type": "function",
+        "z": "d27ff7acba5e037e",
+        "name": "process_sensor_data",
+        "func": "var data = JSON.parse(msg.payload);\nflow.set(\"sensor_data\", data);\nmsg.payload = data;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 280,
+        "y": 140,
+        "wires": [
+            [
+                "0485e48b030f2229",
+                "95f4e048225a7ca9",
+                "172b2d31c0a42643",
+                "b4ede96e1072c9b8",
+                "2c5e21c2cb152ca5"
+            ]
+        ]
+    },
+    {
+        "id": "a66fbdc432908dca",
+        "type": "http in",
+        "z": "d27ff7acba5e037e",
+        "name": "",
+        "url": "/sensor-data",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 100,
+        "y": 500,
+        "wires": [
+            [
+                "64a99cfa8ceea933"
+            ]
+        ]
+    },
+    {
+        "id": "64a99cfa8ceea933",
+        "type": "function",
+        "z": "d27ff7acba5e037e",
+        "name": "parse_data",
+        "func": "var sensorData = flow.get(\"sensor_data\") || {};\nmsg.payload = sensorData;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 290,
+        "y": 500,
+        "wires": [
+            [
+                "9b790e487fcb9bfd"
+            ]
+        ]
+    },
+    {
+        "id": "9b790e487fcb9bfd",
+        "type": "http response",
+        "z": "d27ff7acba5e037e",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 450,
+        "y": 500,
+        "wires": []
+    },
+    {
+        "id": "75407fc2116dfb94",
+        "type": "serial out",
+        "z": "d27ff7acba5e037e",
+        "name": "Arduino Out",
+        "serial": "f39649b35540991f",
+        "x": 690,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "9bd104a1d69e724f",
+        "type": "inject",
+        "z": "d27ff7acba5e037e",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "15",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "READ",
+        "payloadType": "str",
+        "x": 480,
+        "y": 340,
+        "wires": [
+            [
+                "75407fc2116dfb94"
+            ]
+        ]
+    },
+    {
+        "id": "0485e48b030f2229",
+        "type": "ui_text",
+        "z": "d27ff7acba5e037e",
+        "group": "89221f1b3e1e0dd1",
+        "order": 0,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Soil Moisture",
+        "format": "{{msg.payload.soil}}",
+        "layout": "row-spread",
+        "className": "",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#000000",
+        "x": 530,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "95f4e048225a7ca9",
+        "type": "ui_text",
+        "z": "d27ff7acba5e037e",
+        "group": "89221f1b3e1e0dd1",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Temperature",
+        "format": "{{msg.payload.temp}} °C",
+        "layout": "row-spread",
+        "className": "",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#000000",
+        "x": 530,
+        "y": 140,
+        "wires": []
+    },
+    {
+        "id": "172b2d31c0a42643",
+        "type": "ui_text",
+        "z": "d27ff7acba5e037e",
+        "group": "89221f1b3e1e0dd1",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Humidity",
+        "format": "{{msg.payload.hum}} %",
+        "layout": "row-spread",
+        "className": "",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#000000",
+        "x": 520,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "b4ede96e1072c9b8",
+        "type": "function",
+        "z": "d27ff7acba5e037e",
+        "name": "water",
+        "func": "var data = flow.get(\"sensor_data\");\nvar moistureThreshold = 500; // CALIBRATE\n\n// check if watering needed\nif (data.soil < moistureThreshold) {\n    msg.payload = \"WATER\";\n} else {\n    msg.payload = \"IDLE\";\n}\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 490,
+        "y": 260,
+        "wires": [
+            [
+                "75407fc2116dfb94",
+                "49f58424f2ecc968"
+            ]
+        ]
+    },
+    {
+        "id": "49f58424f2ecc968",
+        "type": "debug",
+        "z": "d27ff7acba5e037e",
+        "name": "debug 2",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
         "complete": "false",
         "statusVal": "",
         "statusType": "auto",
-        "x": 260,
-        "y": 60,
+        "x": 700,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "54b2e13c8ec7b998",
+        "type": "ui_button",
+        "z": "d27ff7acba5e037e",
+        "name": "",
+        "group": "32058175d5771dde",
+        "order": 0,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "label": "manual watering",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "payload": "WATER",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "x": 480,
+        "y": 300,
+        "wires": [
+            [
+                "75407fc2116dfb94"
+            ]
+        ]
+    },
+    {
+        "id": "c0388066fca0e290",
+        "type": "http request",
+        "z": "d27ff7acba5e037e",
+        "name": "",
+        "method": "GET",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "https://api.open-meteo.com/v1/forecast?latitude=51.898&longitude=-8.4706&current_weather=true",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 290,
+        "y": 620,
+        "wires": [
+            [
+                "40da37c3a039ece7"
+            ]
+        ]
+    },
+    {
+        "id": "562d551e6ea129af",
+        "type": "inject",
+        "z": "d27ff7acba5e037e",
+        "name": "weather api",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 90,
+        "y": 620,
+        "wires": [
+            [
+                "c0388066fca0e290"
+            ]
+        ]
+    },
+    {
+        "id": "40da37c3a039ece7",
+        "type": "function",
+        "z": "d27ff7acba5e037e",
+        "name": "parse_weather_api",
+        "func": "var data = JSON.parse(msg.payload);\nvar current = data.current_weather;\n\nmsg.payload = {\n    temp: current.temperature + \" °C\",\n    windspeed: current.windspeed + \" km/h\",\n    winddirection: current.winddirection + \"°\",\n    time: current.time\n    }\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 490,
+        "y": 620,
+        "wires": [
+            [
+                "1cd47af34da9410b",
+                "9ff9d3722a1a7b69",
+                "da61cf5cfdd80191",
+                "487192047a9b714b"
+            ]
+        ]
+    },
+    {
+        "id": "1cd47af34da9410b",
+        "type": "ui_text",
+        "z": "d27ff7acba5e037e",
+        "group": "56688f1969147e9e",
+        "order": 0,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Temperature",
+        "format": "{{msg.payload.temp}}",
+        "layout": "row-spread",
+        "className": "",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#000000",
+        "x": 690,
+        "y": 560,
+        "wires": []
+    },
+    {
+        "id": "9ff9d3722a1a7b69",
+        "type": "ui_text",
+        "z": "d27ff7acba5e037e",
+        "group": "56688f1969147e9e",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Wind Speed",
+        "format": "{{msg.payload.windspeed}}",
+        "layout": "row-spread",
+        "className": "",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#000000",
+        "x": 690,
+        "y": 600,
+        "wires": []
+    },
+    {
+        "id": "da61cf5cfdd80191",
+        "type": "ui_text",
+        "z": "d27ff7acba5e037e",
+        "group": "56688f1969147e9e",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Wind Direction",
+        "format": "{{msg.payload.winddirection}}",
+        "layout": "row-spread",
+        "className": "",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#000000",
+        "x": 700,
+        "y": 640,
+        "wires": []
+    },
+    {
+        "id": "487192047a9b714b",
+        "type": "ui_text",
+        "z": "d27ff7acba5e037e",
+        "group": "56688f1969147e9e",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Time",
+        "format": "{{msg.payload.time}}",
+        "layout": "row-spread",
+        "className": "",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#000000",
+        "x": 670,
+        "y": 680,
         "wires": []
     }
 ]
