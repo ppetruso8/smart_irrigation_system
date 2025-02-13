@@ -1,6 +1,7 @@
 import serial
 import time
 
+
 mositure_threshold = 500 # calibrate!
 
 # open connection with Arduino
@@ -19,6 +20,18 @@ def read_arduino():
         print(f"Arduino response: {response}")
         return response
     return None
+
+def send_to_node_red(moisture, temperature, humidity):
+    data = {
+        "timestamp": time.strftime('%Y-%m-%d %H:%M:%S'),
+        "moisture": moisture,
+        "temperature": temperature,
+        "humidity": humidity
+    }
+
+    # node red - ready data
+    print(json.dumps(data)) 
+
 
 # working loop
 # while True:
