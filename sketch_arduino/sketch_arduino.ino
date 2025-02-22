@@ -11,8 +11,16 @@ const int moistureThreshold = 500;  // Calibrate!
 #define DHTTYPE DHT11
 DHT dht(DHTPIN, DHTTYPE);
 
+// Action modes
 enum Mode : byte {IDLE, READ, WATER};
 Mode currentMode = IDLE;
+
+// Watering modes
+enum WaterMode : byte {LIGHT, MEDIUM, HEAVY, CUSTOM};
+WaterMode currentWaterMode = MEDIUM;
+// Setting up variables for watering
+int amount = 0;
+int pulses = 0;
 
 void setup() {
   // Initialize serial communication for debugging
@@ -34,26 +42,48 @@ void loop() {
     String command = Serial.readStringUntil('\n');
     command.trim();
 
-    // Select mode based on read command
+    // Change mode or execute command
     if (command == "READ") {
       currentMode = READ;
     } else if (command == "WATER") {
       currentMode = WATER;
     } else if (command == "IDLE") {
       currentMode = IDLE;
+    } else if (command.startsWith("CHMOD")) {
+      String wateringMode = command.substring(6);
+      setWaterMode(wateringMode);
     }
   }
 
-  // Handle modes
+  // Handle Action Modes
   switch (currentMode) {
     case READ:
       takeReading();
       currentMode = IDLE;
       break;
 
-    case WATER:
-      water();
-      // add code to check in ime x to see if moisture level improved
+    case WATER:  
+      switch (currentWaterMode) {
+        case LIGHT:
+          pulses = 2; // approx. 20ml of water - smaller indoor plants
+          break;
+
+        case MEDIUM:
+          pulses = 5; // approx. 50ml of water - bigger plants (average setting)
+          break;
+
+        case HEAVY:
+          pulses = 10; // approx. 100ml of water - deep watering
+          break;
+
+        case CUSTOM:
+          pulses = amount/10; // 1 pulse = approx. 10ml
+          break; 
+      }
+
+      water(pulses);
+           
+      // add code to check in time x to see if moisture level improved
       currentMode = IDLE;
       break;
 
@@ -96,19 +126,45 @@ void takeReading() {
 
 
 // Watering
-void water() {
-  // ADD DIFFERENT VOLUMES OF WATER
+void water(int pulses) {
+  if (pulses <= 0) {
+    Serial.print("{\"error\":\"invalid_watering_amount\"}");
+    Serial.println();
+    return;
+  }
+
   
-  // Watering in pulses (5)
-  for (int i = 0; i < 5; i++) {
+  Serial.print("{\"notice\":\"watering_started(");
+  Serial.print(pulses*10); // 1 pulse = approx. 10ml
+  Serial.print(")\"}");
+  Serial.println();
+  
+  
+  
+  // Watering in pulses
+  for (int i = 0; i < pulses; i++) {
     digitalWrite(relay, LOW);   // Turn ON pump
-    delay(200);                 // Wait for ON duration
+    delay(250);                 // Wait for ON duration (approx. 10ml per pulse)
     digitalWrite(relay, HIGH);  // Turn OFF pump
-    delay(200);                 // Wait for OFF duration
+    delay(250);                 // Wait for OFF duration
   }
 
   delay(200);
   
   Serial.print("{\"notice\":\"watering_finished\"}");
   Serial.println();
+}
+
+void setWaterMode(String mode) {
+  if (mode == "LIGHT") {
+    currentWaterMode = LIGHT;
+  } else if (mode == "MEDIUM") {
+    currentWaterMode = MEDIUM;
+  } else if (mode == "HEAVY") {
+    currentWaterMode = HEAVY;
+  } else if (mode.startsWith("CUSTOM")) {
+    currentWaterMode = CUSTOM;
+    String wateringAmount = mode.substring(7);  //extract the amount of ml for watering
+    amount = wateringAmount.toInt();
+  }
 }

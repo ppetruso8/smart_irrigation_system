@@ -290,14 +290,14 @@
             }
         ],
         "repeat": "",
-        "crontab": "",
+        "crontab": "0 5-16 * * *",
         "once": false,
         "onceDelay": 0.1,
         "topic": "",
         "payload": "READ",
         "payloadType": "str",
-        "x": 830,
-        "y": 400,
+        "x": 900,
+        "y": 480,
         "wires": [
             [
                 "75407fc2116dfb94"
@@ -372,7 +372,7 @@
         "type": "function",
         "z": "d27ff7acba5e037e",
         "name": "water",
-        "func": "var data = flow.get(\"sensor_data\"); // sensor readings\nvar totalPrecip = parseFloat(flow.get(\"totalPrecip\")) || 0; // total precipitation in mm today\nvar highPrecipProb = flow.get(\"highPrecipProb\"); // true if precipitation probability above 30\nvar hourlyPercip = flow.get(\"hourlyRain\") || [0,0,0,0,0,0]; // array with hourly percipitation \nvar recheckActive = flow.get(\"recheckActive\") || false;\n\nvar moistureThreshold = 500;    // CALIBRATE\nvar rainThreshold = 2;  // min mm of rain today to skip watering\n\n// check if the forecast was accurate\nif (msg.payload === \"RECHECK\") {\n    // water if soil is dry even when rain was predicted\n    if (data.soil < moistureThreshold) {\n        msg.payload = \"WATER\";\n    } else {\n        msg.payload = \"IDLE\";\n    }\n    flow.set(\"recheckActive\", false);\n\n    return msg;\n}\n\n\n// check if rain is expected in next 6 hours\nvar d = new Date().getUTCHours() // get current hour in UTC (API setting)\nvar checkMax = Math.min(d+6, hourlyPercip.length)\n\nvar totalRainNext6Hours = 0;\nfor (var i = d; i < checkMax; i++) {\n    totalRainNext6Hours += hourlyPercip[d];\n    d++;\n}\n\n// check if watering needed\nif (data.soil < moistureThreshold &&    // if soil is dry\n    (totalPrecip < rainThreshold || !highPrecipProb)) {   // if there isn't much rainfall expected or the probability is low\n    msg.payload = \"WATER\";\n} else {    // rain is expected\n    msg.payload = \"IDLE\";\n\n    if (10 >= 2 && // confirm rain in 6 hours if expected\n        !recheckActive) {   // recheck is not activated yet\n        flow.set(\"recheckActive\", true);\n        setTimeout(() => {\n                node.send({ payload: \"RECHECK\"});\n            \n        }, 10000);   // 6 hours\n    }\n    \n}\n\n// if (data.soil < moistureThreshold) {\n//     msg.payload = \"WATER\";\n// } else {\n//     msg.payload = \"IDLE\";\n// }\n\nreturn msg;",
+        "func": "var data = flow.get(\"sensor_data\"); // sensor readings\nvar totalPrecip = parseFloat(flow.get(\"totalPrecip\")) || 0; // total precipitation in mm today\nvar highPrecipProb = flow.get(\"highPrecipProb\"); // true if precipitation probability above 30\nvar hourlyPercip = flow.get(\"hourlyRain\") || [0,0,0,0,0,0]; // array with hourly percipitation \nvar recheckActive = flow.get(\"recheckActive\") || false;\n\nvar moistureThreshold = 500;    // CALIBRATE\nvar rainThreshold = 2;  // min mm of rain today to skip watering\n\n// check if the forecast was accurate\nif (msg.payload === \"RECHECK\") {\n    // water if soil is dry even when rain was predicted\n    if (data.soil < moistureThreshold) {\n        msg.payload = \"WATER\";\n    } else {\n        msg.payload = \"IDLE\";\n    }\n    flow.set(\"recheckActive\", false);\n\n    return msg;\n}\n\n\n// check if rain is expected in next 6 hours\nvar d = new Date().getUTCHours() // get current hour in UTC (API setting)\nvar checkMax = Math.min(d+6, hourlyPercip.length)\n\nvar totalRainNext6Hours = 0;\nfor (var i = d; i < checkMax; i++) {\n    totalRainNext6Hours += hourlyPercip[d];\n    d++;\n}\n\n// check if watering needed\nif (data.soil < moistureThreshold &&    // if soil is dry\n    (totalPrecip < rainThreshold || !highPrecipProb)) {   // if there isn't much rainfall expected or the probability is low\n    msg.payload = \"WATER\";\n} else {    // rain is expected\n    msg.payload = \"IDLE\";\n\n    if (totalRainNext6Hours >= rainThreshold && // confirm rain in 6 hours if expected\n        !recheckActive) {   // recheck is not active\n        flow.set(\"recheckActive\", true);\n        setTimeout(() => {\n                node.send({ payload: \"RECHECK\"});   // send RECHECK message\n            \n        }, 21600000);   // delay 6 hours\n    }\n    \n}\n\n// if (data.soil < moistureThreshold) {\n//     msg.payload = \"WATER\";\n// } else {\n//     msg.payload = \"IDLE\";\n// }\n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -424,8 +424,8 @@
         "payloadType": "str",
         "topic": "topic",
         "topicType": "msg",
-        "x": 820,
-        "y": 360,
+        "x": 860,
+        "y": 440,
         "wires": [
             [
                 "75407fc2116dfb94"
@@ -725,6 +725,144 @@
             ],
             [
                 "b4ede96e1072c9b8"
+            ]
+        ]
+    },
+    {
+        "id": "03fce81cab059470",
+        "type": "ui_dropdown",
+        "z": "d27ff7acba5e037e",
+        "name": "",
+        "label": "Change watering mode",
+        "tooltip": "",
+        "place": "Select option",
+        "group": "32058175d5771dde",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "passthru": true,
+        "multiple": false,
+        "options": [
+            {
+                "label": "Light (20ml)",
+                "value": "LIGHT",
+                "type": "str"
+            },
+            {
+                "label": "Medium (50ml)",
+                "value": "MEDIUM",
+                "type": "str"
+            },
+            {
+                "label": "Heavy (100ml)",
+                "value": "HEAVY",
+                "type": "str"
+            },
+            {
+                "label": "Custom",
+                "value": "CUSTOM",
+                "type": "str"
+            }
+        ],
+        "payload": "",
+        "topic": "payload",
+        "topicType": "msg",
+        "className": "",
+        "x": 410,
+        "y": 340,
+        "wires": [
+            [
+                "0b7ce3cd5e5c992c"
+            ]
+        ]
+    },
+    {
+        "id": "0b7ce3cd5e5c992c",
+        "type": "function",
+        "z": "d27ff7acba5e037e",
+        "name": "process_chmod",
+        "func": "var input = msg.payload;\nvar modes = [\"LIGHT\", \"MEDIUM\", \"HEAVY\"];\n\nif (modes.includes(input)) {\n    msg.payload = \"CHMOD \" + input;\n} else if (input === \"CUSTOM\") {\n    var customWater = flow.get(\"customWater\")\n    if (!customWater || isNaN(customWater)) {\n        msg.payload = \"CHMOD CUSTOM\";\n    } else {\n        msg.payload = \"CHMOD CUSTOM \" + customWater;\n    }\n} else if (parseInt(input) > 0) {    \n    msg.payload = \"CHMOD CUSTOM \" + input;\n} else {\n    node.warn(\"Invalid input for CHMOD.\");\n    return null;\n}\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 860,
+        "y": 340,
+        "wires": [
+            [
+                "9218897efed46d9e",
+                "75407fc2116dfb94"
+            ]
+        ]
+    },
+    {
+        "id": "9218897efed46d9e",
+        "type": "debug",
+        "z": "d27ff7acba5e037e",
+        "name": "debug 4",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1080,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "bbdeece177ba121e",
+        "type": "ui_text_input",
+        "z": "d27ff7acba5e037e",
+        "name": "",
+        "label": "Custom watering amount (ml)",
+        "tooltip": "Enter custom watering amount in milliliters. This value overrides selected mode.",
+        "group": "32058175d5771dde",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "mode": "text",
+        "delay": "500",
+        "topic": "payload",
+        "sendOnBlur": true,
+        "className": "",
+        "topicType": "msg",
+        "x": 390,
+        "y": 380,
+        "wires": [
+            [
+                "ce57b3cc52e7cd01"
+            ]
+        ]
+    },
+    {
+        "id": "ce57b3cc52e7cd01",
+        "type": "change",
+        "z": "d27ff7acba5e037e",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "customWater",
+                "pt": "flow",
+                "to": "payload",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 660,
+        "y": 380,
+        "wires": [
+            [
+                "0b7ce3cd5e5c992c"
             ]
         ]
     }
