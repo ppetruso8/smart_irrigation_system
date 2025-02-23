@@ -25,7 +25,7 @@ WaterMode currentWaterMode = MEDIUM;
 WaterMode tempWaterMode = MEDIUM;
 bool isTempWater = false;
 // Setting up variables for watering
-int amount = 0;
+int amount = 1;
 int pulses = 0;
 
 void setup() {
@@ -216,14 +216,27 @@ void setWaterMode(String mode, bool temp) {
     }
     
   } else if (mode.startsWith("CUSTOM")) {
+    // if custom amount is provided
+    if (mode.length() > 6) {
+      String wateringAmount = mode.substring(7);  //extract the amount of ml for watering
+      amount = wateringAmount.toInt();
+  
+      if (amount <= 0) {
+        Serial.println("{\"error\":\"invalid_watering_amount\"}");
+        return;
+        
+      } else if (amount > 1000) {
+        // limit max amount to 1l
+        amount = 1000;
+        mode = "CUSTOM 1000";
+      }
+    }
+    
     if (!temp) {
       currentWaterMode = CUSTOM;  
     } else {
       tempWaterMode = CUSTOM;
     }
-    
-    String wateringAmount = mode.substring(7);  //extract the amount of ml for watering
-    amount = wateringAmount.toInt();
     
   } else {
     Serial.println("{\"error\":\"invalid_watering_mode\"}");
