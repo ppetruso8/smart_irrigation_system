@@ -11,13 +11,19 @@ const int moistureThreshold = 500;  // Calibrate!
 #define DHTTYPE DHT11
 DHT dht(DHTPIN, DHTTYPE);
 
-// Action modes
-enum Mode : byte {IDLE, READ, WATER};
-Mode currentMode = IDLE;
+// Irrigation modes (based on environment)
+enum EnvMode : byte {INDOOR, OUTDOOR};
+EnvMode currentEnv = INDOOR;
+
+// Status modes
+enum StatusMode : byte {IDLE, READ, WATER};
+StatusMode currentStatus = IDLE;
 
 // Watering modes
 enum WaterMode : byte {LIGHT, MEDIUM, HEAVY, CUSTOM};
 WaterMode currentWaterMode = MEDIUM;
+WaterMode tempWaterMode = MEDIUM;
+bool isTempWater = false;
 // Setting up variables for watering
 int amount = 0;
 int pulses = 0;
@@ -44,36 +50,76 @@ void loop() {
 
     // Change mode or execute command
     if (command == "READ") {
-      currentMode = READ;
-    } else if (command == "WATER") {
-      currentMode = WATER;
+      currentStatus = READ;
+      
+    } else if (command.startsWith("WATER")) {
+      if (command.length() > 6) {
+        // once-off watering mode
+        isTempWater = true;
+        String tempWatering = command.substring(6);
+        setWaterMode(tempWatering, true);
+      }
+      
+      currentStatus = WATER;
+      
     } else if (command == "IDLE") {
-      currentMode = IDLE;
+      currentStatus = IDLE;
+      
     } else if (command.startsWith("CHMOD")) {
       String wateringMode = command.substring(6);
-      setWaterMode(wateringMode);
+      setWaterMode(wateringMode, false);
+      
+    } else if (command.startsWith("SET_ENV")) {
+      String envMode = command.substring(8);
+      setEnvMode(envMode);
+      
+    } else {
+      Serial.println("{\"error\":\"invalid_command\"}");
     }
   }
 
-  // Handle Action Modes
-  switch (currentMode) {
+  // Handle status actions
+  switch (currentStatus) {
     case READ:
       takeReading();
-      currentMode = IDLE;
+      currentStatus = IDLE;
       break;
 
-    case WATER:  
-      switch (currentWaterMode) {
+    case WATER:
+      WaterMode modeToUse;
+      if (isTempWater) {
+        modeToUse = tempWaterMode;
+        isTempWater = false;
+      } else {
+        modeToUse = currentWaterMode;
+      }
+      
+      switch (modeToUse) {
         case LIGHT:
-          pulses = 2; // approx. 20ml of water - smaller indoor plants
+          pulses = (currentEnv == INDOOR) ? 2 : 10;
+//          if (currentEnv == INDOOR) {
+//            pulses = 2; // approx. 20ml of water - smaller indoor plants
+//          } else if (currentEnv == OUTDOOR) {
+//            pulses = 10; // approx. 100ml of water - outdoor potted plants
+//          }
           break;
 
         case MEDIUM:
-          pulses = 5; // approx. 50ml of water - bigger plants (average setting)
+          pulses = (currentEnv == INDOOR) ? 5 : 35;
+//          if (currentEnv == INDOOR) {
+//            pulses = 5; // approx. 50ml of water - bigger plants (average setting)
+//          } else if (currentEnv == OUTDOOR) {
+//            pulses = 35; // approx. 350ml of water - average outdoor plant watering
+//          }
           break;
 
         case HEAVY:
-          pulses = 10; // approx. 100ml of water - deep watering
+          pulses = (currentEnv == INDOOR) ? 10 : 70;
+//          if (currentEnv == INDOOR) {
+//            pulses = 10; // approx. 100ml of water - deep watering
+//          } else if (currentEnv == OUTDOOR) {
+//            pulses = 70; // approx. 700ml of water - heavy outdoor watering/plots
+//          } 
           break;
 
         case CUSTOM:
@@ -82,9 +128,7 @@ void loop() {
       }
 
       water(pulses);
-           
-      // add code to check in time x to see if moisture level improved
-      currentMode = IDLE;
+      currentStatus = IDLE;
       break;
 
     case IDLE:
@@ -110,8 +154,8 @@ void takeReading() {
   float temperature = dht.readTemperature();
 
   if (isnan(humidity) || isnan(temperature)) {
-    Serial.print("{\"\error\":\"error_reading_dht_sensor\"}");
-    Serial.println();
+    Serial.print("}");
+    Serial.println("{\"\error\":\"error_reading_dht_sensor\"}");
     return;
   }
 
@@ -128,18 +172,14 @@ void takeReading() {
 // Watering
 void water(int pulses) {
   if (pulses <= 0) {
-    Serial.print("{\"error\":\"invalid_watering_amount\"}");
-    Serial.println();
+    Serial.println("{\"error\":\"invalid_watering_amount\"}");
     return;
   }
-
   
   Serial.print("{\"notice\":\"watering_started(");
   Serial.print(pulses*10); // 1 pulse = approx. 10ml
   Serial.print(")\"}");
   Serial.println();
-  
-  
   
   // Watering in pulses
   for (int i = 0; i < pulses; i++) {
@@ -150,21 +190,66 @@ void water(int pulses) {
   }
 
   delay(200);
-  
-  Serial.print("{\"notice\":\"watering_finished\"}");
+  Serial.println("{\"notice\":\"watering_finished\"}");
+}
+
+void setWaterMode(String mode, bool temp) {
+  if (mode == "LIGHT") {
+    if (!temp) {
+      currentWaterMode = LIGHT;  
+    } else {
+      tempWaterMode = LIGHT;
+    }
+    
+  } else if (mode == "MEDIUM") {
+    if (!temp) {
+      currentWaterMode = MEDIUM;  
+    } else {
+      tempWaterMode = MEDIUM;
+    }
+    
+  } else if (mode == "HEAVY") {
+    if (!temp) {
+      currentWaterMode = HEAVY;  
+    } else {
+      tempWaterMode = HEAVY;
+    }
+    
+  } else if (mode.startsWith("CUSTOM")) {
+    if (!temp) {
+      currentWaterMode = CUSTOM;  
+    } else {
+      tempWaterMode = CUSTOM;
+    }
+    
+    String wateringAmount = mode.substring(7);  //extract the amount of ml for watering
+    amount = wateringAmount.toInt();
+    
+  } else {
+    Serial.println("{\"error\":\"invalid_watering_mode\"}");
+    return;
+  }
+
+  if (!temp) {
+    Serial.print("{\"notice\":\"watering_mode_set(");
+  } else {
+    Serial.print("{\"notice\":\"temp_watering_mode_set(");
+  }
+  Serial.print(mode);
+  Serial.print(")\"}");
   Serial.println();
 }
 
-void setWaterMode(String mode) {
-  if (mode == "LIGHT") {
-    currentWaterMode = LIGHT;
-  } else if (mode == "MEDIUM") {
-    currentWaterMode = MEDIUM;
-  } else if (mode == "HEAVY") {
-    currentWaterMode = HEAVY;
-  } else if (mode.startsWith("CUSTOM")) {
-    currentWaterMode = CUSTOM;
-    String wateringAmount = mode.substring(7);  //extract the amount of ml for watering
-    amount = wateringAmount.toInt();
+void setEnvMode(String mode) {
+  if (mode == "INDOOR") {
+    currentEnv = INDOOR;
+    Serial.println("{\"notice\":\"env_set_indoor\"}");
+    
+  } else if (mode == "OUTDOOR") {
+    currentEnv = OUTDOOR;
+    Serial.println("{\"notice\":\"env_set_outdoor\"}");
+    
+  } else {
+    Serial.println("{\"error\":\"invalid_env\"}");
   }
 }
