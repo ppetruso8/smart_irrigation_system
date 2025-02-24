@@ -22,7 +22,7 @@ StatusMode currentStatus = IDLE;
 // Watering modes
 enum WaterMode : byte {LIGHT, MEDIUM, HEAVY, CUSTOM};
 WaterMode currentWaterMode = MEDIUM;
-WaterMode tempWaterMode = MEDIUM;
+WaterMode tempWaterMode = MEDIUM; // automatic watering mode select
 bool isTempWater = false;
 // Setting up variables for watering
 int amount = 1;
@@ -54,7 +54,7 @@ void loop() {
       
     } else if (command.startsWith("WATER")) {
       if (command.length() > 6) {
-        // once-off watering mode
+        // automatic watering
         isTempWater = true;
         String tempWatering = command.substring(6);
         setWaterMode(tempWatering, true);
@@ -87,39 +87,27 @@ void loop() {
 
     case WATER:
       WaterMode modeToUse;
+      
       if (isTempWater) {
         modeToUse = tempWaterMode;
         isTempWater = false;
+        
       } else {
         modeToUse = currentWaterMode;
+        
       }
       
       switch (modeToUse) {
         case LIGHT:
           pulses = (currentEnv == INDOOR) ? 2 : 10;
-//          if (currentEnv == INDOOR) {
-//            pulses = 2; // approx. 20ml of water - smaller indoor plants
-//          } else if (currentEnv == OUTDOOR) {
-//            pulses = 10; // approx. 100ml of water - outdoor potted plants
-//          }
           break;
 
         case MEDIUM:
           pulses = (currentEnv == INDOOR) ? 5 : 35;
-//          if (currentEnv == INDOOR) {
-//            pulses = 5; // approx. 50ml of water - bigger plants (average setting)
-//          } else if (currentEnv == OUTDOOR) {
-//            pulses = 35; // approx. 350ml of water - average outdoor plant watering
-//          }
           break;
 
         case HEAVY:
           pulses = (currentEnv == INDOOR) ? 10 : 70;
-//          if (currentEnv == INDOOR) {
-//            pulses = 10; // approx. 100ml of water - deep watering
-//          } else if (currentEnv == OUTDOOR) {
-//            pulses = 70; // approx. 700ml of water - heavy outdoor watering/plots
-//          } 
           break;
 
         case CUSTOM:
