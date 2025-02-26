@@ -167,6 +167,37 @@
         "className": ""
     },
     {
+        "id": "5d42f12891b474f7",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "192.168.8.140",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
         "id": "c8f8a9b50670e8ae",
         "type": "serial in",
         "z": "d27ff7acba5e037e",
@@ -287,7 +318,7 @@
             }
         ],
         "repeat": "",
-        "crontab": "*/5 5-19 * * *",
+        "crontab": "0 5-17 * * *",
         "once": false,
         "onceDelay": 0.1,
         "topic": "",
@@ -1036,5 +1067,85 @@
         "x": 1000,
         "y": 140,
         "wires": []
+    },
+    {
+        "id": "a8a888fa98dae805",
+        "type": "mqtt in",
+        "z": "d27ff7acba5e037e",
+        "name": "",
+        "topic": "irrigation/readings",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "5d42f12891b474f7",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 150,
+        "y": 980,
+        "wires": [
+            [
+                "77b7b68f1334d86c"
+            ]
+        ]
+    },
+    {
+        "id": "77b7b68f1334d86c",
+        "type": "debug",
+        "z": "d27ff7acba5e037e",
+        "name": "debug 7",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 380,
+        "y": 980,
+        "wires": []
+    },
+    {
+        "id": "35a8bc56db8a3151",
+        "type": "mqtt out",
+        "z": "d27ff7acba5e037e",
+        "name": "",
+        "topic": "irrigation/control",
+        "qos": "0",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "5d42f12891b474f7",
+        "x": 420,
+        "y": 1040,
+        "wires": []
+    },
+    {
+        "id": "ed67f4d7b67122bc",
+        "type": "inject",
+        "z": "d27ff7acba5e037e",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "READ",
+        "payloadType": "str",
+        "x": 210,
+        "y": 1040,
+        "wires": [
+            [
+                "35a8bc56db8a3151"
+            ]
+        ]
     }
 ]
