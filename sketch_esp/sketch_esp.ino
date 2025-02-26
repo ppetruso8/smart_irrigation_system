@@ -3,7 +3,7 @@
 #include <DHT.h>
 
 // Pin assignments 
-const int relay = 2;
+const int relay = 26;
 const int soilMoisture = 34;
 const int moistureThreshold = 500;  // Calibrate!
 
