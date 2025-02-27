@@ -198,20 +198,6 @@
         "sessionExpiry": ""
     },
     {
-        "id": "c8f8a9b50670e8ae",
-        "type": "serial in",
-        "z": "d27ff7acba5e037e",
-        "name": "Arduino In",
-        "serial": "f39649b35540991f",
-        "x": 80,
-        "y": 140,
-        "wires": [
-            [
-                "0f25c96d5a604298"
-            ]
-        ]
-    },
-    {
         "id": "2c5e21c2cb152ca5",
         "type": "debug",
         "z": "d27ff7acba5e037e",
@@ -224,7 +210,7 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 460,
+        "x": 520,
         "y": 60,
         "wires": []
     },
@@ -233,19 +219,18 @@
         "type": "function",
         "z": "d27ff7acba5e037e",
         "name": "process_sensor_data",
-        "func": "let data = JSON.parse(msg.payload);\n\n// log error or notice messages from Arduino\nif (data.hasOwnProperty(\"error\") || data.hasOwnProperty(\"notice\")) {\n    node.warn(\"Message: \" + JSON.stringify(data));\n\n    // check notice contains information about watering \n    if (data.hasOwnProperty(\"notice\") && data.notice.includes(\"watering_started\")) {\n        // extract the volume of water used for watering\n        var amount = data.notice.substring(17,data.notice.length-1);\n\n        // manage data for log\n        data = flow.get(\"sensorData\") || {};\n        data.timestamp = new Date().toISOString();\n        data.waterAmount = amount;\n        data.waterMode = flow.get(\"lastWateringMode\") || \"UNKNOWN\";\n        data.env = flow.get(\"envMode\") || \"INDOOR\";\n\n        msg.payload = data;\n        return msg;\n    }\n    return null;\n}\n\n// save sensor data into the flow\nflow.set(\"sensorData\", data);\n\nmsg.payload = \"water\";\nreturn msg;",
+        "func": "let data = msg.payload;\n\n// log error or notice messages from ESP\nif (data.hasOwnProperty(\"error\") || data.hasOwnProperty(\"notice\")) {\n    node.warn(\"Message: \" + JSON.stringify(data));\n\n    // check notice contains information about watering \n    if (data.hasOwnProperty(\"notice\") && data.notice.includes(\"watering_started\")) {\n        // extract the volume of water used for watering\n        var amount = data.notice.substring(17,data.notice.length-1);\n\n        // manage data for log\n        data = flow.get(\"sensorData\") || {};\n        data.timestamp = new Date().toISOString();\n        data.waterAmount = amount;\n        data.waterMode = flow.get(\"lastWateringMode\") || \"UNKNOWN\";\n        data.env = flow.get(\"envMode\") || \"INDOOR\";\n\n        msg.payload = data;\n        return msg;\n    }\n    return null;\n}\n\n// save sensor data into the flow\nflow.set(\"sensorData\", data);\n\nmsg.payload = \"water\";\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 260,
+        "x": 320,
         "y": 140,
         "wires": [
             [
-                "ae558f0435c71b2c",
-                "2c5e21c2cb152ca5"
+                "ae558f0435c71b2c"
             ]
         ]
     },
@@ -298,16 +283,6 @@
         "wires": []
     },
     {
-        "id": "75407fc2116dfb94",
-        "type": "serial out",
-        "z": "d27ff7acba5e037e",
-        "name": "Arduino Out",
-        "serial": "f39649b35540991f",
-        "x": 1170,
-        "y": 320,
-        "wires": []
-    },
-    {
         "id": "9bd104a1d69e724f",
         "type": "inject",
         "z": "d27ff7acba5e037e",
@@ -324,12 +299,12 @@
         "topic": "",
         "payload": "READ",
         "payloadType": "str",
-        "x": 940,
+        "x": 1000,
         "y": 260,
         "wires": [
             [
-                "75407fc2116dfb94",
-                "083c4b7369ede12a"
+                "083c4b7369ede12a",
+                "35a8bc56db8a3151"
             ]
         ]
     },
@@ -350,7 +325,7 @@
         "font": "",
         "fontSize": 16,
         "color": "#000000",
-        "x": 810,
+        "x": 870,
         "y": 40,
         "wires": []
     },
@@ -371,7 +346,7 @@
         "font": "",
         "fontSize": 16,
         "color": "#000000",
-        "x": 810,
+        "x": 870,
         "y": 80,
         "wires": []
     },
@@ -392,7 +367,7 @@
         "font": "",
         "fontSize": 16,
         "color": "#000000",
-        "x": 800,
+        "x": 860,
         "y": 120,
         "wires": []
     },
@@ -401,20 +376,20 @@
         "type": "function",
         "z": "d27ff7acba5e037e",
         "name": "water",
-        "func": "let data = flow.get(\"sensorData\"); // sensor readings\nlet totalPrecip = parseFloat(flow.get(\"totalPrecipHourly\")) || 0; // total precipitation in mm today\nlet probPrecip = flow.get(\"probPrecip\") || []; // true if precipitation probability above 30\nlet hourlyPrecip = flow.get(\"hourlyRain\") || []; // array with hourly percipitation \nlet envMode = flow.get(\"envMode\") || \"INDOOR\";  // environment setting\nlet defaultWaterMode = flow.get(\"defWaterMode\") || \"AUTO\"; // automatic or user overrides\nlet customWaterAmount = flow.get(\"customWater\") || 0; // user defined amount for watering\nlet recheckActive = flow.get(\"isRecheckActive\") || false;\n\nlet moistureThreshold = 500;    // CALIBRATE\n\n// User overriden watering mode\nif (defaultWaterMode !== \"AUTO\") {\n    if (defaultWaterMode === \"CUSTOM\" && customWaterAmount > 0) {\n        msg.payload = \"WATER CUSTOM \" + customWaterAmount;\n        flow.set(\"lastWateringMode\", msg.payload.substring(6,13));\n    } else {\n        msg.payload = \"WATER \" + defaultWaterMode;\n    }   flow.set(\"lastWateringMode\", msg.payload.substring(6,));\n\n    // no recheck - set amount of water selected\n    return msg;\n} \n\n// INDOOR MODE\nif (envMode === \"INDOOR\") {\n    if (data.soil >= moistureThreshold) {\n        msg.payload = \"IDLE\";\n    } else if (data.soil >= 425) {\n        msg.payload = \"WATER LIGHT\";\n    } else if (data.soil >= 350) {\n        msg.payload = \"WATER MEDIUM\";\n    } else {\n        msg.payload = \"WATER HEAVY\";\n    }\n}\n// OUTDOOR MODE\nelse {\n    // check forecast (if rain is expected in next 4/6 hours)\n    let d = new Date().getUTCHours() // get current hour in UTC\n    // how many hours to check forecast for\n    let checkHrs = (d === 17) ? 6 : 4;  // if last check of the day, check next 6 hours\n    let checkMax = Math.min(d+checkHrs, hourlyPrecip.length) // get the upper boundary index for weather check\n\n    // count total precipitation mm and max precipitation probabilty in next x hours \n    let totalRainNextHours = 0;\n    let maxPrecipProb = 0;\n    for (var i = d; i < checkMax; i++) {\n        totalRainNextHours += hourlyPrecip[i];\n        \n        if (probPrecip[i] > maxPrecipProb) {\n            maxPrecipProb = probPrecip[i];\n        }\n    }\n\n    // determine if watering needed\n    if (data.soil >= moistureThreshold) {\n        msg.payload = \"IDLE\";   // no need to water\n    }\n    else if (data.soil >= 425) {\n        if (maxPrecipProb < 30) {\n            msg.payload = \"WATER LIGHT\";\n        } else {\n            msg.payload = \"IDLE\";\n        }\n    } else if (data.soil >= 350) {\n        if (maxPrecipProb < 30) {\n            msg.payload = \"WATER MEDIUM\";\n        } else if (totalRainNextHours < 2) {\n            msg.payload = \"WATER LIGHT\";\n        } else {\n            msg.payload = \"IDLE\";\n        }\n    } else {    // soil is dry\n        if (maxPrecipProb < 30) {\n            msg.payload = \"WATER HEAVY\";\n        } else if (totalRainNextHours < 2) {\n            msg.payload = \"WATER MEDIUM\";\n        } else if (totalRainNextHours < 4) {\n            msg.payload = \"WATER LIGHT\";\n        } else {\n            msg.payload = \"IDLE\"\n        }\n    }\n}\n\n// store chosen watering mode into flow for log\nflow.set(\"lastWateringMode\", msg.payload.substring(6,));\n\n// recheck soil moisture after 10 minutes if watering\nif (!recheckActive) {\n    if (msg.payload.includes(\"WATER\")) {\n        flow.set(\"isRecheckActive\", true);\n        setTimeout(() => {\n            // send READ message to trigger new reading and function execution\n            node.send({ payload: \"READ\"});  \n            }, 600000);   // recheck in 10 minutes\n    }\n} else {\n    flow.set(\"isRecheckActive\", false);    \n} \n\nreturn msg;",
+        "func": "let data = flow.get(\"sensorData\"); // sensor readings\nlet totalPrecip = parseFloat(flow.get(\"totalPrecipHourly\")) || 0; // total precipitation in mm today\nlet probPrecip = flow.get(\"probPrecip\") || []; // true if precipitation probability above 30\nlet hourlyPrecip = flow.get(\"hourlyRain\") || []; // array with hourly percipitation \nlet envMode = flow.get(\"envMode\") || \"INDOOR\";  // environment setting\nlet defaultWaterMode = flow.get(\"defWaterMode\") || \"AUTO\"; // automatic or user overrides\nlet customWaterAmount = flow.get(\"customWater\") || 0; // user defined amount for watering\nlet recheckActive = flow.get(\"isRecheckActive\") || false;\n\nlet moistureThreshold = 3000;    // CALIBRATE\n\n// User overriden watering mode\nif (defaultWaterMode !== \"AUTO\") {\n    if (defaultWaterMode === \"CUSTOM\" && customWaterAmount > 0) {\n        msg.payload = \"WATER CUSTOM \" + customWaterAmount;\n        flow.set(\"lastWateringMode\", msg.payload.substring(6,13));\n    } else {\n        msg.payload = \"WATER \" + defaultWaterMode;\n    }   flow.set(\"lastWateringMode\", msg.payload.substring(6,));\n\n    // no recheck - set amount of water selected\n    return msg;\n} \n\n// INDOOR MODE\nif (envMode === \"INDOOR\") {\n    if (data.soil >= moistureThreshold) {\n        msg.payload = \"IDLE\";\n    } else if (data.soil >= 425) {\n        msg.payload = \"WATER LIGHT\";\n    } else if (data.soil >= 350) {\n        msg.payload = \"WATER MEDIUM\";\n    } else {\n        msg.payload = \"WATER HEAVY\";\n    }\n}\n// OUTDOOR MODE\nelse {\n    // check forecast (if rain is expected in next 4/6 hours)\n    let d = new Date().getUTCHours() // get current hour in UTC\n    // how many hours to check forecast for\n    let checkHrs = (d === 17) ? 6 : 4;  // if last check of the day, check next 6 hours\n    let checkMax = Math.min(d+checkHrs, hourlyPrecip.length) // get the upper boundary index for weather check\n\n    // count total precipitation mm and max precipitation probabilty in next x hours \n    let totalRainNextHours = 0;\n    let maxPrecipProb = 0;\n    for (var i = d; i < checkMax; i++) {\n        totalRainNextHours += hourlyPrecip[i];\n        \n        if (probPrecip[i] > maxPrecipProb) {\n            maxPrecipProb = probPrecip[i];\n        }\n    }\n\n    // determine if watering needed\n    if (data.soil >= moistureThreshold) {\n        msg.payload = \"IDLE\";   // no need to water\n    }\n    else if (data.soil >= 425) {\n        if (maxPrecipProb < 30) {\n            msg.payload = \"WATER LIGHT\";\n        } else {\n            msg.payload = \"IDLE\";\n        }\n    } else if (data.soil >= 350) {\n        if (maxPrecipProb < 30) {\n            msg.payload = \"WATER MEDIUM\";\n        } else if (totalRainNextHours < 2) {\n            msg.payload = \"WATER LIGHT\";\n        } else {\n            msg.payload = \"IDLE\";\n        }\n    } else {    // soil is dry\n        if (maxPrecipProb < 30) {\n            msg.payload = \"WATER HEAVY\";\n        } else if (totalRainNextHours < 2) {\n            msg.payload = \"WATER MEDIUM\";\n        } else if (totalRainNextHours < 4) {\n            msg.payload = \"WATER LIGHT\";\n        } else {\n            msg.payload = \"IDLE\"\n        }\n    }\n}\n\n// store chosen watering mode into flow for log\nflow.set(\"lastWateringMode\", msg.payload.substring(6,));\n\n// recheck soil moisture after 10 minutes if watering\nif (!recheckActive) {\n    if (msg.payload.includes(\"WATER\")) {\n        flow.set(\"isRecheckActive\", true);\n        setTimeout(() => {\n            // send READ message to trigger new reading and function execution\n            node.send({ payload: \"READ\"});  \n            }, 600000);   // recheck in 10 minutes\n    }\n} else {\n    flow.set(\"isRecheckActive\", false);    \n} \n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 670,
+        "x": 730,
         "y": 300,
         "wires": [
             [
-                "75407fc2116dfb94",
                 "49f58424f2ecc968",
-                "ec61008359c39560"
+                "ec61008359c39560",
+                "35a8bc56db8a3151"
             ]
         ]
     },
@@ -438,12 +413,12 @@
         "payloadType": "str",
         "topic": "topic",
         "topicType": "msg",
-        "x": 920,
+        "x": 980,
         "y": 420,
         "wires": [
             [
-                "75407fc2116dfb94",
-                "96c4d266fd3b6eb0"
+                "96c4d266fd3b6eb0",
+                "35a8bc56db8a3151"
             ]
         ]
     },
@@ -747,7 +722,7 @@
         "topic": "payload",
         "topicType": "msg",
         "className": "",
-        "x": 400,
+        "x": 460,
         "y": 340,
         "wires": [
             [
@@ -767,12 +742,12 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 890,
+        "x": 950,
         "y": 340,
         "wires": [
             [
                 "9218897efed46d9e",
-                "75407fc2116dfb94"
+                "35a8bc56db8a3151"
             ]
         ]
     },
@@ -810,7 +785,7 @@
         "sendOnBlur": true,
         "className": "",
         "topicType": "msg",
-        "x": 390,
+        "x": 450,
         "y": 380,
         "wires": [
             [
@@ -837,7 +812,7 @@
         "from": "",
         "to": "",
         "reg": false,
-        "x": 660,
+        "x": 720,
         "y": 380,
         "wires": [
             [
@@ -875,7 +850,7 @@
         "topic": "payload",
         "topicType": "msg",
         "className": "",
-        "x": 720,
+        "x": 780,
         "y": 500,
         "wires": [
             [
@@ -895,12 +870,12 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 940,
+        "x": 1000,
         "y": 500,
         "wires": [
             [
-                "75407fc2116dfb94",
-                "1199cf16616d6f60"
+                "1199cf16616d6f60",
+                "35a8bc56db8a3151"
             ]
         ]
     },
@@ -916,7 +891,7 @@
         "complete": "false",
         "statusVal": "",
         "statusType": "auto",
-        "x": 1140,
+        "x": 1240,
         "y": 500,
         "wires": []
     },
@@ -936,7 +911,7 @@
         "strings": true,
         "include_empty_strings": "",
         "include_null_values": "",
-        "x": 810,
+        "x": 870,
         "y": 180,
         "wires": [
             [
@@ -955,7 +930,7 @@
         "createDir": false,
         "overwriteFile": "false",
         "encoding": "none",
-        "x": 1010,
+        "x": 1170,
         "y": 180,
         "wires": [
             []
@@ -981,7 +956,7 @@
         "checkall": "true",
         "repair": false,
         "outputs": 2,
-        "x": 450,
+        "x": 530,
         "y": 140,
         "wires": [
             [
@@ -990,9 +965,7 @@
                 "95f4e048225a7ca9",
                 "172b2d31c0a42643"
             ],
-            [
-                "b4ede96e1072c9b8"
-            ]
+            []
         ]
     },
     {
@@ -1007,7 +980,7 @@
         "complete": "false",
         "statusVal": "",
         "statusType": "auto",
-        "x": 480,
+        "x": 540,
         "y": 280,
         "wires": []
     },
@@ -1023,7 +996,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 660,
+        "x": 740,
         "y": 220,
         "wires": [
             [
@@ -1046,7 +1019,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1170,
+        "x": 1250,
         "y": 420,
         "wires": [
             []
@@ -1064,8 +1037,8 @@
         "complete": "false",
         "statusVal": "",
         "statusType": "auto",
-        "x": 1000,
-        "y": 140,
+        "x": 1180,
+        "y": 220,
         "wires": []
     },
     {
@@ -1081,29 +1054,14 @@
         "rap": true,
         "rh": 0,
         "inputs": 0,
-        "x": 150,
-        "y": 980,
+        "x": 90,
+        "y": 140,
         "wires": [
             [
-                "77b7b68f1334d86c"
+                "0f25c96d5a604298",
+                "2c5e21c2cb152ca5"
             ]
         ]
-    },
-    {
-        "id": "77b7b68f1334d86c",
-        "type": "debug",
-        "z": "d27ff7acba5e037e",
-        "name": "debug 7",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "false",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 380,
-        "y": 980,
-        "wires": []
     },
     {
         "id": "35a8bc56db8a3151",
@@ -1119,8 +1077,8 @@
         "correl": "",
         "expiry": "",
         "broker": "5d42f12891b474f7",
-        "x": 420,
-        "y": 1040,
+        "x": 1260,
+        "y": 320,
         "wires": []
     },
     {
@@ -1140,11 +1098,57 @@
         "topic": "",
         "payload": "READ",
         "payloadType": "str",
-        "x": 210,
-        "y": 1040,
+        "x": 1390,
+        "y": 180,
         "wires": [
             [
                 "35a8bc56db8a3151"
+            ]
+        ]
+    },
+    {
+        "id": "8dee672ec47f757f",
+        "type": "inject",
+        "z": "d27ff7acba5e037e",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "WATER",
+        "payloadType": "str",
+        "x": 1390,
+        "y": 140,
+        "wires": [
+            [
+                "35a8bc56db8a3151"
+            ]
+        ]
+    },
+    {
+        "id": "130afca86a9ccf1f",
+        "type": "mqtt in",
+        "z": "d27ff7acba5e037e",
+        "name": "",
+        "topic": "irrigation/notice",
+        "qos": "0",
+        "datatype": "auto-detect",
+        "broker": "5d42f12891b474f7",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 80,
+        "y": 200,
+        "wires": [
+            [
+                "0f25c96d5a604298"
             ]
         ]
     }
