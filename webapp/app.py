@@ -32,20 +32,51 @@ def index():
     longitude = -8.4706
     latitude = 51.898
 
+    
     # weather_data = get_weather_api(latitude, longitude)
     weather_current = get_current_weather(latitude, longitude)
     forecast_hourly, forecast_daily = get_forecast(latitude, longitude)
-    
+
+    # 48h hourly forecast
     forecast_hourly = forecast_hourly.iloc[:48]
+    # 5 day forecast
+    forecast_daily = forecast_daily.iloc[:5]
 
-    hourly_html = forecast_hourly.to_html(classes='table table-striped', border = 0)
-    daily_html = forecast_daily.to_html(classes='table table-striped', border = 0)
+    # weather code translation 
+    weather_codes = {0: "Clear Sky", 1: "Mainly Clear Sky", 2: "Partly Cloudy", 3: "Cloudy",
+                     45: "Fog", 48: "Depositing Rime Fog", 51: "Light Drizzle", 
+                     53: "Moderate Drizzle", 55: "Dense Drizzle", 56: "Light Freezing Drizzle",
+                     57: "Dense Freezing Drizzle", 61: "Slight Rain", 63: "Moderate Rain",
+                     65: "Heavy Rain", 66: "Light Freezing Rain", 67: "Heavy Freezing Rain",
+                     71: "Slight Snowfall", 73: "Moderate Snowfall", 75: "Heavy Snowfall",
+                     77: "Snow Grains", 80: "Slight Rain Showers", 81: "Moderate Rain Showers",
+                     82: "Violent Rain Showers", 85: "Slight Snow Showers", 86: "Heavy Snow Showers",
+                     95: "Thunderstorms", 96: "Thunderstorm with Slight Hail", 
+                     99: "Thunderstorm with Heavy Hail"}
+    # replace weather codes with actual strings
+    forecast_hourly["weathercode"] = forecast_hourly["weathercode"].replace(weather_codes)
+    forecast_daily["weathercode"] = forecast_daily["weathercode"].replace(weather_codes)
+    weather_current["weathercode"] = weather_codes[weather_current["weathercode"]]
 
-    print(hourly_html)
-    # sample reading
+    print(weather_current)
+    # ensure time is not an index
+    forecast_hourly.reset_index(inplace=True)
+    forecast_daily.reset_index(inplace=True)
+
+    # change format of time to more readable
+    forecast_hourly['time'] = pd.to_datetime(forecast_hourly['time']).dt.strftime('%d %b %Y %H:%M')  
+    forecast_daily['time'] = pd.to_datetime(forecast_daily['time']).dt.strftime('%d %b %Y')
+
+    print(forecast_daily)
+ 
+    # convert dataframe into HTML table
+    # hourly_html = forecast_hourly.to_html(classes='table table-striped', border = 0)
+    # daily_html = forecast_daily.to_html(classes='table table-striped', border = 0)
+
+    # sample sensor reading
     reading = {"moisture": 1, "temperature": 1, "humidity": 1, "brightness": 1}
 
-    return render_template("index.html", weather=weather_current, reading=reading, hourly=hourly_html, daily=daily_html)
+    return render_template("index.html", weather=weather_current, reading=reading, hourly=forecast_hourly, daily=forecast_daily)
 
 # @app.route("/register", methods = ["GET", "POST"])
 # def register():
@@ -158,25 +189,26 @@ def get_current_weather(lat, long):
     else:
         print(f"Error retrieving the weather API data: {response.status_code}")
 
-def get_forecast(lat, long):
+def get_forecast(lat, long):  
     # https://github.com/m0rp43us/openmeteopy/blob/main/readme/WEATHER_FORECAST.md
     # https://github.com/m0rp43us/openmeteopy/blob/main/notebooks/tutorial.ipynb
     hourly = HourlyForecast()     
     hourly = hourly.temperature_2m() 
     hourly = hourly.precipitation()
     hourly = hourly.windspeed_10m()
+    hourly = hourly.relativehumidity_2m()
+    hourly = hourly.precipitation_probability()
     hourly = hourly.weathercode()
 
     daily = DailyForecast()
     daily = daily.temperature_2m_max()
     daily = daily.temperature_2m_min()
     daily = daily.precipitation_sum()
+
     daily = daily.weathercode()
     
     options = ForecastOptions(lat, long, forecast_days=1)
-
     mgr = OpenMeteo(options, hourly=hourly, daily=daily)
-
     meteo = mgr.get_pandas()
 
     return meteo

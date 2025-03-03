@@ -2,33 +2,84 @@
 
 {% block main_content %}
     <h1>Dashboard</h1>
-    <section class = "reading">
+    <section id = "readings">
         <h2>Sensor Data</h2>
+        <h3>Sensor 1</h3>
         <p>Soil Moisture: {{ reading.moisture }}</p>
-        
+        <p>Temperature: {{ reading.temperature }} °C</p>
+        <p>Humidity: {{ reading.humidity }} %</p>
+        <p>Brightness: {{ reading.brightness }}</p>
         <button onclick="refresh()">Refresh data</button>
     </section>
 
-    <section class = "weather">
-        <h2>Weather</h2>
-        <h3>Current Weather</h3>
-        <p>Temperature: {{ reading.temperature }} °C</p>
-        <p>Humidity: {{ reading.humidity }} %</p>
-        <p>Windspeed: {{ weather.windspeed or "N/A" }} km/h</p>
-        <p>Wind Direction: {{ weather.winddirection or "N/A" }} °</p>
-        <p>Weather Code: {{ weather.weathercode }}</p>
-        <p>Brightness: {{ reading.brightness }}</p>
-
-        <h3>2 Day Hourly Forecast</h3>
-        <div>{{ hourly|safe }}</div>
-        <h3>5 Day Weather Forecast</h3> 
-        <div>{{ daily|safe }}</div>
-
-    </section>
-
-    <section class = "controls">
+    <section id = "controls">
+        <h2>Controls</h2>
         <button onclick="pump('on')">Turn Pump ON</button>
         <button onclick="pump('off')">Turn Pump OFF</button>
     </section>
+
+    <section id = "weather">
+        <h2>Weather</h2>
+        <section id="current_weather">
+            <h3>Current Weather</h3>
+        
+            <div class="weather_item">
+                <p class="weather_icon">🌡</p>
+                <p>Temperature</p>
+                <p>{{ weather.temperature }}°C</p>
+            </div>
+        
+            <div class="weather_item">
+                <p class="weather_icon">🌥</p>
+                <p>Status</p>
+                <p>{{ weather.weathercode }}</p>
+            </div>
+        
+            <div class="weather_item">
+                <p class="weather_icon">༄</p>
+                <p>Wind Speed</p>
+                <p>{{ weather.windspeed }} km/h</p>
+            </div>
+        
+            <div class="weather_item">
+                <p class="weather_icon">🧭</p>
+                <p>Wind Direction</p>
+                <p>{{ weather.winddirection }}°</p>
+            </div>
+        </section>
+        
+
+        <section id="hourly_forecast">
+            <h3>2-Day Hourly Forecast</h3>
+            <section id="hourly_container">
+                {% for index, row in hourly.iterrows() %}
+                    <div class="hourly_item">
+                        <p class="time">{{ row['time'] }}</p>
+                        <p class="temp">&nbsp🌡 {{ row['temperature_2m'] }}°C</p>
+                        <p class="precipitation">💧 {{ row['precipitation'] }}mm</p>
+                        <p class ="precipitation">☔ {{ row['precipitation_probability'] }}%</p>
+                        <p class ="humidity">🌫️ {{ row['relativehumidity_2m'] }}%</p>
+                        <p class="weather_status">{{ row['weathercode'] }}</p>
+                    </div>
+                {% endfor %}
+            </section>
+        </section>
+
+        <section id="daily_forecast">
+            <h3>5-Day Weather Forecast</h3>
+            <section id="daily_container">
+                {% for index, row in daily.iterrows() %}
+                    <div class="daily_item">
+                        <p class="time">{{ row['time'] }}</p>
+                        <p class="temp">↑🌡 {{ row['temperature_2m_max'] }}°C</p>
+                        <p class="temp">↓🌡 {{ row['temperature_2m_min'] }}°C</p>
+                        <p class="precipitation">💧 {{ row['precipitation_sum'] }}mm</p>
+                        <p class="weather_status">{{ row['weathercode'] }}</p>
+                    </div>
+                {% endfor %}
+            </section>
+        </section>        
+    </section>
+
 
 {% endblock %}
