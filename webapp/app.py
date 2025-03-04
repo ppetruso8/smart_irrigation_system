@@ -73,10 +73,13 @@ def index():
     # hourly_html = forecast_hourly.to_html(classes='table table-striped', border = 0)
     # daily_html = forecast_daily.to_html(classes='table table-striped', border = 0)
 
+    #readings = get_readings() --> list of dict 
     # sample sensor reading
-    reading = {"moisture": 1, "temperature": 1, "humidity": 1, "brightness": 1}
+    reading = {"sensor_no": 1, "moisture": 1, "temperature": 1, "humidity": 1, "brightness": 1}
+    reading2 = {"sensor_no": 2, "moisture": 2, "temperature": 2, "humidity": 2, "brightness": 2}
+    readings = [reading, reading2]
 
-    return render_template("index.html", weather=weather_current, reading=reading, hourly=forecast_hourly, daily=forecast_daily)
+    return render_template("index.html", weather=weather_current, readings=readings, hourly=forecast_hourly, daily=forecast_daily)
 
 # @app.route("/register", methods = ["GET", "POST"])
 # def register():
@@ -125,8 +128,8 @@ def index():
             return redirect(next_page)
     return render_template("login.html", form=form)
 
-@app.route("/logout")
-def logout():
+# @app.route("/logout")
+# def logout():
     session.clear()
     return redirect( url_for("index") )
 
@@ -212,3 +215,6 @@ def get_forecast(lat, long):
     meteo = mgr.get_pandas()
 
     return meteo
+
+def get_readings():
+    pass

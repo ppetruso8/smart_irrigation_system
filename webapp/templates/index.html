@@ -4,16 +4,23 @@
     <h1>Dashboard</h1>
     <section id = "readings">
         <h2>Sensor Data</h2>
-        <h3>Sensor 1</h3>
-        <p>Soil Moisture: {{ reading.moisture }}</p>
-        <p>Temperature: {{ reading.temperature }} °C</p>
-        <p>Humidity: {{ reading.humidity }} %</p>
-        <p>Brightness: {{ reading.brightness }}</p>
-        <button onclick="refresh()">Refresh data</button>
+        <section id="readings_container">
+            {% for reading in readings %}
+            <section class = "sensor">
+                <h3>Sensor {{ reading.sensor_no }}</h3>
+                <p>Soil Moisture: {{ reading.moisture }}</p>
+                <p>Temperature: {{ reading.temperature }} °C</p>
+                <p>Humidity: {{ reading.humidity }} %</p>
+                <p>Brightness: {{ reading.brightness }}</p>
+                <button onclick="refresh()">Update</button>
+            </section>
+            {% endfor %}
+        </section>
     </section>
 
     <section id = "controls">
         <h2>Controls</h2>
+        <h3>Pumps</h3>
         <button onclick="pump('on')">Turn Pump ON</button>
         <button onclick="pump('off')">Turn Pump OFF</button>
     </section>
@@ -47,7 +54,6 @@
                 <p>{{ weather.winddirection }}°</p>
             </div>
         </section>
-        
 
         <section id="hourly_forecast">
             <h3>2-Day Hourly Forecast</h3>

@@ -1,18 +1,72 @@
-#weather, #reading, #controls {
+@viewport {
+    width: device-width;
+}
+
+/* @font-face {
+    font-family: Montserrat;
+    src: url("fonts/Montserrat/Montserrat-Regular.ttf");
+} */
+
+html {
+    /* background-color: rgb(11,12,16); */
+
+    scroll-behavior: smooth;
+
+    --section_bg: rgb(217,230,240);
+
+    --main: rgb(243, 243, 243);
+    --text: rgb(11,12,16);
+    --footer: rgb(37, 37, 37);
+    --header_nav: rgb(10,10,11);
+    --header_nav_text: rgb(243, 243, 243);
+    --hover: rgb(78, 78, 80);
+}
+
+/* body {
+    width: auto;
+    margin: 0;
+
+    background-color: var(--main);
+
+    font-family: "Montserrat", "Segoe UI", sans-serif;
+    color: var(--text);
+    font-size: 16px;
+    hyphens: auto;
+    line-height: 1.5em;
+    text-align: center;
+}
+
+header {
+    width: auto;
+    padding: 1em;
+    background-color: var(--header_nav);
+
+    background-image: url("header.jpg");
+    color: var(--header_nav_text);
+    font-size: 1.9em;
+} */
+
+#weather, #readings , #controls {
     margin: 1.2em;
     padding: 1.2em;
 
-    background: #f4f4f4;
+    /* background: #f4f4f4; */
+    background: var(--section_bg);
     border-radius: 0.5em;
 }
 
-#weather h3, #reading h3, #controls h3 {
+#weather h3, #readings h3, #controls h3 {
     padding-bottom: 0.25em;
+
     border-bottom: 2px solid #3498db;
 }
 
-#weather p, #reading p, #controls p {
+#weather p:not(:first-child) , #readings p:not(:first-child), #controls p:not(:first-child) {
     margin: 0.25em 0;
+}
+
+h1 {
+    margin: auto 0.8em;
 }
 
 /* Current Weather */
@@ -28,10 +82,10 @@
 .weather_item {
     flex: 1;
     text-align: center;
-    
     padding: 0.5em;
-    border-radius: 0.5em;
+    font-size: 1em;
 
+    border-radius: 0.5em;
     background: #f8f9fa;
     box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
 }
@@ -45,12 +99,8 @@
     font-size: 1.2em;
 }
 
-.weather_item p {
-    font-size: 1em;
-}
-
 /* Hourly Forecast */
-#hourly_container {
+#hourly_container, #readings_container {
     display: flex;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
@@ -59,12 +109,11 @@
     padding: 0.5em 1em 1em 1em;
 }
 
-.hourly_item {
+.hourly_item, .sensor {
     display: flex;
     flex-direction: column;
     justify-content: center;
     scroll-snap-align: start;
-    vertical-align: middle;
 
     min-width: 8em;
     padding: 0.5em;
@@ -151,13 +200,33 @@
     background: #f8f9fa;
 }
 
+/* Sensors */
+.sensor {
+    flex: 1;
+    padding: 0.5em;
+    font-size: 1em;
+    max-width: 10em;
+
+    border-radius: 0.5em;
+    background: #f8f9fa;
+    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.sensor h3 {
+    text-align: center;
+    margin: 0.5em 0;
+}
+
+.sensor p {
+    padding-left: 0.4em;
+}
 
 /* Buttons */
 button {
     padding: 0.6em 0.8em;
+
     border-radius: 0.5em;
     border: none;
-
     background: #3498db;
     color: white;
     transition: background 0.3s ease;
@@ -166,4 +235,8 @@ button {
 
 button:hover {
     background: #2980b9;
+}
+
+#readings button {
+    margin-top: 1em;
 }
