@@ -31,7 +31,6 @@ def index():
     # API info MAKE CUSTOMIZABLE FROM DASHBOARD
     longitude = -8.4706
     latitude = 51.898
-
     
     # weather_data = get_weather_api(latitude, longitude)
     weather_current = get_current_weather(latitude, longitude)
@@ -73,13 +72,14 @@ def index():
     # hourly_html = forecast_hourly.to_html(classes='table table-striped', border = 0)
     # daily_html = forecast_daily.to_html(classes='table table-striped', border = 0)
 
-    #readings = get_readings() --> list of dict 
+    # readings = get_sensors() --> list of dict 
     # sample sensor reading
-    reading = {"sensor_no": 1, "moisture": 1, "temperature": 1, "humidity": 1, "brightness": 1}
-    reading2 = {"sensor_no": 2, "moisture": 2, "temperature": 2, "humidity": 2, "brightness": 2}
-    readings = [reading, reading2]
+    sensor = {"sensor_no": 1, "moisture": 1, "temperature": 1, "humidity": 1, "brightness": 1, "pump": 1, "env": "INDOOR", "mode": "Automatic"}
+    sensor2 = {"sensor_no": 2, "moisture": 2, "temperature": 2, "humidity": 2, "brightness": 2, "pump": 2, "env": "OUTDOOR", "mode": "MANUAL LIGHT"}
+    sensors = [sensor, sensor2]
 
-    return render_template("index.html", weather=weather_current, readings=readings, hourly=forecast_hourly, daily=forecast_daily)
+    return render_template("index.html", weather=weather_current, sensors=sensors, 
+                           hourly=forecast_hourly, daily=forecast_daily)
 
 # @app.route("/register", methods = ["GET", "POST"])
 # def register():

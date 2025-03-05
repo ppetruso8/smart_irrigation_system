@@ -2,27 +2,25 @@
 
 {% block main_content %}
     <h1>Dashboard</h1>
-    <section id = "readings">
-        <h2>Sensor Data</h2>
-        <section id="readings_container">
-            {% for reading in readings %}
+    <section id = "sensors">
+        <h2>Sensors</h2>
+        <section id="sensors_container">
+            {% for sensor in sensors %}
             <section class = "sensor">
-                <h3>Sensor {{ reading.sensor_no }}</h3>
-                <p>Soil Moisture: {{ reading.moisture }}</p>
-                <p>Temperature: {{ reading.temperature }} °C</p>
-                <p>Humidity: {{ reading.humidity }} %</p>
-                <p>Brightness: {{ reading.brightness }}</p>
+                <h3>Sensor {{ sensor.sensor_no }}</h3>
+                <p>Soil Moisture: {{ sensor.moisture }}</p>
+                <p>Temperature: {{ sensor.temperature }} °C</p>
+                <p>Humidity: {{ sensor.humidity }} %</p>
+                <p>Brightness: {{ sensor.brightness }}</p>
                 <button onclick="refresh()">Update</button>
+                <p>Pump: {{ sensor.pump }}</p>
+                <p>Sensor: {{ sensor.sensor_no }}</p>
+                <p>Environment: {{ sensor.env }}</p>
+                <p>Watering Mode: {{ sensor.mode }}</p>
+                <button onclick="pump('on')">Manual Watering</button>
             </section>
             {% endfor %}
         </section>
-    </section>
-
-    <section id = "controls">
-        <h2>Controls</h2>
-        <h3>Pumps</h3>
-        <button onclick="pump('on')">Turn Pump ON</button>
-        <button onclick="pump('off')">Turn Pump OFF</button>
     </section>
 
     <section id = "weather">
@@ -31,7 +29,7 @@
             <h3>Current Weather</h3>
         
             <div class="weather_item">
-                <p class="weather_icon">🌡</p>
+                <p class="weather_icon" >🌡</p>
                 <p>Temperature</p>
                 <p>{{ weather.temperature }}°C</p>
             </div>
@@ -56,15 +54,15 @@
         </section>
 
         <section id="hourly_forecast">
-            <h3>2-Day Hourly Forecast</h3>
+            <h3>2-Day Hourly Weather Forecast</h3>
             <section id="hourly_container">
                 {% for index, row in hourly.iterrows() %}
                     <div class="hourly_item">
                         <p class="time">{{ row['time'] }}</p>
-                        <p class="temp">&nbsp🌡 {{ row['temperature_2m'] }}°C</p>
-                        <p class="precipitation">💧 {{ row['precipitation'] }}mm</p>
-                        <p class ="precipitation">☔ {{ row['precipitation_probability'] }}%</p>
-                        <p class ="humidity">🌫️ {{ row['relativehumidity_2m'] }}%</p>
+                        <p class="temp" title="Temperature">&nbsp🌡 {{ row['temperature_2m'] }}°C</p>
+                        <p class="precipitation" title="Precipitation">💧 {{ row['precipitation'] }}mm</p>
+                        <p class ="precipitation" title="Chance of Precipitation">☔ {{ row['precipitation_probability'] }}%</p>
+                        <p class ="humidity" title="Humidity">🌫️ {{ row['relativehumidity_2m'] }}%</p>
                         <p class="weather_status">{{ row['weathercode'] }}</p>
                     </div>
                 {% endfor %}
@@ -77,9 +75,9 @@
                 {% for index, row in daily.iterrows() %}
                     <div class="daily_item">
                         <p class="time">{{ row['time'] }}</p>
-                        <p class="temp">↑🌡 {{ row['temperature_2m_max'] }}°C</p>
-                        <p class="temp">↓🌡 {{ row['temperature_2m_min'] }}°C</p>
-                        <p class="precipitation">💧 {{ row['precipitation_sum'] }}mm</p>
+                        <p class="temp" title="Highest Temperature">↑🌡 {{ row['temperature_2m_max'] }}°C</p>
+                        <p class="temp" title="Lowest Temperature">↓🌡 {{ row['temperature_2m_min'] }}°C</p>
+                        <p class="precipitation" title="Precipitation">💧 {{ row['precipitation_sum'] }}mm</p>
                         <p class="weather_status">{{ row['weathercode'] }}</p>
                     </div>
                 {% endfor %}
