@@ -3,7 +3,7 @@ from database import get_db, close_db
 from flask_session import Session
 import requests
 # from werkzeug.security import generate_password_hash, check_password_hash
-# from forms import
+from forms import SensorForm
 from functools import wraps
 
 from openmeteopy import OpenMeteo
@@ -25,7 +25,7 @@ Session(app)
 # def load_logged_in_user():
 #     g.user = session.get("user_id", None)
 
-@app.route("/")
+@app.route("/", methods = ["GET", "POST"])
 def index():
     # https://pypi.org/project/openmeteo-requests/
     # API info MAKE CUSTOMIZABLE FROM DASHBOARD
@@ -78,8 +78,36 @@ def index():
     sensor2 = {"sensor_no": 2, "moisture": 2, "temperature": 2, "humidity": 2, "brightness": 2, "pump": 2, "env": "OUTDOOR", "mode": "MANUAL LIGHT"}
     sensors = [sensor, sensor2]
 
+    # create form for each sensor for updating the settings
+    forms = {sensor["sensor_no"]: SensorForm(data=sensor) for sensor in sensors}
+
+    if request.method == "POST":
+        sensor_no = request.form.get("sensor")
+
+        if sensor_no is not None:
+            print(type(sensor_no))
+            sensor_no = int(sensor_no)
+        else:
+            print("Error")
+
+        form = forms.get(sensor_no)
+
+        if form.validate_on_submit():
+            new_pump = form.pump.data
+            new_env = form.env.data
+            new_mode = form.mode.data
+
+            # Update Raspberry Pi
+            print("Updating Raspberry Pi")
+            sensor = sensors[sensor_no-1]
+            sensor["pump"] = new_pump
+            sensor["env"] = new_env
+            sensor["mode"] = new_mode
+
+            return redirect(url_for("index"))  # Refresh the page after submission
+
     return render_template("index.html", weather=weather_current, sensors=sensors, 
-                           hourly=forecast_hourly, daily=forecast_daily)
+                           hourly=forecast_hourly, daily=forecast_daily, forms=forms)
 
 # @app.route("/register", methods = ["GET", "POST"])
 # def register():

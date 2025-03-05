@@ -13,11 +13,28 @@
                 <p>Humidity: {{ sensor.humidity }} %</p>
                 <p>Brightness: {{ sensor.brightness }}</p>
                 <button onclick="refresh()">Update</button>
-                <p>Pump: {{ sensor.pump }}</p>
+                <button onclick="pump('on')">Manual Watering</button>
+
+                <form action="" method="POST" novalidate>
+                    {{ forms[sensor.sensor_no].hidden_tag() }}
+                    <input type="hidden" name="sensor" value="{{ sensor.sensor_no }}">
+                    
+                    {{ forms[sensor.sensor_no].pump.label }}
+                    {{ forms[sensor.sensor_no].pump }}
+                    </br>
+                    {{ forms[sensor.sensor_no].env.label }}
+                    {{ forms[sensor.sensor_no].env() }}
+                    </br>
+                    {{ forms[sensor.sensor_no].mode.label }}
+                    {{ forms[sensor.sensor_no].mode() }}
+                    </br>
+                    {{ forms[sensor.sensor_no].submit() }}
+                </form>
+                <!-- <p>Pump: {{ sensor.pump }}</p>
                 <p>Sensor: {{ sensor.sensor_no }}</p>
                 <p>Environment: {{ sensor.env }}</p>
-                <p>Watering Mode: {{ sensor.mode }}</p>
-                <button onclick="pump('on')">Manual Watering</button>
+                <p>Watering Mode: {{ sensor.mode }}</p> -->
+                
             </section>
             {% endfor %}
         </section>
