@@ -204,7 +204,7 @@ h1 {
     max-width: 17em;
 }
 
-.sensor h3 {
+.sensor h3, .sensor h4 {
     text-align: center;
     margin: 0.5em 0;
 }
@@ -214,8 +214,11 @@ h1 {
 }
 
 /* Buttons */
-button {
+button, #submit {
+    align-self: center;
+    /* width: 10em; */
     padding: 0.6em 0.8em;
+    margin: 1em;
 
     border-radius: 0.5em;
     border: none;
@@ -225,10 +228,29 @@ button {
     cursor: pointer;
 }
 
-button:hover {
+button:hover, #submit:hover {
     background: var(--hover);
 }
 
-#sensors button {
-    margin: 1em;
+.submit_button {
+    text-align: center;
+}
+
+.sensor_buttons {
+    align-self: center;
+    text-align: center;
+}
+
+#location form {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+#location label {
+    font-weight: bold;
+}
+
+#location #submit {
+    margin: 0em 2em;
 }

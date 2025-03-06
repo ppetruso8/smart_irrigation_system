@@ -5,7 +5,11 @@ from wtforms.validators import InputRequired, EqualTo, Length
 
 class SensorForm(FlaskForm):
     sensor = IntegerField()
-    pump = IntegerField("Pump", validators=[InputRequired()])
-    env = SelectField("Environment", choices=["Indoor", "Outdoor"])
-    mode = SelectField("Watering Mode", choices=["Automatic", "Manual Light", "Manual Normal", "Manual Heavy"])
+    pump = IntegerField("Pump:", validators=[InputRequired()])
+    env = SelectField("Environment:", choices=["Indoor", "Outdoor"])
+    mode = SelectField("Watering Mode:", choices=["Automatic", "Manual Light", "Manual Normal", "Manual Heavy"])
     submit = SubmitField("Update Settings")
+
+class LocationForm(FlaskForm):
+    location = StringField("Current Location:", validators=[InputRequired()])
+    submit = SubmitField("Update Location")

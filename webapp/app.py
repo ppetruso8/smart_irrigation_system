@@ -3,7 +3,7 @@ from database import get_db, close_db
 from flask_session import Session
 import requests
 # from werkzeug.security import generate_password_hash, check_password_hash
-from forms import SensorForm
+from forms import SensorForm, LocationForm
 from functools import wraps
 
 from openmeteopy import OpenMeteo
@@ -27,21 +27,35 @@ Session(app)
 
 @app.route("/", methods = ["GET", "POST"])
 def index():
-    # https://pypi.org/project/openmeteo-requests/
-    # API info MAKE CUSTOMIZABLE FROM DASHBOARD
-    longitude = -8.4706
-    latitude = 51.898
+    location_form = LocationForm()
     
+    # default location - Cork
+    city = "Cork"
+    country = "Ireland"
+    latitude = 51.898
+    longitude = -8.4706
+
+    # get coordinates for the user input city
+    if location_form.validate_on_submit():
+        city = location_form.location.data
+        lat, long, name, country = get_coordinates(city)
+
+        if lat and long and name and country:
+            latitude = float(lat)
+            longitude = float(long)
+            city = city
+            country = country
+        else: 
+            print("Error updating city data")
+
     # weather_data = get_weather_api(latitude, longitude)
     weather_current = get_current_weather(latitude, longitude)
     forecast_hourly, forecast_daily = get_forecast(latitude, longitude)
 
-    # 48h hourly forecast
-    forecast_hourly = forecast_hourly.iloc[:48]
-    # 5 day forecast
-    forecast_daily = forecast_daily.iloc[:5]
+    forecast_hourly = forecast_hourly.iloc[:48] # 48h hourly forecast
+    forecast_daily = forecast_daily.iloc[:5]    # 5 day forecast
 
-    # weather code translation 
+    # weather code translation dict
     weather_codes = {0: "Clear Sky", 1: "Mainly Clear Sky", 2: "Partly Cloudy", 3: "Cloudy",
                      45: "Fog", 48: "Depositing Rime Fog", 51: "Light Drizzle", 
                      53: "Moderate Drizzle", 55: "Dense Drizzle", 56: "Light Freezing Drizzle",
@@ -57,7 +71,6 @@ def index():
     forecast_daily["weathercode"] = forecast_daily["weathercode"].replace(weather_codes)
     weather_current["weathercode"] = weather_codes[weather_current["weathercode"]]
 
-    print(weather_current)
     # ensure time is not an index
     forecast_hourly.reset_index(inplace=True)
     forecast_daily.reset_index(inplace=True)
@@ -65,15 +78,9 @@ def index():
     # change format of time to more readable
     forecast_hourly['time'] = pd.to_datetime(forecast_hourly['time']).dt.strftime('%d %b %Y %H:%M')  
     forecast_daily['time'] = pd.to_datetime(forecast_daily['time']).dt.strftime('%d %b %Y')
-
-    print(forecast_daily)
  
-    # convert dataframe into HTML table
-    # hourly_html = forecast_hourly.to_html(classes='table table-striped', border = 0)
-    # daily_html = forecast_daily.to_html(classes='table table-striped', border = 0)
-
     # readings = get_sensors() --> list of dict 
-    # sample sensor reading
+    # sample sensor 
     sensor = {"sensor_no": 1, "moisture": 1, "temperature": 1, "humidity": 1, "brightness": 1, "pump": 1, "env": "INDOOR", "mode": "Automatic"}
     sensor2 = {"sensor_no": 2, "moisture": 2, "temperature": 2, "humidity": 2, "brightness": 2, "pump": 2, "env": "OUTDOOR", "mode": "MANUAL LIGHT"}
     sensors = [sensor, sensor2]
@@ -82,84 +89,82 @@ def index():
     forms = {sensor["sensor_no"]: SensorForm(data=sensor) for sensor in sensors}
 
     if request.method == "POST":
-        sensor_no = request.form.get("sensor")
-
-        if sensor_no is not None:
-            print(type(sensor_no))
+        # updating sensor settings
+        if request.form.get("sensor") is not None:
+            sensor_no = request.form.get("sensor")
             sensor_no = int(sensor_no)
-        else:
-            print("Error")
 
-        form = forms.get(sensor_no)
+            form = forms.get(sensor_no)
 
-        if form.validate_on_submit():
-            new_pump = form.pump.data
-            new_env = form.env.data
-            new_mode = form.mode.data
+            if form.validate_on_submit():
+                new_pump = form.pump.data
+                new_env = form.env.data
+                new_mode = form.mode.data
 
-            # Update Raspberry Pi
-            print("Updating Raspberry Pi")
-            sensor = sensors[sensor_no-1]
-            sensor["pump"] = new_pump
-            sensor["env"] = new_env
-            sensor["mode"] = new_mode
+                # update Raspberry Pi
+                print("Updating Raspberry Pi")
+                sensor = sensors[sensor_no-1]
+                sensor["pump"] = new_pump
+                sensor["env"] = new_env
+                sensor["mode"] = new_mode
 
-            return redirect(url_for("index"))  # Refresh the page after submission
+            return redirect(url_for("index"))  # refresh the page 
 
-    return render_template("index.html", weather=weather_current, sensors=sensors, 
-                           hourly=forecast_hourly, daily=forecast_daily, forms=forms)
+    return render_template("index.html", weather=weather_current, sensors=sensors, hourly=forecast_hourly, 
+                           daily=forecast_daily, forms=forms, city=city, country=country,
+                           location_form=location_form)
 
 # @app.route("/register", methods = ["GET", "POST"])
 # def register():
-    form = RegistrationForm()
-    if form.validate_on_submit():
-        user_id = form.user_id.data
-        password = form.password.data
-        email = form.email.data
-        db = get_db()
-        possible_clashing_user = db.execute("""SELECT * FROM users
-                                               WHERE user_id = ?;""", (user_id,)).fetchone()
-        possible_clashing_email = db.execute("""SELECT * FROM users
-                                                WHERE email = ?;""", (email,)).fetchone()
-        if possible_clashing_user is not None:
-            form.user_id.errors.append("User id is already taken!")
-        elif possible_clashing_email is not None:
-            form.email.errors.append("Email is already registered!")
-        elif "@" not in email:
-            form.email.errors.append("Enter a valid email address!")
-        else:
-            db.execute("""INSERT INTO users (user_id, password, email)
-                          VALUES (?, ?, ?);""",
-                          (user_id, generate_password_hash(password), email))
-            db.commit()
-            return redirect(url_for("login"))
-    return render_template("register.html", form=form)
+#     form = RegistrationForm()
+#     if form.validate_on_submit():
+#         user_id = form.user_id.data
+#         password = form.password.data
+#         email = form.email.data
+#         db = get_db()
+#         possible_clashing_user = db.execute("""SELECT * FROM users
+#                                                WHERE user_id = ?;""", (user_id,)).fetchone()
+#         possible_clashing_email = db.execute("""SELECT * FROM users
+#                                                 WHERE email = ?;""", (email,)).fetchone()
+#         if possible_clashing_user is not None:
+#             form.user_id.errors.append("User id is already taken!")
+#         elif possible_clashing_email is not None:
+#             form.email.errors.append("Email is already registered!")
+#         elif "@" not in email:
+#             form.email.errors.append("Enter a valid email address!")
+#         else:
+#             db.execute("""INSERT INTO users (user_id, password, email)
+#                           VALUES (?, ?, ?);""",
+#                           (user_id, generate_password_hash(password), email))
+#             db.commit()
+#             return redirect(url_for("login"))
+#     return render_template("register.html", form=form)
 
-# @app.route("/login", methods = ["GET", "POST"])
-# def login():
-    form = LoginForm()
-    if form.validate_on_submit():  
-        user_id = form.user_id.data
-        password = form.password.data
-        db = get_db()
-        matching_user = db.execute("""SELECT * FROM users
-                                      WHERE user_id = ?;""", (user_id,)).fetchone()
-        if matching_user is None:
-            form.user_id.errors.append("Unknown user id!")
-        elif not check_password_hash(matching_user["password"], password):
-            form.password.errors.append("Incorrect password!")
-        else:
-            session["user_id"] = user_id
-            next_page = request.args.get("next")
-            if not next_page:
-                next_page = url_for("index")
-            return redirect(next_page)
-    return render_template("login.html", form=form)
+# # @app.route("/login", methods = ["GET", "POST"])
+# # def login():
+#     form = LoginForm()
+#     if form.validate_on_submit():  
+#         user_id = form.user_id.data
+#         password = form.password.data
+#         db = get_db()
+#         matching_user = db.execute("""SELECT * FROM users
+#                                       WHERE user_id = ?;""", (user_id,)).fetchone()
+#         if matching_user is None:
+#             form.user_id.errors.append("Unknown user id!")
+#         elif not check_password_hash(matching_user["password"], password):
+#             form.password.errors.append("Incorrect password!")
+#         else:
+#             session["user_id"] = user_id
+#             next_page = request.args.get("next")
+#             if not next_page:
+#                 next_page = url_for("index")
+#             return redirect(next_page)
+#     return render_template("login.html", form=form)
 
-# @app.route("/logout")
-# def logout():
-    session.clear()
-    return redirect( url_for("index") )
+# # @app.route("/logout")
+# # def logout():
+#     session.clear()
+#     return redirect( url_for("index") )
 
 @app.route("/settings")
 def settings():
@@ -220,6 +225,8 @@ def get_current_weather(lat, long):
     else:
         print(f"Error retrieving the weather API data: {response.status_code}")
 
+    return None
+
 def get_forecast(lat, long):  
     # https://github.com/m0rp43us/openmeteopy/blob/main/readme/WEATHER_FORECAST.md
     # https://github.com/m0rp43us/openmeteopy/blob/main/notebooks/tutorial.ipynb
@@ -246,3 +253,18 @@ def get_forecast(lat, long):
 
 def get_readings():
     pass
+
+def get_coordinates(city):
+    city = city.strip()
+    city = city.replace(" ", "+")
+    url = f"https://geocoding-api.open-meteo.com/v1/search?name={city}&count=10&language=en&format=json"
+    response = requests.get(url)
+
+    if response.status_code == 200:
+        data = response.json()
+        data = data["results"][0]
+        return data["latitude"], data["longitude"], data["name"], data["country"]
+    else:
+        print(f"Error retrieving the weather API data: {response.status_code}")
+    
+    return None,None,None,None
