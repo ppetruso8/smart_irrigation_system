@@ -13,3 +13,15 @@ class SensorForm(FlaskForm):
 class LocationForm(FlaskForm):
     location = StringField("Current Location:", validators=[InputRequired()])
     submit = SubmitField("Update Location")
+
+class RegistrationForm(FlaskForm):
+    username = StringField("Username", validators=[InputRequired(), Length(min=4, max=25)])
+    password = PasswordField("Password", validators=[InputRequired(), Length(min=5)])
+    password2 = PasswordField("Confirm Password:", 
+        validators=[InputRequired(), EqualTo("password", message="Passwords must match!")])
+    submit = SubmitField("Register")
+
+class LoginForm(FlaskForm):
+    username = StringField("Username", validators=[InputRequired()])
+    password = PasswordField("Password", validators=[InputRequired()])
+    submit = SubmitField("Login")

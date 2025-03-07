@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block main_content %} 
+    <h2>Register</h2>
+    
+    <section>
+        <form action = "" method="post" novalidate>
+            {{ form.hidden_tag() }}
+            {{ form.username.label }}
+            {{ form.username() }}
+            {% for error in form.username.errors %} 
+                {{ error }} 
+            {% endfor %}
+            <br />
+            {{ form.password.label }}
+            {{ form.password() }}
+            {% for error in form.password.errors %} 
+                {{ error }}
+            {% endfor %}
+            <br />
+            {{ form.password2.label }}
+            {{ form.password2() }}
+            {% for error in form.password2.errors %} 
+                {{ error }}
+            {% endfor %}
+            <br />
+            {{ form.submit() }}
+            </form>
+    </section>
+
+    <p>Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
+
+{% endblock %}

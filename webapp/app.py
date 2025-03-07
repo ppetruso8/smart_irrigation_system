@@ -1,10 +1,12 @@
 from flask import Flask, render_template, redirect, request, url_for, session, g
+from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
 from database import get_db, close_db
 from flask_session import Session
-import requests
-# from werkzeug.security import generate_password_hash, check_password_hash
-from forms import SensorForm, LocationForm
 from functools import wraps
+import requests
+
+from forms import SensorForm, LocationForm, RegistrationForm, LoginForm
 
 from openmeteopy import OpenMeteo
 from openmeteopy.hourly import HourlyForecast
@@ -17,15 +19,41 @@ import time
 app = Flask(__name__)
 app.teardown_appcontext(close_db)      
 app.config["SECRET_KEY"] = "my-secret-key"     
-app.config["SESSION_PERMANENT"] = False     
-app.config["SESSION_TYPE"] = "filesystem"   
-Session(app)
+# app.config["SESSION_PERMANENT"] = False     
+# app.config["SESSION_TYPE"] = "filesystem"   
+# Session(app)
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "login" 
+
+class User(UserMixin): 
+    """ Class to represent user
+    Inherits from UserMixin, which provides default implementations for all required properties and methods.
+    """
+    def __init__(self, id, username, password_hash):
+        """ Initialize user object with id, username, and hash of password
+        """
+        self.id = id
+        self.username = username
+        self.password_hash = password_hash
+
+@login_manager.user_loader
+def load_user(user_id):
+    """User loader function"""
+    db = get_db()
+    user = db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+    if user:
+        return User(user["id"], user["username"], user["password"])
+    return None
+
 
 # @app.before_request
 # def load_logged_in_user():
-#     g.user = session.get("user_id", None)
+#     g.user = session.get("username", None)
 
 @app.route("/", methods = ["GET", "POST"])
+@login_required
 def index():
     location_form = LocationForm()
     
@@ -114,57 +142,72 @@ def index():
                            daily=forecast_daily, forms=forms, city=city, country=country,
                            location_form=location_form)
 
-# @app.route("/register", methods = ["GET", "POST"])
-# def register():
-#     form = RegistrationForm()
-#     if form.validate_on_submit():
-#         user_id = form.user_id.data
-#         password = form.password.data
-#         email = form.email.data
-#         db = get_db()
-#         possible_clashing_user = db.execute("""SELECT * FROM users
-#                                                WHERE user_id = ?;""", (user_id,)).fetchone()
-#         possible_clashing_email = db.execute("""SELECT * FROM users
-#                                                 WHERE email = ?;""", (email,)).fetchone()
-#         if possible_clashing_user is not None:
-#             form.user_id.errors.append("User id is already taken!")
-#         elif possible_clashing_email is not None:
-#             form.email.errors.append("Email is already registered!")
-#         elif "@" not in email:
-#             form.email.errors.append("Enter a valid email address!")
-#         else:
-#             db.execute("""INSERT INTO users (user_id, password, email)
-#                           VALUES (?, ?, ?);""",
-#                           (user_id, generate_password_hash(password), email))
-#             db.commit()
-#             return redirect(url_for("login"))
-#     return render_template("register.html", form=form)
+@app.route("/register", methods = ["GET", "POST"])
+def register():
+    form = RegistrationForm()
+    if form.validate_on_submit():
+        username = form.username.data
+        password = form.password.data
+        password_verify = form.password2.data
+        # email = form.email.data
 
-# # @app.route("/login", methods = ["GET", "POST"])
-# # def login():
-#     form = LoginForm()
-#     if form.validate_on_submit():  
-#         user_id = form.user_id.data
-#         password = form.password.data
-#         db = get_db()
-#         matching_user = db.execute("""SELECT * FROM users
-#                                       WHERE user_id = ?;""", (user_id,)).fetchone()
-#         if matching_user is None:
-#             form.user_id.errors.append("Unknown user id!")
-#         elif not check_password_hash(matching_user["password"], password):
-#             form.password.errors.append("Incorrect password!")
-#         else:
-#             session["user_id"] = user_id
-#             next_page = request.args.get("next")
-#             if not next_page:
-#                 next_page = url_for("index")
-#             return redirect(next_page)
-#     return render_template("login.html", form=form)
+        if password != password_verify:
+            form.password2.errors.append("Submitted passwords don't match!")
+            return render_template("register.html", form=form)
 
-# # @app.route("/logout")
-# # def logout():
-#     session.clear()
-#     return redirect( url_for("index") )
+        db = get_db()
+        possible_clashing_user = db.execute("""SELECT * FROM users
+                                               WHERE username = ?;""", (username,)).fetchone()
+        # possible_clashing_email = db.execute("""SELECT * FROM users
+        #                                         WHERE email = ?;""", (email,)).fetchone()
+        if possible_clashing_user is not None:
+            form.username.errors.append("Username is already taken!")
+        # elif possible_clashing_email is not None:
+        #     form.email.errors.append("Email is already registered!")
+        # elif "@" not in email:
+        #     form.email.errors.append("Enter a valid email address!")
+        else:
+            db.execute("""INSERT INTO users (username, password)
+                          VALUES (?, ?);""",
+                          (username, generate_password_hash(password)))
+            db.commit()
+            return redirect(url_for("login"))
+    return render_template("register.html", form=form)
+
+@app.route("/login", methods = ["GET", "POST"])
+def login():
+    form = LoginForm()
+    if form.validate_on_submit():  
+        username = form.username.data
+        password = form.password.data
+
+        db = get_db()
+        user = db.execute("""SELECT * FROM users
+                                      WHERE username = ?;""", (username,)).fetchone()
+        
+        if not user:     # !!!make into one
+            form.username.errors.append("Unknown username!")
+        elif not check_password_hash(user["password"], password):
+            form.password.errors.append("Incorrect password!")
+        else:   # login successful
+            user_obj = User(user["id"], user["username"], user["password"])
+            login_user(user_obj, remember=True)
+
+            # session["username"] = username
+
+            next_page = request.args.get("next")
+            if not next_page:
+                next_page = url_for("index")
+
+            return redirect(next_page)
+    return render_template("login.html", form=form)
+
+@app.route("/logout")
+@login_required
+def logout():
+    logout_user()
+    # session.clear()
+    return redirect(url_for("login"))
 
 @app.route("/settings")
 def settings():
