@@ -33,51 +33,111 @@ body {
     hyphens: auto;
     font-size: 16px;
 }
-/* body {
-    width: auto;
-    margin: 0;
-
-    background-color: var(--main);
-
-    font-family: "Montserrat", "Segoe UI", sans-serif;
-    color: var(--text);
-    font-size: 16px;
-    hyphens: auto;
-    line-height: 1.5em;
-    text-align: center;
-}
 
 header {
     width: auto;
-    padding: 1em;
-    background-color: var(--header_nav);
+    padding: 0.5em;
+    background-color: var(--main);
+    color: var(--text);
+    font-size: 1.8em;
+    text-align: center;
+}
 
-    background-image: url("header.jpg");
-    color: var(--header_nav_text);
-    font-size: 1.9em;
-} */
+nav {
+    width: auto;
+    /* margin: 0; */
+    padding: 0;
 
-#weather, #sensors {
-    margin: 1.2em;
-    padding: 1.2em;
+    background-color: var(--section_bg);
+    overflow: hidden;
 
+    text-align: center;
+    font-size: 1.1em;
+    color: var(--text);
+}
+
+nav {
+    display: flex;
+    justify-content: space-evenly;
+
+    margin: 0;
+    padding: 0;
+}
+
+ul {
+    list-style: none;
+    padding: 0
+}
+
+ul li {
+    text-align: left
+}
+
+nav ul {
+    display: flex;
+    justify-content: space-evenly;
+    margin: 0;
+    width: 100%;
+    list-style: none;
+}
+
+nav ul + ul {
+    justify-content: flex-end;
+}
+
+nav ul li {
+    padding: 0.5em;;
+}
+
+nav a {
+    color: var(--text);
+    text-decoration: none;
+}
+
+nav ul li:hover {
+    background-color: var(--hover);
+    transition: background-color 1s;
+}
+
+main {
+    margin: 2em;
+}
+
+section {
+    margin: 1.2em auto;
+    padding: 0.1em 1.2em;
     background: var(--section_bg);
     border-radius: 0.5em;
 }
 
-#weather h3, #sensors h3 {
-    padding-bottom: 0.25em;
+h1 {
+    margin: 0em;
+}
 
+h2 {
+    margin-left: 0em;
+    font-size: 1.5em;
+}
+
+h3 {
+    font-size: 1.35em;
+}
+
+h4 {
+    font-size: 1.15em;
+    padding-bottom: 0.25em;
     border-bottom: 2px solid var(--blue_detail);
 }
+
+h5 {
+    font-size: 1.05em;
+}
+
 
 #weather p:not(:first-child) , #sensors p:not(:first-child) {
     margin: 0.25em 0;
 }
 
-h1 {
-    margin: auto 0.8em;
-}
 
 /* Current Weather */
 #current_weather {
@@ -85,7 +145,7 @@ h1 {
     flex-wrap: wrap;
     justify-content: space-evenly;
     align-items: center;
-    
+    margin-top: 0em;
     gap: 1em 2em;
 }
 
@@ -93,14 +153,13 @@ h1 {
     flex: 1;
     text-align: center;
     padding: 0.5em;
-
     border-radius: 0.5em;
     background: var(--main);
     box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .weather_icon {
-    font-size: 20px;
+    font-size: 1.5em;
     margin: 0.5em 0;
 }
 
@@ -108,13 +167,10 @@ h1 {
     font-weight: bold;
 }
 
-#current_weather h3 {
+#current_weather h4 {
     width: 100%;
     margin-bottom: 0.5em;
     padding-bottom: 0.2em;
-
-    border-bottom: 2px solid #3498db;
-    font-size: 20px;
 }
 
 /* Hourly Forecast */
@@ -204,7 +260,7 @@ h1 {
     max-width: 17em;
 }
 
-.sensor h3, .sensor h4 {
+.sensor h4, .sensor h5 {
     text-align: center;
     margin: 0.5em 0;
 }
@@ -216,7 +272,6 @@ h1 {
 /* Buttons */
 button, #submit {
     align-self: center;
-    /* width: 10em; */
     padding: 0.6em 0.8em;
     margin: 1em;
 
@@ -241,10 +296,16 @@ button:hover, #submit:hover {
     text-align: center;
 }
 
+#location {
+    margin-bottom: 0em;
+}
+
 #location form {
     display: flex;
     flex-direction: row;
+    flex-wrap: wrap;
     align-items: center;
+    justify-content: flex-start;
 }
 
 #location label {
@@ -252,5 +313,5 @@ button:hover, #submit:hover {
 }
 
 #location #submit {
-    margin: 0em 2em;
+    margin: 0.5em 2em;
 }

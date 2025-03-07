@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 
 {% block main_content %}
-    <h1>Dashboard</h1>
+    <h2>Dashboard</h2>
     <section id = "sensors">
-        <h2>Sensors</h2>
+        <h3>Sensors</h3>
         <section id="sensors_container">
             {% for sensor in sensors %}
-            <section class = "sensor">
-                <h3>Sensor {{ sensor.sensor_no }}</h3>
+            <div class = "sensor">
+                <h4>Sensor {{ sensor.sensor_no }}</h4>
                 <p>Soil Moisture: {{ sensor.moisture }}</p>
                 <p>Temperature: {{ sensor.temperature }} °C</p>
                 <p>Humidity: {{ sensor.humidity }} %</p>
@@ -18,7 +18,7 @@
                     <button onclick="pump('on')">Manual Watering</button>
                 </div>
 
-                <h4>Settings</h4>
+                <h5>Settings</h5>
                 <form action="" method="POST" novalidate>
                     {{ forms[sensor.sensor_no].hidden_tag() }}
                     <input type="hidden" name="sensor" value="{{ sensor.sensor_no }}">
@@ -35,19 +35,14 @@
                     <div class="submit_button">
                         {{ forms[sensor.sensor_no].submit() }}
                     </div>
-                </form>
-                <!-- <p>Pump: {{ sensor.pump }}</p>
-                <p>Sensor: {{ sensor.sensor_no }}</p>
-                <p>Environment: {{ sensor.env }}</p>
-                <p>Watering Mode: {{ sensor.mode }}</p> -->
-                
-            </section>
+                </form>              
+            </div>
             {% endfor %}
         </section>
     </section>
 
     <section id = "weather">
-        <h2>Weather</h2>
+        <h3>Weather</h3>
         <section id="location">
             <form action="" method="POST" novalidate>
                 <div>
@@ -62,7 +57,7 @@
         </section>
 
         <section id="current_weather">
-            <h3>Current Weather</h3>
+            <h4>Current Weather</h4>
         
             <div class="weather_item">
                 <p class="weather_icon" >🌡</p>
@@ -90,7 +85,7 @@
         </section>
 
         <section id="hourly_forecast">
-            <h3>2-Day Hourly Weather Forecast</h3>
+            <h4>2-Day Hourly Weather Forecast</h4>
             <section id="hourly_container">
                 {% for index, row in hourly.iterrows() %}
                     <div class="hourly_item">
@@ -106,7 +101,7 @@
         </section>
 
         <section id="daily_forecast">
-            <h3>5-Day Weather Forecast</h3>
+            <h4>5-Day Weather Forecast</h4>
             <section id="daily_container">
                 {% for index, row in daily.iterrows() %}
                     <div class="daily_item">
