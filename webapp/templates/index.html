@@ -5,37 +5,37 @@
     <section id = "sensors">
         <h3>Sensors</h3>
         <section id="sensors_container">
-            {% for sensor in sensors %}
-            <div class = "sensor">
-                <h4>Sensor {{ sensor.sensor_no }}</h4>
+            {% for sensor_no, sensor in sensors.items() %}
+            <div class="sensor">
+                <h4>Sensor {{ sensor_no }}</h4>
                 <p>Soil Moisture: {{ sensor.moisture }}</p>
                 <p>Temperature: {{ sensor.temperature }} °C</p>
                 <p>Humidity: {{ sensor.humidity }} %</p>
-                <p>Brightness: {{ sensor.brightness }}</p>
-
+                <p>env: {{ sensor.env }}</p>
+        
                 <div class="sensor_buttons">
                     <button onclick="refresh()">Update</button>
                     <button onclick="pump('on')">Manual Watering</button>
                 </div>
-
+        
                 <h5>Settings</h5>
                 <form action="" method="POST" novalidate>
-                    {{ forms[sensor.sensor_no].hidden_tag() }}
-                    <input type="hidden" name="sensor" value="{{ sensor.sensor_no }}">
+                    {{ forms[sensor_no].hidden_tag() }}
+                    <input type="hidden" name="sensor" value="{{ sensor_no }}">
                     
-                    {{ forms[sensor.sensor_no].pump.label }}
-                    {{ forms[sensor.sensor_no].pump }}
+                    {{ forms[sensor_no].pump.label }}
+                    {{ forms[sensor_no].pump }}
                     </br>
-                    {{ forms[sensor.sensor_no].env.label }}
-                    {{ forms[sensor.sensor_no].env() }}
+                    {{ forms[sensor_no].env.label }}
+                    {{ forms[sensor_no].env() }}
                     </br>
-                    {{ forms[sensor.sensor_no].mode.label }}
-                    {{ forms[sensor.sensor_no].mode() }}
+                    {{ forms[sensor_no].mode.label }}
+                    {{ forms[sensor_no].mode() }}
                     </br>
                     <div class="submit_button">
-                        {{ forms[sensor.sensor_no].submit() }}
+                        {{ forms[sensor_no].submit() }}
                     </div>
-                </form>              
+                </form>
             </div>
             {% endfor %}
         </section>
@@ -115,6 +115,9 @@
             </section>
         </section>        
     </section>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+
 
 
 {% endblock %}

@@ -52,16 +52,26 @@ def load_user(user_id):
 # def load_logged_in_user():
 #     g.user = session.get("username", None)
 
+# sensor = {"sensor_no": 1, "moisture": 1, "temperature": 1, "humidity": 1, "pump": 1, "env": "INDOOR", "mode": "Automatic"}
+# sensor2 = {"sensor_no": 2, "moisture": 2, "temperature": 2, "humidity": 2, "pump": 2, "env": "OUTDOOR", "mode": "MANUAL LIGHT"}
+# sensors = [sensor, sensor2]
+
+sensors = {1: {"moisture": 1, "temperature": 1, "humidity": 1, "pump": 1, "env": "Indoor", "mode": "Automatic"},
+               2: {"moisture": 2, "temperature": 2, "humidity": 2, "pump": 2, "env": "Outdoor", "mode": "MANUAL LIGHT"}}
+
 @app.route("/", methods = ["GET", "POST"])
 @login_required
 def index():
     location_form = LocationForm()
     
-    # default location - Cork
+    # temp default location - Cork
     city = "Cork"
     country = "Ireland"
     latitude = 51.898
     longitude = -8.4706
+
+    # location_form.location.default = city
+    # location_form.process()
 
     # get coordinates for the user input city
     if location_form.validate_on_submit():
@@ -108,19 +118,23 @@ def index():
     forecast_daily['time'] = pd.to_datetime(forecast_daily['time']).dt.strftime('%d %b %Y')
  
     # readings = get_sensors() --> list of dict 
-    # sample sensor 
-    sensor = {"sensor_no": 1, "moisture": 1, "temperature": 1, "humidity": 1, "brightness": 1, "pump": 1, "env": "INDOOR", "mode": "Automatic"}
-    sensor2 = {"sensor_no": 2, "moisture": 2, "temperature": 2, "humidity": 2, "brightness": 2, "pump": 2, "env": "OUTDOOR", "mode": "MANUAL LIGHT"}
-    sensors = [sensor, sensor2]
-
+    # sample sensors 
+    
     # create form for each sensor for updating the settings
-    forms = {sensor["sensor_no"]: SensorForm(data=sensor) for sensor in sensors}
+    forms = {sensor_id: SensorForm(data=data) for sensor_id, data in sensors.items()}
+
+    # # change to only if first time ?
+    # for sensor_no, sensor in sensors.items():
+    #     form = forms[sensor_no]
+    #     form.pump.default = sensor["pump"]
+    #     form.env.default = sensor["env"]
+    #     form.mode.default = sensor["mode"]
+    #     form.process()
 
     if request.method == "POST":
         # updating sensor settings
         if request.form.get("sensor") is not None:
-            sensor_no = request.form.get("sensor")
-            sensor_no = int(sensor_no)
+            sensor_no = int(request.form.get("sensor"))
 
             form = forms.get(sensor_no)
 
@@ -131,12 +145,13 @@ def index():
 
                 # update Raspberry Pi
                 print("Updating Raspberry Pi")
-                sensor = sensors[sensor_no-1]
-                sensor["pump"] = new_pump
-                sensor["env"] = new_env
-                sensor["mode"] = new_mode
+                sensors[sensor_no]["pump"] = new_pump
+                sensors[sensor_no]["env"] = new_env
+                sensors[sensor_no]["mode"] = new_mode
 
-            return redirect(url_for("index"))  # refresh the page 
+                forms[sensor_no] = SensorForm(data=sensors[sensor_no])
+
+                return redirect(url_for("index"))  # refresh the page 
 
     return render_template("index.html", weather=weather_current, sensors=sensors, hourly=forecast_hourly, 
                            daily=forecast_daily, forms=forms, city=city, country=country,
