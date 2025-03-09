@@ -62,25 +62,43 @@
             <div class="weather_item">
                 <p class="weather_icon" >🌡</p>
                 <p>Temperature</p>
-                <p>{{ weather.temperature }}°C</p>
+                <p>{{ weather.temperature_2m }}°C</p>
             </div>
         
             <div class="weather_item">
                 <p class="weather_icon">🌥</p>
                 <p>Status</p>
-                <p>{{ weather.weathercode }}</p>
+                <p>{{ weather.weather_code }}</p>
+            </div>
+
+            <div class="weather_item">
+                <p class="weather_icon">💧</p>
+                <p>Rain</p>
+                <p>{{ weather.precipitation }}mm</p>
+            </div>
+
+            <div class="weather_item">
+                <p class="weather_icon">☔</p>
+                <p>Chance of Rain</p>
+                <p>{{ weather.precipitation_probability }}%</p>
+            </div>
+
+            <div class="weather_item">
+                <p class="weather_icon">🌫️</p>
+                <p>Humidity</p>
+                <p>{{ weather.relative_humidity_2m }}%</p>
             </div>
         
             <div class="weather_item">
                 <p class="weather_icon">༄</p>
                 <p>Wind Speed</p>
-                <p>{{ weather.windspeed }} km/h</p>
+                <p>{{ weather.wind_speed_10m }} km/h</p>
             </div>
         
             <div class="weather_item">
                 <p class="weather_icon">🧭</p>
                 <p>Wind Direction</p>
-                <p>{{ weather.winddirection }}°</p>
+                <p>{{ weather.wind_direction_10m }}°</p>
             </div>
         </section>
 

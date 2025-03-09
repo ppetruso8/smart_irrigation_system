@@ -110,7 +110,8 @@ def index():
     # replace weather codes with actual strings
     forecast_hourly["weathercode"] = forecast_hourly["weathercode"].replace(weather_codes)
     forecast_daily["weathercode"] = forecast_daily["weathercode"].replace(weather_codes)
-    weather_current["weathercode"] = weather_codes[weather_current["weathercode"]]
+    weather_current["weather_code"] = weather_codes[weather_current["weather_code"]]
+    print(weather_current)
 
     # ensure time is not an index
     forecast_hourly.reset_index(inplace=True)
@@ -277,12 +278,12 @@ def page_not_found(error):
     }
 
 def get_current_weather(lat, long):
-    url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={long}&current_weather=true"
+    url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={long}&current=temperature_2m,relative_humidity_2m,precipitation,rain,weather_code,wind_speed_10m,wind_direction_10m,precipitation_probability"
     response = requests.get(url)
     
     if response.status_code == 200:
         data = response.json()
-        return data["current_weather"]
+        return data["current"]
     else:
         print(f"Error retrieving the weather API data: {response.status_code}")
 
