@@ -52,9 +52,6 @@ def load_user(user_id):
 # def load_logged_in_user():
 #     g.user = session.get("username", None)
 
-# sensor = {"sensor_no": 1, "moisture": 1, "temperature": 1, "humidity": 1, "pump": 1, "env": "INDOOR", "mode": "Automatic"}
-# sensor2 = {"sensor_no": 2, "moisture": 2, "temperature": 2, "humidity": 2, "pump": 2, "env": "OUTDOOR", "mode": "MANUAL LIGHT"}
-# sensors = [sensor, sensor2]
 
 sensors = {1: {"moisture": 1, "temperature": 1, "humidity": 1, "pump": 1, "env": "Indoor", "mode": "Automatic"},
                2: {"moisture": 2, "temperature": 2, "humidity": 2, "pump": 2, "env": "Outdoor", "mode": "MANUAL LIGHT"}}
@@ -70,8 +67,10 @@ def index():
     latitude = 51.898
     longitude = -8.4706
 
-    # location_form.location.default = city
-    # location_form.process()
+    # retrieve city data from raspberry Pi and replace city
+
+    location_form.location.default = city
+    location_form.process()
 
     # get coordinates for the user input city
     if location_form.validate_on_submit():
@@ -85,6 +84,10 @@ def index():
             country = country
         else: 
             print("Error updating city data")
+
+        # send city data to raspberry pi 
+
+        return redirect(url_for("index", _anchor="weather"))
 
     # weather_data = get_weather_api(latitude, longitude)
     weather_current = get_current_weather(latitude, longitude)
