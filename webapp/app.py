@@ -111,7 +111,6 @@ def index():
     forecast_hourly["weathercode"] = forecast_hourly["weathercode"].replace(weather_codes)
     forecast_daily["weathercode"] = forecast_daily["weathercode"].replace(weather_codes)
     weather_current["weather_code"] = weather_codes[weather_current["weather_code"]]
-    print(weather_current)
 
     # ensure time is not an index
     forecast_hourly.reset_index(inplace=True)
@@ -127,13 +126,13 @@ def index():
     # create form for each sensor for updating the settings
     forms = {sensor_id: SensorForm(data=data) for sensor_id, data in sensors.items()}
 
-    # # change to only if first time ?
-    # for sensor_no, sensor in sensors.items():
-    #     form = forms[sensor_no]
-    #     form.pump.default = sensor["pump"]
-    #     form.env.default = sensor["env"]
-    #     form.mode.default = sensor["mode"]
-    #     form.process()
+    # change to only if first time ?
+    for sensor_no, sensor in sensors.items():
+        form = forms[sensor_no]
+        form.pump.default = sensor["pump"]
+        form.env.default = sensor["env"]
+        form.mode.default = sensor["mode"]
+        form.process()
 
     if request.method == "POST":
         # updating sensor settings
