@@ -1,7 +1,7 @@
 # from email.policy import default
 from flask_wtf import FlaskForm
-from wtforms import SubmitField, StringField, PasswordField, RadioField, SelectField, TextAreaField, IntegerField, HiddenField
-from wtforms.validators import InputRequired, EqualTo, Length
+from wtforms import SubmitField, StringField, PasswordField, SelectField, TextAreaField, IntegerField
+from wtforms.validators import InputRequired, EqualTo, Length, NumberRange
 
 class SensorForm(FlaskForm):
     sensor = IntegerField()
@@ -12,7 +12,7 @@ class SensorForm(FlaskForm):
 
 class FertilizationForm(FlaskForm):
     fertilization_pump = IntegerField()
-    amount = IntegerField("Amount (mm):", validators=[InputRequired()])
+    amount = IntegerField("Amount (mm):", validators=[InputRequired(), NumberRange(10,250)])
     submit = SubmitField("Fertilize")
 
 class LocationForm(FlaskForm):

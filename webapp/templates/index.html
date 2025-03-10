@@ -68,6 +68,9 @@
                         <input type="hidden" name="fertilization_pump" value="{{ pump_no }}">
                         {{ pump_forms[pump_no].amount.label }}
                         {{ pump_forms[pump_no].amount }}
+                        {% for error in pump_forms[pump_no].amount.errors %} 
+                            {{ error }}
+                        {% endfor %}
                         </br>
                         <div class="submit_button">
                             {{ pump_forms[pump_no].submit() }}
