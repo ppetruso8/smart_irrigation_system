@@ -13,7 +13,7 @@ class SensorForm(FlaskForm):
 class FertilizationForm(FlaskForm):
     fertilization_pump = IntegerField()
     amount = IntegerField("Amount (mm):", validators=[InputRequired(), NumberRange(10,250)])
-    submit = SubmitField("Fertilize")
+    submit = SubmitField("Update Setting")
 
 class LocationForm(FlaskForm):
     location = StringField("Current Location:", validators=[InputRequired()])
@@ -30,3 +30,7 @@ class LoginForm(FlaskForm):
     username = StringField("Username", validators=[InputRequired()])
     password = PasswordField("Password", validators=[InputRequired()])
     submit = SubmitField("Login")
+
+class PairingForm(FlaskForm):
+    code = StringField("Pairing code:", validators=[InputRequired(), Length(min=6, max=6)])
+    submit = SubmitField("Submit")

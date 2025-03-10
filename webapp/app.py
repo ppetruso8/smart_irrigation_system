@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, request, url_for, session, g
+from flask import Flask, render_template, redirect, request, url_for, flash
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from database import get_db, close_db
@@ -6,7 +6,7 @@ from flask_session import Session
 from functools import wraps
 import requests
 
-from forms import SensorForm, LocationForm, RegistrationForm, LoginForm, FertilizationForm
+from forms import SensorForm, LocationForm, RegistrationForm, LoginForm, FertilizationForm, PairingForm
 
 from openmeteopy import OpenMeteo
 from openmeteopy.hourly import HourlyForecast
@@ -15,6 +15,8 @@ from openmeteopy.options import ForecastOptions
 import pandas as pd
 
 import time
+
+NODE_RED = "" 
 
 app = Flask(__name__)
 app.teardown_appcontext(close_db)      
@@ -31,12 +33,13 @@ class User(UserMixin):
     """ Class to represent user
     Inherits from UserMixin, which provides default implementations for all required properties and methods.
     """
-    def __init__(self, id, username, password_hash):
+    def __init__(self, id, username, password_hash, has_node_red_permission = 0):
         """ Initialize user object with id, username, and hash of password
         """
         self.id = id
         self.username = username
         self.password_hash = password_hash
+        self.has_node_red_permission = bool(has_node_red_permission)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -44,7 +47,7 @@ def load_user(user_id):
     db = get_db()
     user = db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
     if user:
-        return User(user["id"], user["username"], user["password"])
+        return User(user["id"], user["username"], user["password"], user["has_node_red_permission"])
     return None
 
 
@@ -64,19 +67,20 @@ fertilization_pumps = {1: {"amount": 50, "last": "2025-10-03 15:00"}, 2: {"amoun
 @login_required
 def index():
     location_form = LocationForm()
-    
-    # temp default location - Cork
-    city = "Cork"
-    country = "Ireland"
-    latitude = 51.898
-    longitude = -8.4706
-
-    # retrieve city data from raspberry Pi and replace city
+    city = None
+    # retrieve forecast location data from Node-Red
+    # city, country, latitude, longitude = get_location()
+    if not city:
+        # default location - Cork
+        city = "Cork"
+        country = "Ireland"
+        latitude = 51.898
+        longitude = -8.4706
 
     location_form.location.default = city
     location_form.process()
 
-    # get coordinates for the user input city
+    # get coordinates of user-submitted location
     if location_form.validate_on_submit():
         city = location_form.location.data
         lat, long, name, country = get_coordinates(city)
@@ -89,18 +93,18 @@ def index():
         else: 
             print("Error updating city data")
 
-        # send city data to raspberry pi 
+        # send city data to raspberry pi
+        send_command(f"SET: {city}, {latitude}, {longitude}") 
 
         return redirect(url_for("index", _anchor="weather"))
 
-    # weather_data = get_weather_api(latitude, longitude)
     weather_current = get_current_weather(latitude, longitude)
     forecast_hourly, forecast_daily = get_forecast(latitude, longitude)
 
     forecast_hourly = forecast_hourly.iloc[:48] # 48h hourly forecast
     forecast_daily = forecast_daily.iloc[:5]    # 5 day forecast
 
-    # weather code translation dict
+    # weather code translation dictionary
     weather_codes = {0: "Clear Sky", 1: "Mainly Clear Sky", 2: "Partly Cloudy", 3: "Cloudy",
                      45: "Fog", 48: "Depositing Rime Fog", 51: "Light Drizzle", 
                      53: "Moderate Drizzle", 55: "Dense Drizzle", 56: "Light Freezing Drizzle",
@@ -124,14 +128,15 @@ def index():
     forecast_hourly['time'] = pd.to_datetime(forecast_hourly['time']).dt.strftime('%d %b %Y %H:%M')  
     forecast_daily['time'] = pd.to_datetime(forecast_daily['time']).dt.strftime('%d %b %Y')
  
-    # readings = get_sensors() --> list of dict 
-    # sample sensors 
+    # data from node-red
+    # sensors, dht_sensors = get_sensors()
+    # fertilization_pumps = get_fertilization_pumps()
     
     # create form for each sensor for updating the settings
     forms = {sensor_id: SensorForm(data=data) for sensor_id, data in sensors.items()}
     fertilization_forms = {pump_id: FertilizationForm(data=data) for pump_id, data in fertilization_pumps.items()}
 
-    # change to only if first time ?
+    # default form fill-in
     for sensor_no, sensor in sensors.items():
         form = forms[sensor_no]
         form.pump.default = sensor["pump"]
@@ -165,7 +170,7 @@ def index():
                 forms[sensor_no] = SensorForm(data=sensors[sensor_no])
 
                 return redirect(url_for("index"))
-            
+        # updating fertilization setting
         elif request.form.get("fertilization_pump"):
             pump_no = int(request.form.get("fertilization_pump"))
 
@@ -179,8 +184,6 @@ def index():
                 fertilization_pumps[pump_no]["amount"] = new_amount
 
                 fertilization_pumps[pump_no] = FertilizationForm(data=fertilization_pumps[pump_no])
-
-                # start_pump(pump_no, amount)
 
                 return redirect(url_for("index"))  # refresh the page
 
@@ -257,53 +260,92 @@ def logout():
     return redirect(url_for("login"))
 
 @app.route("/settings")
+@login_required
 def settings():
     return render_template("settings.html")
 
 @app.route("/statistics")
+@login_required
 def statistics():
     return render_template("statistics.html")
 
 @app.route("/profile")
+@login_required
 def profile():
     return render_template("profile.html")
+
+@app.route("/pair", methods=["GET", "POST"])
+@login_required
+def pair():
+    form = PairingForm()
+    code = "123456"  #GET FROM PI
+
+    if form.validate_on_submit():
+        user_code = form.code.data
+
+        if user_code == code:
+            db = get_db()
+            db.execute("UPDATE users SET has_node_red_permission = 1 where id = ?", (current_user.id,))
+            db.commit()
+            flash("Pairing successful")
+            return redirect(url_for("index"))
+        else:
+            form.code.errors = "Invalid pairing code"
+        
+    return render_template("pair.html", form=form)
+    
+
+@app.route("/trigger_pump", methods=["POST"])
+@login_required
+def trigger_watering():
+    command = request.form.get("command")
+
+    if not command:
+        print("No command")
+        return redirect(url_for("index"))
+    
+    print(command)
+
+    if current_user.has_node_red_permission:
+        msg = send_command(command)
+        if msg:
+            print("Success")
+        else:
+            print(f"Failed to send command: {command}")
+    else:
+        print("You don't have permission to control the system.")
+    return redirect(url_for("index"))
+
+@app.route("/send_command", methods=["POST"])
+@login_required
+def send_command():
+    command = request.form.get("command")
+
+    if not command:
+        print("No command")
+        return redirect(url_for("index"))
+        
+    print(command)
+
+    if current_user.has_node_red_permission:
+        if "READ" in command:
+            msg = get_sensors()
+        else:
+            msg = send_command(command)
+        
+        if msg:
+            print("Success")
+        else:
+            print(f"Failed to send command: {command}")
+    else:
+        print("You don't have permission to control the system.")
+    return redirect(url_for("index"))
+    
+
 
 @app.errorhandler(404)
 def page_not_found(error):
     return render_template("error.html", error=error)
-
-
-# def get_weather_api(latitude,longitude):
-    params = {
-        "latitude": latitude,
-        "longitude": longitude,
-        "hourly": ["temperature_2m", "precipitation", "wind_speed_10m"],
-        "current": ["temperature_2m", "relative_humidity_2m"]
-    }
-
-    # responses = om.weather_api("https://api.open-meteo.com/v1/forecast", params=params)
-    # weather = responses[0]["current_weather"]
-    
-    response = responses[0]
-    # print(f"Coordinates {response.Latitude()}°N {response.Longitude()}°E")
-    # print(f"Elevation {response.Elevation()} m asl")
-    # print(f"Timezone {response.Timezone()} {response.TimezoneAbbreviation()}")
-    # print(f"Timezone difference to GMT+0 {response.UtcOffsetSeconds()} s")
-
-    # Current values
-    current = response.Current()
-    current_variables = list(map(lambda i: current.Variables(i), range(0, current.VariablesLength())))
-    current_temperature_2m = next(filter(lambda x: x.Variable() == Variable.temperature and x.Altitude() == 2, current_variables))
-    current_relative_humidity_2m = next(filter(lambda x: x.Variable() == Variable.relative_humidity and x.Altitude() == 2, current_variables))
-
-    # print(f"Current time {current.Time()}")
-    # print(f"Current temperature_2m {current_temperature_2m.Value()}")
-    # print(f"Current relative_humidity_2m {current_relative_humidity_2m.Value()}")
-
-    return {
-        "temperature": current_temperature_2m.Value(),
-        "humidity": current_relative_humidity_2m.Value()
-    }
 
 def get_current_weather(lat, long):
     url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={long}&current=temperature_2m,relative_humidity_2m,precipitation,rain,weather_code,wind_speed_10m,wind_direction_10m,precipitation_probability"
@@ -341,9 +383,6 @@ def get_forecast(lat, long):
 
     return meteo
 
-def get_readings():
-    pass
-
 def get_coordinates(city):
     city = city.strip()
     city = city.replace(" ", "+")
@@ -358,3 +397,52 @@ def get_coordinates(city):
         print(f"Error retrieving the weather API data: {response.status_code}")
     
     return None,None,None,None
+
+def get_sensors():
+    """ Retrieve sensor data from Node-Red using HTTP GET request
+    """
+    response = requests.get(f"{NODE_RED}/sensor-data")
+
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print(f"Error fetching sensor data from Node-Red: {response.status_code}")
+
+    # UPDATE DICTS
+    return None
+
+def send_command(command):
+    """ Send command to Node-Red using HTTP POST request
+    """
+    payload = {"command": command}
+    print(f"COMMAND SENT: {command}")
+    return None
+    # response = requests.post(f"{NODE_RED}/control", json=payload)
+
+    # if response.status_code == 200:
+    #     return response.json()
+    # else:
+    #     print(f"Error sending command to Node-Red: {response.status_code}")
+    # return None
+
+def get_location():
+    """ Get selected location for forecast from Node-Red
+    """
+    response = requests.post(f"{NODE_RED}/location")
+
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print(f"Error sending command to Node-Red: {response.status_code}")
+    return None
+
+def get_fertilization_pumps():
+    """ Retrieve sensor data from Node-Red using HTTP GET request
+    """
+    response = requests.get(f"{NODE_RED}/fertilization")
+
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print(f"Error fetching sensor data from Node-Red: {response.status_code}")
+    return None

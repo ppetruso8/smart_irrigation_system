@@ -128,8 +128,19 @@ h5 {
     font-size: 1.05em;
 }
 
+footer {
+    width: auto;
+    padding: 0.5em 2em;
 
-#weather p:not(:first-child) , #sensors p:not(:first-child) {
+    background: var(--section_bg);
+    color: var(--text);
+}
+
+footer a {
+    color: var(--blue_detail);
+}
+
+#weather p:not(:first-child) , #sensors p:not(:first-child), #fertilization p:not(:first-child) {
     margin: 0.25em 0;
 }
 
@@ -263,19 +274,19 @@ h5 {
 }
 
 /* Sensors */
-.sensor {
+.sensor, .fertilization_pump {
     flex: 1;
     padding: 0.5em;
     min-width: 250px;
     max-width: 17em;
 }
 
-.sensor h4, .sensor h5, .fertilization_pump h4 {
+.sensor h4, .sensor h5, .fertilization_pump h4, .fertilization_pump h5 {
     text-align: center;
     margin: 0.5em 0;
 }
 
-.sensor p {
+.sensor p, .fertilization_pump p {
     padding-left: 0.4em;
 }
 
@@ -314,6 +325,13 @@ button:hover, #submit:hover {
     text-align: center;
 }
 
+#update_button {
+    margin-top: 0em;
+    margin-bottom: 2em;
+}
+
+/* Location form */
+
 #location {
     margin-bottom: 0em;
 }
@@ -332,17 +350,4 @@ button:hover, #submit:hover {
 
 #location #submit {
     margin: 0.5em 2em;
-}
-
-footer {
-    width: auto;
-    /* margin: 2em; */
-    padding: 0.5em 2em;
-
-    background: var(--section_bg);
-    color: var(--text);
-}
-
-footer a {
-    color: var(--blue_detail);
 }
