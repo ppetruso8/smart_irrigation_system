@@ -6,7 +6,7 @@ from flask_session import Session
 from functools import wraps
 import requests
 
-from forms import SensorForm, LocationForm, RegistrationForm, LoginForm
+from forms import SensorForm, LocationForm, RegistrationForm, LoginForm, FertilizationForm
 
 from openmeteopy import OpenMeteo
 from openmeteopy.hourly import HourlyForecast
@@ -53,8 +53,12 @@ def load_user(user_id):
 #     g.user = session.get("username", None)
 
 
-sensors = {1: {"moisture": 1, "temperature": 1, "humidity": 1, "pump": 1, "env": "Indoor", "mode": "Automatic"},
-               2: {"moisture": 2, "temperature": 2, "humidity": 2, "pump": 2, "env": "Outdoor", "mode": "MANUAL LIGHT"}}
+sensors = {1: {"moisture": 1, "pump": 1, "env": "Indoor", "mode": "Automatic"},
+               2: {"moisture": 2, "pump": 2, "env": "Outdoor", "mode": "MANUAL LIGHT"}}
+
+dht_sensors = {1: {"temperature": 1, "humidity": 1}, 2: {"temperature": 2, "humidity": 2}}
+
+fertilization_pumps = {1: {"amount": 50, "last": "2025-10-03 15:00"}, 2: {"amount": 60, "last": "2025-10-03 14:00"}}
 
 @app.route("/", methods = ["GET", "POST"])
 @login_required
@@ -125,6 +129,7 @@ def index():
     
     # create form for each sensor for updating the settings
     forms = {sensor_id: SensorForm(data=data) for sensor_id, data in sensors.items()}
+    fertilization_forms = {pump_id: FertilizationForm(data=data) for pump_id, data in fertilization_pumps.items()}
 
     # change to only if first time ?
     for sensor_no, sensor in sensors.items():
@@ -134,9 +139,14 @@ def index():
         form.mode.default = sensor["mode"]
         form.process()
 
+    for pump_no, pump in fertilization_pumps.items():
+        form = fertilization_forms[pump_no]
+        form.amount.default = pump["amount"]
+        form.process()
+
     if request.method == "POST":
         # updating sensor settings
-        if request.form.get("sensor") is not None:
+        if request.form.get("sensor"):
             sensor_no = int(request.form.get("sensor"))
 
             form = forms.get(sensor_no)
@@ -154,11 +164,30 @@ def index():
 
                 forms[sensor_no] = SensorForm(data=sensors[sensor_no])
 
-                return redirect(url_for("index"))  # refresh the page 
+                return redirect(url_for("index"))
+            
+        elif request.form.get("fertilization_pump"):
+            pump_no = int(request.form.get("fertilization_pump"))
+
+            form = fertilization_forms.get(pump_no)
+
+            if form.validate_on_submit():
+                new_amount = form.amount.data
+
+                # update Raspberry Pi
+                print("Updating Raspberry Pi")
+                fertilization_pumps[pump_no]["amount"] = new_amount
+
+                fertilization_pumps[pump_no] = FertilizationForm(data=fertilization_pumps[pump_no])
+
+                # start_pump(pump_no, amount)
+
+                return redirect(url_for("index"))  # refresh the page
 
     return render_template("index.html", weather=weather_current, sensors=sensors, hourly=forecast_hourly, 
                            daily=forecast_daily, forms=forms, city=city, country=country,
-                           location_form=location_form)
+                           location_form=location_form, dht_sensors=dht_sensors, pumps=fertilization_pumps,
+                           pump_forms=fertilization_forms)
 
 @app.route("/register", methods = ["GET", "POST"])
 def register():

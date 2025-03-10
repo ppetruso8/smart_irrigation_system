@@ -1,4 +1,3 @@
-/* Scroll to correct item in hourly forecast based on current time */
 let now = new Date();
 let curTime;
 let hourlyItem;
@@ -7,6 +6,7 @@ let hourlyContainer = document.getElementById('hourly_container');
 document.addEventListener("DOMContentLoaded", init, false);
 
 function init() {
+    /* Scroll to correct item in hourly forecast based on current time */
     // get current time and transform to format as in HTML
     now.setMinutes(0);  // round current time down to nearest hour 
     curTime = now.toLocaleDateString("en-GB", {

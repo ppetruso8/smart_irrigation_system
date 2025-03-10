@@ -8,17 +8,12 @@
 }
 
 html {
-    /* background-color: rgb(11,12,16); */
-
     scroll-behavior: smooth;
 
     --section_bg: rgb(217,230,240);
 
     --main: rgb(246, 251, 253);
     --text: rgb(11,12,16);
-    /* --footer: rgb(37, 37, 37); */
-    /* --header_nav: rgb(10,10,11); */
-    /* --header_nav_text: rgb(243, 243, 243); */
     --blue_detail: rgb(52, 152, 219);
     --hover: rgb(41, 128, 185);
 }
@@ -138,6 +133,10 @@ h5 {
     margin: 0.25em 0;
 }
 
+#additional_features {
+    margin: 0;
+    padding: 0;
+}
 
 /* Current Weather */
 #current_weather {
@@ -184,7 +183,7 @@ h5 {
 }
 
 /* Hourly Forecast */
-#hourly_container, #sensors_container {
+#hourly_container, .sensors_container, #fertilization_container {
     display: flex;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
@@ -193,7 +192,7 @@ h5 {
     padding: 0.5em 1em 1em 1em;
 }
 
-.hourly_item, .sensor {
+.hourly_item, .sensor, .fertilization_pump {
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -271,7 +270,7 @@ h5 {
     max-width: 17em;
 }
 
-.sensor h4, .sensor h5 {
+.sensor h4, .sensor h5, .fertilization_pump h4 {
     text-align: center;
     margin: 0.5em 0;
 }
@@ -302,7 +301,7 @@ button:hover, #submit:hover {
     text-align: center;
 }
 
-.sensor_buttons {
+.func_buttons {
     align-self: center;
     text-align: center;
 }
@@ -325,4 +324,17 @@ button:hover, #submit:hover {
 
 #location #submit {
     margin: 0.5em 2em;
+}
+
+footer {
+    width: auto;
+    /* margin: 2em; */
+    padding: 0.5em 2em;
+
+    background: var(--section_bg);
+    color: var(--text);
+}
+
+footer a {
+    color: var(--blue_detail);
 }

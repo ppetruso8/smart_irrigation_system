@@ -10,6 +10,11 @@ class SensorForm(FlaskForm):
     mode = SelectField("Watering Mode:", choices=["Automatic", "Manual Light", "Manual Normal", "Manual Heavy"])
     submit = SubmitField("Update Settings")
 
+class FertilizationForm(FlaskForm):
+    fertilization_pump = IntegerField()
+    amount = IntegerField("Amount (mm):", validators=[InputRequired()])
+    submit = SubmitField("Fertilize")
+
 class LocationForm(FlaskForm):
     location = StringField("Current Location:", validators=[InputRequired()])
     submit = SubmitField("Update Location")
