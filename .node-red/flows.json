@@ -198,23 +198,6 @@
         "sessionExpiry": ""
     },
     {
-        "id": "2c5e21c2cb152ca5",
-        "type": "debug",
-        "z": "d27ff7acba5e037e",
-        "name": "debug 1",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "payload",
-        "targetType": "msg",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 520,
-        "y": 60,
-        "wires": []
-    },
-    {
         "id": "0f25c96d5a604298",
         "type": "function",
         "z": "d27ff7acba5e037e",
@@ -230,8 +213,7 @@
         "y": 140,
         "wires": [
             [
-                "ae558f0435c71b2c",
-                "b4ede96e1072c9b8"
+                "ae558f0435c71b2c"
             ]
         ]
     },
@@ -326,8 +308,8 @@
         "font": "",
         "fontSize": 16,
         "color": "#000000",
-        "x": 870,
-        "y": 40,
+        "x": 730,
+        "y": 20,
         "wires": []
     },
     {
@@ -347,8 +329,8 @@
         "font": "",
         "fontSize": 16,
         "color": "#000000",
-        "x": 870,
-        "y": 80,
+        "x": 730,
+        "y": 60,
         "wires": []
     },
     {
@@ -368,8 +350,8 @@
         "font": "",
         "fontSize": 16,
         "color": "#000000",
-        "x": 860,
-        "y": 120,
+        "x": 720,
+        "y": 100,
         "wires": []
     },
     {
@@ -377,15 +359,15 @@
         "type": "function",
         "z": "d27ff7acba5e037e",
         "name": "water",
-        "func": "let data = flow.get(\"sensorData\"); // sensor readings\nlet totalPrecip = parseFloat(flow.get(\"totalPrecipHourly\")) || 0; // total precipitation in mm today\nlet probPrecip = flow.get(\"probPrecip\") || []; // true if precipitation probability above 30\nlet hourlyPrecip = flow.get(\"hourlyRain\") || []; // array with hourly percipitation \nlet envMode = flow.get(\"envMode\") || \"INDOOR\";  // environment setting\nlet defaultWaterMode = flow.get(\"defWaterMode\") || \"AUTO\"; // automatic or user overrides\nlet customWaterAmount = flow.get(\"customWater\") || 0; // user defined amount for watering\nlet recheckActive = flow.get(\"isRecheckActive\") || false;\n\nlet moistureThreshold = 3000;    // CALIBRATE\n\n// User overriden watering mode\nif (defaultWaterMode !== \"AUTO\") {\n    if (defaultWaterMode === \"CUSTOM\" && customWaterAmount > 0) {\n        msg.payload = \"WATER CUSTOM \" + customWaterAmount;\n        flow.set(\"lastWateringMode\", msg.payload.substring(6,13));\n    } else {\n        msg.payload = \"WATER \" + defaultWaterMode;\n    }   flow.set(\"lastWateringMode\", msg.payload.substring(6,));\n\n    // no recheck - set amount of water selected\n    return msg;\n} \n\n// INDOOR MODE\nif (envMode === \"INDOOR\") {\n    if (data.soil >= moistureThreshold) {\n        msg.payload = \"IDLE\";\n    } else if (data.soil >= 425) {\n        msg.payload = \"WATER LIGHT\";\n    } else if (data.soil >= 350) {\n        msg.payload = \"WATER MEDIUM\";\n    } else {\n        msg.payload = \"WATER HEAVY\";\n    }\n}\n// OUTDOOR MODE\nelse {\n    // check forecast (if rain is expected in next 4/6 hours)\n    let d = new Date().getUTCHours() // get current hour in UTC\n    // how many hours to check forecast for\n    let checkHrs = (d === 17) ? 6 : 4;  // if last check of the day, check next 6 hours\n    let checkMax = Math.min(d+checkHrs, hourlyPrecip.length) // get the upper boundary index for weather check\n\n    // count total precipitation mm and max precipitation probabilty in next x hours \n    let totalRainNextHours = 0;\n    let maxPrecipProb = 0;\n    for (var i = d; i < checkMax; i++) {\n        totalRainNextHours += hourlyPrecip[i];\n        \n        if (probPrecip[i] > maxPrecipProb) {\n            maxPrecipProb = probPrecip[i];\n        }\n    }\n\n    // determine if watering needed\n    if (data.soil >= moistureThreshold) {\n        msg.payload = \"IDLE\";   // no need to water\n    }\n    else if (data.soil >= 425) {\n        if (maxPrecipProb < 30) {\n            msg.payload = \"WATER LIGHT\";\n        } else {\n            msg.payload = \"IDLE\";\n        }\n    } else if (data.soil >= 350) {\n        if (maxPrecipProb < 30) {\n            msg.payload = \"WATER MEDIUM\";\n        } else if (totalRainNextHours < 2) {\n            msg.payload = \"WATER LIGHT\";\n        } else {\n            msg.payload = \"IDLE\";\n        }\n    } else {    // soil is dry\n        if (maxPrecipProb < 30) {\n            msg.payload = \"WATER HEAVY\";\n        } else if (totalRainNextHours < 2) {\n            msg.payload = \"WATER MEDIUM\";\n        } else if (totalRainNextHours < 4) {\n            msg.payload = \"WATER LIGHT\";\n        } else {\n            msg.payload = \"IDLE\"\n        }\n    }\n}\n\n// store chosen watering mode into flow for log\nflow.set(\"lastWateringMode\", msg.payload.substring(6,));\n\n// recheck soil moisture after 10 minutes if watering\nif (!recheckActive) {\n    if (msg.payload.includes(\"WATER\")) {\n        flow.set(\"isRecheckActive\", true);\n        setTimeout(() => {\n            // send READ message to trigger new reading and function execution\n            node.send({ payload: \"READ\"});  \n            }, 600000);   // recheck in 10 minutes\n    }\n} else {\n    flow.set(\"isRecheckActive\", false);    \n} \n\nreturn msg;",
+        "func": "let data = flow.get(\"sensorData\"); // sensor readings\nlet totalPrecip = parseFloat(flow.get(\"totalPrecipHourly\")) || 0; // total precipitation in mm today\nlet probPrecip = flow.get(\"probPrecip\") || []; // true if precipitation probability above 30\nlet hourlyPrecip = flow.get(\"hourlyRain\") || []; // array with hourly percipitation \nlet envMode = flow.get(\"envMode\") || \"INDOOR\";  // environment setting\nlet defaultWaterMode = flow.get(\"defWaterMode\") || \"AUTO\"; // automatic or user overrides\nlet customWaterAmount = flow.get(\"customWater\") || 0; // user defined amount for watering\nlet recheckActive = flow.get(\"isRecheckActive\") || false;\n\nlet moistureThreshold = 1500;    // wet soil\n\n// User overriden watering mode\nif (defaultWaterMode !== \"AUTO\") {\n    if (defaultWaterMode === \"CUSTOM\" && customWaterAmount > 0) {\n        msg.payload = \"WATER CUSTOM \" + customWaterAmount;\n        flow.set(\"lastWateringMode\", msg.payload.substring(6,13));\n    } else {\n        msg.payload = \"WATER \" + defaultWaterMode;\n    }   flow.set(\"lastWateringMode\", msg.payload.substring(6,));\n\n    // no recheck - set amount of water selected\n    return msg;\n} \n\n// INDOOR MODE\nif (envMode === \"INDOOR\") {\n    if (data.soil <= moistureThreshold) {\n        msg.payload = \"IDLE\";\n    } else if (data.soil <= 2000) {\n        msg.payload = \"WATER LIGHT\";\n    } else if (data.soil <= 2500) {\n        msg.payload = \"WATER MEDIUM\";\n    } else {\n        msg.payload = \"WATER HEAVY\";\n    }\n}\n// OUTDOOR MODE\nelse {\n    // check forecast (if rain is expected in next 4/6 hours)\n    let d = new Date().getUTCHours() // get current hour in UTC\n    // how many hours to check forecast for\n    let checkHrs = (d === 17) ? 6 : 4;  // if last check of the day, check next 6 hours\n    let checkMax = Math.min(d+checkHrs, hourlyPrecip.length) // get the upper boundary index for weather check\n\n    // count total precipitation mm and max precipitation probabilty in next x hours \n    let totalRainNextHours = 0;\n    let maxPrecipProb = 0;\n    for (var i = d; i < checkMax; i++) {\n        totalRainNextHours += hourlyPrecip[i];\n        \n        if (probPrecip[i] > maxPrecipProb) {\n            maxPrecipProb = probPrecip[i];\n        }\n    }\n\n    // determine if watering needed\n    if (data.soil <= moistureThreshold) {\n        msg.payload = \"IDLE\";   // no need to water\n    }\n    else if (data.soil <= 2000) {\n        if (maxPrecipProb < 30) {\n            msg.payload = \"WATER LIGHT\";\n        } else {\n            msg.payload = \"IDLE\";\n        }\n    } else if (data.soil <= 2500) {\n        if (maxPrecipProb < 30) {\n            msg.payload = \"WATER MEDIUM\";\n        } else if (totalRainNextHours < 2) {\n            msg.payload = \"WATER LIGHT\";\n        } else {\n            msg.payload = \"IDLE\";\n        }\n    } else {    // soil is dry\n        if (maxPrecipProb < 30) {\n            msg.payload = \"WATER HEAVY\";\n        } else if (totalRainNextHours < 2) {\n            msg.payload = \"WATER MEDIUM\";\n        } else if (totalRainNextHours < 4) {\n            msg.payload = \"WATER LIGHT\";\n        } else {\n            msg.payload = \"IDLE\"\n        }\n    }\n}\n\n// store chosen watering mode into flow for log\nflow.set(\"lastWateringMode\", msg.payload.substring(6,));\n\n// recheck soil moisture after 10 minutes if watering\nif (!recheckActive) {\n    if (msg.payload.includes(\"WATER\")) {\n        flow.set(\"isRecheckActive\", true);\n        setTimeout(() => {\n            // send READ message to trigger new reading and function execution\n            node.send({ payload: \"READ\"});  \n            }, 600000);   // recheck in 10 minutes\n    }\n} else {\n    flow.set(\"isRecheckActive\", false);    \n} \n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 730,
-        "y": 300,
+        "x": 670,
+        "y": 240,
         "wires": [
             [
                 "49f58424f2ecc968",
@@ -472,7 +454,7 @@
         "type": "function",
         "z": "d27ff7acba5e037e",
         "name": "parse_weather_api",
-        "func": "var data = JSON.parse(msg.payload);\nvar current = data.current_weather;\n\nmsg.payload = {\n    temp: current.temperature + \" °C\",\n    windspeed: current.windspeed + \" km/h\",\n    winddirection: current.winddirection + \"°\",\n    time: current.time\n    }\n\nreturn msg;",
+        "func": "let data = JSON.parse(msg.payload);\nlet current = data.current_weather;\n\nlet date = new Date(current.time)\nlet formatted_date = date.toLocaleString(\"en-GB\", {\n    day: \"2-digit\",\n    month: \"short\",\n    year: \"numeric\",\n    hour: \"2-digit\",\n    minute: \"2-digit\",\n    hour12: false\n}).replace(\",\", \"\");\n\n\nmsg.payload = {\n    temp: current.temperature + \" °C\",\n    windspeed: current.windspeed + \" km/h\",\n    winddirection: current.winddirection + \"°\",\n    time: formatted_date\n    }\n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -486,7 +468,8 @@
                 "1cd47af34da9410b",
                 "9ff9d3722a1a7b69",
                 "da61cf5cfdd80191",
-                "487192047a9b714b"
+                "487192047a9b714b",
+                "da5a3b8216fe6eb0"
             ]
         ]
     },
@@ -495,7 +478,7 @@
         "type": "ui_text",
         "z": "d27ff7acba5e037e",
         "group": "56688f1969147e9e",
-        "order": 0,
+        "order": 5,
         "width": 0,
         "height": 0,
         "name": "",
@@ -551,27 +534,6 @@
         "color": "#000000",
         "x": 780,
         "y": 860,
-        "wires": []
-    },
-    {
-        "id": "487192047a9b714b",
-        "type": "ui_text",
-        "z": "d27ff7acba5e037e",
-        "group": "56688f1969147e9e",
-        "order": 3,
-        "width": 0,
-        "height": 0,
-        "name": "",
-        "label": "Time",
-        "format": "{{msg.payload.time}}",
-        "layout": "row-spread",
-        "className": "",
-        "style": false,
-        "font": "",
-        "fontSize": 16,
-        "color": "#000000",
-        "x": 750,
-        "y": 900,
         "wires": []
     },
     {
@@ -641,7 +603,7 @@
         "type": "ui_text",
         "z": "d27ff7acba5e037e",
         "group": "56688f1969147e9e",
-        "order": 4,
+        "order": 3,
         "width": 0,
         "height": 0,
         "name": "",
@@ -662,12 +624,12 @@
         "type": "ui_text",
         "z": "d27ff7acba5e037e",
         "group": "56688f1969147e9e",
-        "order": 5,
+        "order": 4,
         "width": 0,
         "height": 0,
         "name": "",
         "label": "Highest Probabilty of Rainfall",
-        "format": "{{msg.payload.maxPrecipProb}}",
+        "format": "{{msg.payload.maxPrecipProb}}%",
         "layout": "row-spread",
         "className": "",
         "style": false,
@@ -913,7 +875,7 @@
         "include_empty_strings": "",
         "include_null_values": "",
         "x": 870,
-        "y": 180,
+        "y": 140,
         "wires": [
             [
                 "d5db91812b763d19"
@@ -931,8 +893,8 @@
         "createDir": false,
         "overwriteFile": "false",
         "encoding": "none",
-        "x": 1170,
-        "y": 180,
+        "x": 1110,
+        "y": 140,
         "wires": [
             []
         ]
@@ -961,12 +923,11 @@
         "y": 140,
         "wires": [
             [
-                "d4bc37cb6b14bcdd",
-                "0485e48b030f2229",
-                "95f4e048225a7ca9",
-                "172b2d31c0a42643"
+                "d4bc37cb6b14bcdd"
             ],
-            []
+            [
+                "b4ede96e1072c9b8"
+            ]
         ]
     },
     {
@@ -981,8 +942,8 @@
         "complete": "false",
         "statusVal": "",
         "statusType": "auto",
-        "x": 540,
-        "y": 280,
+        "x": 680,
+        "y": 300,
         "wires": []
     },
     {
@@ -997,14 +958,11 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 740,
-        "y": 220,
+        "x": 860,
+        "y": 200,
         "wires": [
             [
-                "d4bc37cb6b14bcdd",
-                "0485e48b030f2229",
-                "95f4e048225a7ca9",
-                "172b2d31c0a42643"
+                "d4bc37cb6b14bcdd"
             ]
         ]
     },
@@ -1056,11 +1014,13 @@
         "rh": 0,
         "inputs": 0,
         "x": 90,
-        "y": 140,
+        "y": 100,
         "wires": [
             [
                 "0f25c96d5a604298",
-                "2c5e21c2cb152ca5"
+                "0485e48b030f2229",
+                "95f4e048225a7ca9",
+                "172b2d31c0a42643"
             ]
         ]
     },
@@ -1145,12 +1105,33 @@
         "rap": true,
         "rh": 0,
         "inputs": 0,
-        "x": 80,
-        "y": 200,
+        "x": 100,
+        "y": 160,
         "wires": [
             [
                 "0f25c96d5a604298"
             ]
         ]
+    },
+    {
+        "id": "487192047a9b714b",
+        "type": "ui_text",
+        "z": "d27ff7acba5e037e",
+        "group": "56688f1969147e9e",
+        "order": 6,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Last data update",
+        "format": "{{msg.payload.time}}",
+        "layout": "row-spread",
+        "className": "",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#000000",
+        "x": 790,
+        "y": 900,
+        "wires": []
     }
 ]
