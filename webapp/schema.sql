@@ -4,11 +4,13 @@ CREATE TABLE users
 (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL UNIQUE,
+    email TEXT NOT NULL,
     password TEXT NOT NULL,
     has_node_red_permission BIT DEFAULT 0,     
-    first_name TEXT DEFAULT 'Not provided',
-    last_name TEXT DEFAULT 'Not provided'
+    country TEXT DEFAULT 'Not Provided'
 );
 
-INSERT INTO users (username, password)
-VALUES ('admin', 'admin5'), ('admin2', 'admin5');
+INSERT INTO users (username, password, email)
+VALUES ('admin', 'admin5', 'a@a.a');
+
+SELECT * FROM users;

@@ -10,8 +10,7 @@
             <div class="sensor">
                 <h4>Sensor {{ sensor_no }}</h4>
                 <p>Soil Moisture: {{ sensor.moisture }}</p>
-        
-                <!-- class="func_buttons" -->
+
                 <form class="func_buttons"  action="/send_command" method="post">
                     <input type="hidden" name="command" value="WATER, {{ sensor_no }}">
                     <button class=submit_button type ="submit">Manual Watering</button>
@@ -51,7 +50,7 @@
 
         <form action="/send_command" method="post">
             <input type="hidden" name="command" value="READ">
-            <button id=update_button type="submit">Update Readings</button>
+            <button class=update_button type="submit">Update Readings</button>
         </form>
 
     </section>

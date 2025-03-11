@@ -6,7 +6,7 @@ from flask_session import Session
 from functools import wraps
 import requests
 
-from forms import SensorForm, LocationForm, RegistrationForm, LoginForm, FertilizationForm, PairingForm
+from forms import SensorForm, LocationForm, RegistrationForm, LoginForm, FertilizationForm, PairingForm, UserDetailsForm, ChangePasswordForm
 
 from openmeteopy import OpenMeteo
 from openmeteopy.hourly import HourlyForecast
@@ -33,11 +33,13 @@ class User(UserMixin):
     """ Class to represent user
     Inherits from UserMixin, which provides default implementations for all required properties and methods.
     """
-    def __init__(self, id, username, password_hash, has_node_red_permission = 0):
+    def __init__(self, id, username, email, country, password_hash, has_node_red_permission = 0):
         """ Initialize user object with id, username, and hash of password
         """
         self.id = id
         self.username = username
+        self.email = email
+        self.country = country
         self.password_hash = password_hash
         self.has_node_red_permission = bool(has_node_red_permission)
 
@@ -47,14 +49,13 @@ def load_user(user_id):
     db = get_db()
     user = db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
     if user:
-        return User(user["id"], user["username"], user["password"], user["has_node_red_permission"])
+        return User(user["id"], user["username"], user["password"], user["email"], 
+                    user["has_node_red_permission"], user["country"])
     return None
-
 
 # @app.before_request
 # def load_logged_in_user():
 #     g.user = session.get("username", None)
-
 
 sensors = {1: {"moisture": 1, "pump": 1, "env": "Indoor", "mode": "Automatic"},
                2: {"moisture": 2, "pump": 2, "env": "Outdoor", "mode": "MANUAL LIGHT"}}
@@ -70,6 +71,7 @@ def index():
     city = None
     # retrieve forecast location data from Node-Red
     # city, country, latitude, longitude = get_location()
+    # country = current_user.country
     if not city:
         # default location - Cork
         city = "Cork"
@@ -197,29 +199,27 @@ def register():
     form = RegistrationForm()
     if form.validate_on_submit():
         username = form.username.data
+        email = form.email.data
         password = form.password.data
         password_verify = form.password2.data
-        # email = form.email.data
 
         if password != password_verify:
             form.password2.errors.append("Submitted passwords don't match!")
             return render_template("register.html", form=form)
 
         db = get_db()
-        possible_clashing_user = db.execute("""SELECT * FROM users
-                                               WHERE username = ?;""", (username,)).fetchone()
-        # possible_clashing_email = db.execute("""SELECT * FROM users
-        #                                         WHERE email = ?;""", (email,)).fetchone()
+        possible_clashing_user = db.execute("SELECT * FROM users WHERE username = ?;", (username,)).fetchone()
+        possible_clashing_email = db.execute("SELECT * FROM users WHERE email = ?;", (email,)).fetchone()
+
         if possible_clashing_user is not None:
             form.username.errors.append("Username is already taken!")
-        # elif possible_clashing_email is not None:
-        #     form.email.errors.append("Email is already registered!")
-        # elif "@" not in email:
-        #     form.email.errors.append("Enter a valid email address!")
+        elif possible_clashing_email is not None:
+            form.email.errors.append("Email is already registered!")
+        elif "@" not in email:
+            form.email.errors.append("Enter a valid email address!")
         else:
-            db.execute("""INSERT INTO users (username, password)
-                          VALUES (?, ?);""",
-                          (username, generate_password_hash(password)))
+            db.execute("INSERT INTO users (username, password, email) VALUES (?, ?, ?);",
+                        (username, generate_password_hash(password), email))
             db.commit()
             return redirect(url_for("login"))
     return render_template("register.html", form=form)
@@ -232,19 +232,15 @@ def login():
         password = form.password.data
 
         db = get_db()
-        user = db.execute("""SELECT * FROM users
-                                      WHERE username = ?;""", (username,)).fetchone()
+        user = db.execute("SELECT * FROM users WHERE username = ?;", (username,)).fetchone()
         
         if not user:     # !!!make into one
-            form.username.errors.append("Unknown username!")
+            form.password.errors.append("Incorrect information!")
         elif not check_password_hash(user["password"], password):
-            form.password.errors.append("Incorrect password!")
+            form.password.errors.append("Incorrect information!")
         else:   # login successful
-            user_obj = User(user["id"], user["username"], user["password"])
+            user_obj = User(user["id"], user["username"], user["email"], user["country"], user["password"], user["has_node_red_permission"])
             login_user(user_obj, remember=True)
-
-            # session["username"] = username
-
             next_page = request.args.get("next")
             if not next_page:
                 next_page = url_for("index")
@@ -256,29 +252,16 @@ def login():
 @login_required
 def logout():
     logout_user()
-    # session.clear()
     return redirect(url_for("login"))
 
-@app.route("/settings")
+@app.route("/settings", methods=["GET", "POST"])
 @login_required
 def settings():
-    return render_template("settings.html")
-
-@app.route("/statistics")
-@login_required
-def statistics():
-    return render_template("statistics.html")
-
-@app.route("/profile")
-@login_required
-def profile():
-    return render_template("profile.html")
-
-@app.route("/pair", methods=["GET", "POST"])
-@login_required
-def pair():
     form = PairingForm()
-    code = "123456"  #GET FROM PI
+    code = "123456"
+    # code = get_pairing_code()
+    db = get_db()
+    user = db.execute("SELECT * FROM users WHERE id = ?;", (current_user.id,)).fetchone()
 
     if form.validate_on_submit():
         user_code = form.code.data
@@ -287,34 +270,100 @@ def pair():
             db = get_db()
             db.execute("UPDATE users SET has_node_red_permission = 1 where id = ?", (current_user.id,))
             db.commit()
-            flash("Pairing successful")
-            return redirect(url_for("index"))
+            return redirect(url_for("settings"))
         else:
-            form.code.errors = "Invalid pairing code"
-        
-    return render_template("pair.html", form=form)
-    
+            form.code.errors.append("Invalid pairing code")
 
-@app.route("/trigger_pump", methods=["POST"])
+    return render_template("settings.html", form=form, user=user, current_user=current_user)
+
+@app.route("/unpair", methods = ["GET", "POST"])
 @login_required
-def trigger_watering():
-    command = request.form.get("command")
-
-    if not command:
-        print("No command")
-        return redirect(url_for("index"))
+def unpair():
+    db = get_db()
+    db.execute("UPDATE users SET has_node_red_permission = 0 where id = ?", (current_user.id,))
+    db.commit()
+    current_user.has_node_red_permission = 0
+    return redirect(url_for("settings"))
     
-    print(command)
 
-    if current_user.has_node_red_permission:
-        msg = send_command(command)
-        if msg:
-            print("Success")
+@app.route("/edit_account",  methods = ["GET", "POST"])
+@login_required
+def edit_account():
+    form = UserDetailsForm()
+
+    db = get_db()
+    user = db.execute("SELECT * FROM users WHERE id = ?;", (current_user.id,)).fetchone()
+
+    if request.method == "GET":
+        form.email.default = user["email"]
+        form.country.default = user["country"]
+        form.process()  
+
+    if request.method == "POST":
+        print("POST request received")
+
+    if form.validate_on_submit():
+        email = form.email.data
+        country = form.country.data
+        confirm_password = form.confirm_password.data
+
+        if check_password_hash(user["password"], confirm_password):
+            if len(email) != 0 and email != user["email"]:
+                possible_clashing_email = db.execute("SELECT * FROM users WHERE email = ?;", (email,)).fetchone()
+                if possible_clashing_email is not None:
+                    form.email.errors.append("Email is already registered!")
+                    return render_template("edit_account.html", form=form)
+                elif "@" not in email:
+                    form.email.errors.append("Enter a valid email address!")
+                    return render_template("edit_account.html", form=form)
+                else:
+                    db.execute("UPDATE users SET email = ? WHERE id = ?;", (email, current_user.id))
+                    db.commit()
+                    current_user.email = email
+
+            if country != user["country"]:
+                db.execute("UPDATE users SET country = ? WHERE id = ?;", (country, current_user.id))
+                db.commit()
+                current_user.country = country
+            return redirect(url_for("settings"))
         else:
-            print(f"Failed to send command: {command}")
-    else:
-        print("You don't have permission to control the system.")
-    return redirect(url_for("index"))
+            form.confirm_password.errors.append("Incorrect password!")
+    return render_template("edit_account.html", form=form)
+
+@app.route("/change_password", methods=["GET", "POST"])
+@login_required
+def change_password():
+    form = ChangePasswordForm()
+    message = ""
+    if form.validate_on_submit():
+        user_id = current_user.id
+        new_password = form.password.data
+        confirm_password = form.confirm_password.data
+
+        db = get_db()
+        user = db.execute("SELECT * FROM users WHERE id = ?;", (current_user.id,)).fetchone()
+
+        if check_password_hash(user["password"], confirm_password):
+            if len(new_password) != 0:
+                if check_password_hash(user["password"], new_password):
+                    form.password2.errors.append("New password must be different from the current password.")
+                    return render_template("change_password.html", form=form)
+                else:
+                    new_password = generate_password_hash(new_password)
+                    db.execute("""UPDATE users
+                                  SET password = ?
+                                  WHERE id = ?;""", (new_password, current_user.id))
+                    db.commit()
+                    current_user.password = new_password
+                    message = "Your password was successfully changed."
+        else:
+            form.confirm_password.errors.append("Incorrect password!")
+    return render_template("change_password.html", form=form, message=message)
+
+@app.route("/statistics")
+@login_required
+def statistics():
+    return render_template("statistics.html")
 
 @app.route("/send_command", methods=["POST"])
 @login_required
@@ -331,7 +380,7 @@ def send_command():
         if "READ" in command:
             msg = get_sensors()
         else:
-            msg = send_command(command)
+            msg = send_node_red_command(command)
         
         if msg:
             print("Success")
@@ -341,12 +390,11 @@ def send_command():
         print("You don't have permission to control the system.")
     return redirect(url_for("index"))
     
-
-
 @app.errorhandler(404)
 def page_not_found(error):
     return render_template("error.html", error=error)
 
+""" Weather API """
 def get_current_weather(lat, long):
     url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={long}&current=temperature_2m,relative_humidity_2m,precipitation,rain,weather_code,wind_speed_10m,wind_direction_10m,precipitation_probability"
     response = requests.get(url)
@@ -398,20 +446,8 @@ def get_coordinates(city):
     
     return None,None,None,None
 
-def get_sensors():
-    """ Retrieve sensor data from Node-Red using HTTP GET request
-    """
-    response = requests.get(f"{NODE_RED}/sensor-data")
-
-    if response.status_code == 200:
-        return response.json()
-    else:
-        print(f"Error fetching sensor data from Node-Red: {response.status_code}")
-
-    # UPDATE DICTS
-    return None
-
-def send_command(command):
+""" Raspberry Pi communication """
+def send_node_red_command(command):
     """ Send command to Node-Red using HTTP POST request
     """
     payload = {"command": command}
@@ -420,10 +456,25 @@ def send_command(command):
     # response = requests.post(f"{NODE_RED}/control", json=payload)
 
     # if response.status_code == 200:
+    #     print(response)
     #     return response.json()
     # else:
     #     print(f"Error sending command to Node-Red: {response.status_code}")
     # return None
+
+def get_sensors():
+    """ Retrieve sensor data from Node-Red using HTTP GET request
+    """
+    response = requests.get(f"{NODE_RED}/sensor-data")
+
+    if response.status_code == 200:
+        print(response)
+        return response.json()
+    else:
+        print(f"Error fetching sensor data from Node-Red: {response.status_code}")
+
+    # UPDATE DICTS
+    return None
 
 def get_location():
     """ Get selected location for forecast from Node-Red
@@ -431,6 +482,7 @@ def get_location():
     response = requests.post(f"{NODE_RED}/location")
 
     if response.status_code == 200:
+        print(response)
         return response.json()
     else:
         print(f"Error sending command to Node-Red: {response.status_code}")
@@ -442,6 +494,19 @@ def get_fertilization_pumps():
     response = requests.get(f"{NODE_RED}/fertilization")
 
     if response.status_code == 200:
+        print(response)
+        return response.json()
+    else:
+        print(f"Error fetching sensor data from Node-Red: {response.status_code}")
+    return None
+
+def get_pairing_code():
+    """Obtain pairing code from Raspberry Pi
+    """
+    response = requests.get(f"{NODE_RED}/pair")
+
+    if response.status_code == 200:
+        print(response)
         return response.json()
     else:
         print(f"Error fetching sensor data from Node-Red: {response.status_code}")

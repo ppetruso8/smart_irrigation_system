@@ -149,6 +149,11 @@ footer a {
     padding: 0;
 }
 
+.account_action {
+    padding: 1.2em;
+    padding-bottom: 0.2em;
+}
+
 /* Current Weather */
 #current_weather {
     display: flex;
@@ -320,18 +325,30 @@ button:hover, #submit:hover {
     text-align: center;
 }
 
+#pair #submit, .account_action #submit {
+    margin-left: 0em;
+}
+
 .func_buttons {
     align-self: center;
     text-align: center;
 }
 
-#update_button {
+.update_button {
     margin-top: 0em;
     margin-bottom: 2em;
 }
 
-/* Location form */
+.settings_button {
+    margin-top: 0em;
+    margin-left: 0em;
+}
 
+#account_buttons {
+    display: flex;
+}
+
+/* Forms */
 #location {
     margin-bottom: 0em;
 }

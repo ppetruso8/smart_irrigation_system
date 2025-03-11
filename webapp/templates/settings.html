@@ -1,4 +1,41 @@
 {% extends "base.html" %}
 {% block main_content %}
 <h1>Settings</h1>
+
+<section id="pair">
+    <h2>Pairing Raspberry Pi</h2>
+    {% if user.has_node_red_permission %}
+        <p>Raspberry Pi successfully paired.</p>
+        <form action="/unpair" method="post">
+            <button class="settings_button" type="submit">Unpair</button>
+        </form>
+    {% else %}
+        <form method="POST" action="" novalidate>
+            {{ form.hidden_tag() }}
+            {{ form.code.label }}
+            {{ form.code() }}
+            {% for error in form.code.errors %} 
+                {{ error }}
+            {% endfor %}
+        </br>
+        {{ form.submit() }}
+        </form>
+    {% endif %}
+</section>
+
+<section id="account_info">
+    <h2>My Account</h2>
+    <p>Username: {{ user.username }}</p>
+    <p>E-mail: {{ user.email }}</p>
+    <p>Country: {{ user.country }}</p>
+    <div id="account_buttons">
+        <form action="/edit_account" method="post">
+            <button class="settings_button" type="submit">Edit Details</button>
+        </form>
+        <form action="/change_password" method="post">
+            <button class="settings_button" type="submit">Change Password</button>
+        </form>
+    </div>
+</section>
+
 {% endblock %}

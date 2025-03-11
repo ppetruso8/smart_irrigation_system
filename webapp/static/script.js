@@ -4,6 +4,7 @@ let hourlyItem;
 let hourlyContainer = document.getElementById('hourly_container');
 
 document.addEventListener("DOMContentLoaded", init, false);
+document.getElementById("clickMe").onclick = doFunction;
 
 function init() {
     /* Scroll to correct item in hourly forecast based on current time */

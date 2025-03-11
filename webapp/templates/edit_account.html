@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block main_content %}
+    <p id="back">
+        <a href="{{ url_for('settings') }}">Back</a>
+    </p>
+    <h2>Edit account details</h2>
+    <p>Write in only the information you wish to edit.</p>
+    <section class="account_action">
+        <form action = "" method="post" novalidate>
+            {{ form.hidden_tag() }}
+            {{ form.email.label }}
+            {{ form.email() }}
+            {% for error in form.email.errors %} 
+                {{ error }}
+            {% endfor %}
+            <br />
+            {{ form.country.label }}
+            {{ form.country() }}
+            <br />
+            <br />
+            {{ form.confirm_password.label }}
+            {{ form.confirm_password() }}
+            {% for error in form.confirm_password.errors %} 
+                {{ error }}
+            {% endfor %}
+            <br />
+            {{ form.submit() }}
+        </form>
+    </section>
+
+{% endblock %}

@@ -15,11 +15,9 @@
         <nav>
             <ul>
                 {% if current_user.is_authenticated %}
-                <li><a href="{{ url_for('index') }}">Dashboard</a></li>
-                    <li><a href="{{ url_for('settings') }}">Settings</a></li>
-                    <li><a href="{{ url_for('pair') }}">Pair</a></li>
+                    <li><a href="{{ url_for('index') }}">Dashboard</a></li>
                     <li><a href="{{ url_for('statistics') }}">Statistics</a></li>
-                        <li><a href="{{ url_for('profile') }}">My Account</a></li>
+                    <li><a href="{{ url_for('settings') }}">Settings</a></li>
                     <li><a href="{{ url_for('logout') }}">Logout</a></li>
                 {% else %}
                     <li><a href="{{ url_for('register') }}">Register</a></li>
