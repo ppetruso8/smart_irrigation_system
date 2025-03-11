@@ -50,8 +50,8 @@ def load_user(user_id):
 sensors = {1: {"moisture": 1, "pump": 1, "env": "Indoor", "mode": "Automatic"},
                2: {"moisture": 2, "pump": 2, "env": "Outdoor", "mode": "MANUAL LIGHT"}}
 dht_sensors = {1: {"temperature": 1, "humidity": 1}, 2: {"temperature": 2, "humidity": 2}}
-fertilization_pumps = {1: {"amount": 50, "last": "2025-10-03 15:00"}, 2: {"amount": 60, "last": "2025-10-03 14:00"}}
-
+# fertilization_pumps = {1: {"amount": 50, "last": "2025-10-03 15:00"}, 2: {"amount": 60, "last": "2025-10-03 14:00"}}
+fertilization_pumps = {}
 @app.route("/", methods = ["GET", "POST"])
 @login_required
 def index():
@@ -111,9 +111,6 @@ def index():
     forecast_hourly["time"] = [datetime.strptime(time, "%Y-%m-%dT%H:%M").strftime("%d %b %Y %H:%M") for time in forecast_hourly["time"]]
     forecast_daily["time"] = [datetime.strptime(time, "%Y-%m-%d").strftime("%d %b %Y") for time in forecast_daily["time"]]
 
-    print(forecast_daily)
-    print(forecast_hourly)
- 
     # data from node-red
     # sensors, dht_sensors = get_sensors()
     # fertilization_pumps = get_fertilization_pumps()

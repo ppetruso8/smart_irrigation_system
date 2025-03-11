@@ -6,46 +6,54 @@
         <h3>Sensors</h3>
 
         <section class="sensors_container">
-            {% for sensor_no, sensor in sensors.items() %}
-            <div class="sensor">
-                <h4>Sensor {{ sensor_no }}</h4>
-                <p>Soil Moisture: {{ sensor.moisture }}</p>
+            {% if sensors %}
+                {% for sensor_no, sensor in sensors.items() %}
+                <div class="sensor">
+                    <h4>Sensor {{ sensor_no }}</h4>
+                    <p>Soil Moisture: {{ sensor.moisture }}</p>
 
-                <form class="func_buttons"  action="/send_command" method="post">
-                    <input type="hidden" name="command" value="WATER, {{ sensor_no }}">
-                    <button class=submit_button type ="submit">Manual Watering</button>
-                </form>
-        
-                <h5>Settings</h5>
-                <form action="" method="POST" novalidate>
-                    {{ forms[sensor_no].hidden_tag() }}
-                    <input type="hidden" name="sensor" value="{{ sensor_no }}">
-                    
-                    {{ forms[sensor_no].pump.label }}
-                    {{ forms[sensor_no].pump() }}
-                    </br>
-                    {{ forms[sensor_no].env.label }}
-                    {{ forms[sensor_no].env() }}
-                    </br>
-                    {{ forms[sensor_no].mode.label }}
-                    {{ forms[sensor_no].mode() }}
-                    </br>
-                    <div class="submit_button">
-                        {{ forms[sensor_no].submit() }}
-                    </div>
-                </form>
-            </div>
-            {% endfor %}
+                    <form class="func_buttons"  action="/send_command" method="post">
+                        <input type="hidden" name="command" value="WATER, {{ sensor_no }}">
+                        <button class=submit_button type ="submit">Manual Watering</button>
+                    </form>
+            
+                    <h5>Settings</h5>
+                    <form action="" method="POST" novalidate>
+                        {{ forms[sensor_no].hidden_tag() }}
+                        <input type="hidden" name="sensor" value="{{ sensor_no }}">
+                        
+                        {{ forms[sensor_no].pump.label }}
+                        {{ forms[sensor_no].pump() }}
+                        </br>
+                        {{ forms[sensor_no].env.label }}
+                        {{ forms[sensor_no].env() }}
+                        </br>
+                        {{ forms[sensor_no].mode.label }}
+                        {{ forms[sensor_no].mode() }}
+                        </br>
+                        <div class="submit_button">
+                            {{ forms[sensor_no].submit() }}
+                        </div>
+                    </form>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p>No sensors available. Check the pin configuration or add new sensor.</p>
+            {% endif %}
         </section>
 
         <section class="sensors_container">
-            {% for sensor_no, dht_sensor in dht_sensors.items() %}
-            <div class="sensor">
-                <h4>DHT Sensor {{ sensor_no }}</h4>
-                <p>Temperature: {{ dht_sensor.temperature }}°C</p>
-                <p>Humidity: {{ dht_sensor.humidity }}%</p>
-            </div>
-            {% endfor %}
+            {% if dht_sensors %}
+                {% for sensor_no, dht_sensor in dht_sensors.items() %}
+                <div class="sensor">
+                    <h4>DHT Sensor {{ sensor_no }}</h4>
+                    <p>Temperature: {{ dht_sensor.temperature }}°C</p>
+                    <p>Humidity: {{ dht_sensor.humidity }}%</p>
+                </div>
+                {% endfor %}
+            {% else %}
+                <p>No DHT sensors available. Check the pin configuration or add new sensor.</p>
+            {% endif %}
         </section>
 
         <form action="/send_command" method="post">
@@ -60,32 +68,36 @@
             <h3>Fertilization</h3>
 
             <section id="fertilization_container">
-                {% for pump_no, pump in pumps.items() %}
-                <div class="fertilization_pump">
-                    <h4>Pump {{ pump_no }}</h4>
-                    <p>Last Fertilization: {{ pump.last }}</p>
-                    <form class="func_buttons"  action="/send_command" method="post">
-                        <input type="hidden" name="command" value="FERTILIZE, {{ pump_no }}">
-                        <button class=submit_button type ="submit">Fertilize</button>
-                    </form>
+                {% if pumps %}
+                    {% for pump_no, pump in pumps.items() %}
+                    <div class="fertilization_pump">
+                        <h4>Pump {{ pump_no }}</h4>
+                        <p>Last Fertilization: {{ pump.last }}</p>
+                        <form class="func_buttons"  action="/send_command" method="post">
+                            <input type="hidden" name="command" value="FERTILIZE, {{ pump_no }}">
+                            <button class=submit_button type ="submit">Fertilize</button>
+                        </form>
 
-                    <h5>Settings</h5>
-                    <form action="" method="POST" novalidate>
-                        {{ pump_forms[pump_no].hidden_tag() }}
-                        <input type="hidden" name="fertilization_pump" value="{{ pump_no }}">
-                        {{ pump_forms[pump_no].amount.label }}
-                        {{ pump_forms[pump_no].amount() }}
-                        {% for error in pump_forms[pump_no].amount.errors %} 
-                            {{ error }}
-                        {% endfor %}
-                        </br>
-                        <div class="submit_button">
-                            {{ pump_forms[pump_no].submit() }}
-                        </div>
-                    </form>
+                        <h5>Settings</h5>
+                        <form action="" method="POST" novalidate>
+                            {{ pump_forms[pump_no].hidden_tag() }}
+                            <input type="hidden" name="fertilization_pump" value="{{ pump_no }}">
+                            {{ pump_forms[pump_no].amount.label }}
+                            {{ pump_forms[pump_no].amount() }}
+                            {% for error in pump_forms[pump_no].amount.errors %} 
+                                {{ error }}
+                            {% endfor %}
+                            </br>
+                            <div class="submit_button">
+                                {{ pump_forms[pump_no].submit() }}
+                            </div>
+                        </form>
 
-                </div>
-                {% endfor %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p>No pumps available. Check the pin configuration or add new pump.</p>
+                {% endif %}
             </section>
             
         </section>
