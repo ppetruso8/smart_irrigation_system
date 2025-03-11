@@ -47,15 +47,9 @@ def load_user(user_id):
                     user["has_node_red_permission"], user["country"])
     return None
 
-# @app.before_request
-# def load_logged_in_user():
-#     g.user = session.get("username", None)
-
 sensors = {1: {"moisture": 1, "pump": 1, "env": "Indoor", "mode": "Automatic"},
                2: {"moisture": 2, "pump": 2, "env": "Outdoor", "mode": "MANUAL LIGHT"}}
-
 dht_sensors = {1: {"temperature": 1, "humidity": 1}, 2: {"temperature": 2, "humidity": 2}}
-
 fertilization_pumps = {1: {"amount": 50, "last": "2025-10-03 15:00"}, 2: {"amount": 60, "last": "2025-10-03 14:00"}}
 
 @app.route("/", methods = ["GET", "POST"])
@@ -135,7 +129,9 @@ def index():
         form.env.default = sensor["env"]
         form.mode.default = sensor["mode"]
         form.process()
-
+      
+    # fertilization 
+    
     for pump_no, pump in fertilization_pumps.items():
         form = fertilization_forms[pump_no]
         form.amount.default = pump["amount"]
@@ -446,16 +442,14 @@ def send_node_red_command(command):
     """ Send command to Node-Red using HTTP POST request
     """
     payload = {"command": command}
-    print(f"COMMAND SENT: {command}")
-    return None
-    # response = requests.post(f"{NODE_RED}/control", json=payload)
+    response = requests.post(f"{NODE_RED}/control", json=payload)
 
-    # if response.status_code == 200:
-    #     print(response)
-    #     return response.json()
-    # else:
-    #     print(f"Error sending command to Node-Red: {response.status_code}")
-    # return None
+    if response.status_code == 200:
+        print(response)
+        return response.json()
+    else:
+        print(f"Error sending command to Node-Red: {response.status_code}")
+    return None
 
 def get_sensors():
     """ Retrieve sensor data from Node-Red using HTTP GET request
