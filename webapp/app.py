@@ -10,7 +10,7 @@ from forms import SensorForm, LocationForm, RegistrationForm, LoginForm, Fertili
 
 from datetime import datetime
 
-NODE_RED = "" 
+NODE_RED = "http://127.0.0.1:1880/" 
 
 app = Flask(__name__)
 app.teardown_appcontext(close_db)      

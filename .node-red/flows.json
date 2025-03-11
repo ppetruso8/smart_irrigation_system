@@ -202,15 +202,15 @@
         "type": "function",
         "z": "d27ff7acba5e037e",
         "name": "process_sensor_data",
-        "func": "let data = msg.payload;\n\n// log error or notice messages from ESP\nif (data.hasOwnProperty(\"error\") || data.hasOwnProperty(\"notice\")) {\n    node.warn(\"Message: \" + JSON.stringify(data));\n\n    // check notice contains information about watering \n    if (data.hasOwnProperty(\"notice\") && data.notice.includes(\"watering_started\")) {\n        // extract the volume of water used for watering\n        var amount = data.notice.substring(17,data.notice.length-1);\n\n        // manage data for log\n        data = flow.get(\"sensorData\") || {};\n        data.timestamp = new Date().toISOString();\n        data.waterAmount = amount;\n        data.waterMode = flow.get(\"lastWateringMode\") || \"UNKNOWN\";\n        data.env = flow.get(\"envMode\") || \"INDOOR\";\n\n        msg.payload = data;\n        return msg;\n    }\n    return null;\n}\n\n// save sensor data into the flow\nflow.set(\"sensorData\", data);\n\nmsg.payload = \"water\";\nreturn msg;",
+        "func": "let data = msg.payload;\n\n// log error or notice messages from ESP\nif (data.hasOwnProperty(\"error\") || data.hasOwnProperty(\"notice\")) {\n    node.warn(\"Message: \" + JSON.stringify(data));\n\n    // check notice contains information about watering \n    if (data.hasOwnProperty(\"notice\") && data.notice.includes(\"watering_started\")) {\n        // extract the volume of water used for watering\n        var amount = data.notice.substring(17,data.notice.length-1);\n\n        // manage data for log\n        data = flow.get(\"sensorData\") || {};\n        data.timestamp = new Date().toISOString();\n        data.waterAmount = amount;\n        data.waterMode = flow.get(\"lastWateringMode\") || \"UNKNOWN\";\n        data.env = flow.get(\"envMode\") || \"INDOOR\";\n\n        msg.payload = data;\n        return msg;\n    }\n    return null;\n}\n\n// save sensor data into the flow\nflow.set(\"sensorData\", data.sensors);\n\nmsg.payload = \"water\";\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 320,
-        "y": 140,
+        "x": 340,
+        "y": 160,
         "wires": [
             [
                 "ae558f0435c71b2c"
@@ -292,69 +292,6 @@
         ]
     },
     {
-        "id": "0485e48b030f2229",
-        "type": "ui_text",
-        "z": "d27ff7acba5e037e",
-        "group": "89221f1b3e1e0dd1",
-        "order": 0,
-        "width": 0,
-        "height": 0,
-        "name": "",
-        "label": "Soil Moisture",
-        "format": "{{msg.payload.soil}}",
-        "layout": "row-spread",
-        "className": "",
-        "style": false,
-        "font": "",
-        "fontSize": 16,
-        "color": "#000000",
-        "x": 730,
-        "y": 20,
-        "wires": []
-    },
-    {
-        "id": "95f4e048225a7ca9",
-        "type": "ui_text",
-        "z": "d27ff7acba5e037e",
-        "group": "89221f1b3e1e0dd1",
-        "order": 1,
-        "width": 0,
-        "height": 0,
-        "name": "",
-        "label": "Temperature",
-        "format": "{{msg.payload.temp}} °C",
-        "layout": "row-spread",
-        "className": "",
-        "style": false,
-        "font": "",
-        "fontSize": 16,
-        "color": "#000000",
-        "x": 730,
-        "y": 60,
-        "wires": []
-    },
-    {
-        "id": "172b2d31c0a42643",
-        "type": "ui_text",
-        "z": "d27ff7acba5e037e",
-        "group": "89221f1b3e1e0dd1",
-        "order": 2,
-        "width": 0,
-        "height": 0,
-        "name": "",
-        "label": "Humidity",
-        "format": "{{msg.payload.hum}} %",
-        "layout": "row-spread",
-        "className": "",
-        "style": false,
-        "font": "",
-        "fontSize": 16,
-        "color": "#000000",
-        "x": 720,
-        "y": 100,
-        "wires": []
-    },
-    {
         "id": "b4ede96e1072c9b8",
         "type": "function",
         "z": "d27ff7acba5e037e",
@@ -367,7 +304,7 @@
         "finalize": "",
         "libs": [],
         "x": 670,
-        "y": 240,
+        "y": 280,
         "wires": [
             [
                 "49f58424f2ecc968",
@@ -875,7 +812,7 @@
         "include_empty_strings": "",
         "include_null_values": "",
         "x": 870,
-        "y": 140,
+        "y": 160,
         "wires": [
             [
                 "d5db91812b763d19"
@@ -893,8 +830,8 @@
         "createDir": false,
         "overwriteFile": "false",
         "encoding": "none",
-        "x": 1110,
-        "y": 140,
+        "x": 1070,
+        "y": 160,
         "wires": [
             []
         ]
@@ -919,15 +856,13 @@
         "checkall": "true",
         "repair": false,
         "outputs": 2,
-        "x": 530,
-        "y": 140,
+        "x": 550,
+        "y": 160,
         "wires": [
             [
                 "d4bc37cb6b14bcdd"
             ],
-            [
-                "b4ede96e1072c9b8"
-            ]
+            []
         ]
     },
     {
@@ -942,8 +877,8 @@
         "complete": "false",
         "statusVal": "",
         "statusType": "auto",
-        "x": 680,
-        "y": 300,
+        "x": 420,
+        "y": 280,
         "wires": []
     },
     {
@@ -958,8 +893,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 860,
-        "y": 200,
+        "x": 800,
+        "y": 220,
         "wires": [
             [
                 "d4bc37cb6b14bcdd"
@@ -1014,13 +949,12 @@
         "rh": 0,
         "inputs": 0,
         "x": 90,
-        "y": 100,
+        "y": 120,
         "wires": [
             [
                 "0f25c96d5a604298",
-                "0485e48b030f2229",
-                "95f4e048225a7ca9",
-                "172b2d31c0a42643"
+                "49f58424f2ecc968",
+                "b550b59d364fc311"
             ]
         ]
     },
@@ -1041,31 +975,6 @@
         "x": 1260,
         "y": 320,
         "wires": []
-    },
-    {
-        "id": "ed67f4d7b67122bc",
-        "type": "inject",
-        "z": "d27ff7acba5e037e",
-        "name": "",
-        "props": [
-            {
-                "p": "payload"
-            }
-        ],
-        "repeat": "",
-        "crontab": "",
-        "once": false,
-        "onceDelay": 0.1,
-        "topic": "",
-        "payload": "READ",
-        "payloadType": "str",
-        "x": 1390,
-        "y": 180,
-        "wires": [
-            [
-                "35a8bc56db8a3151"
-            ]
-        ]
     },
     {
         "id": "8dee672ec47f757f",
@@ -1106,7 +1015,7 @@
         "rh": 0,
         "inputs": 0,
         "x": 100,
-        "y": 160,
+        "y": 180,
         "wires": [
             [
                 "0f25c96d5a604298"
@@ -1133,5 +1042,26 @@
         "x": 790,
         "y": 900,
         "wires": []
+    },
+    {
+        "id": "b550b59d364fc311",
+        "type": "ui_template",
+        "z": "d27ff7acba5e037e",
+        "group": "89221f1b3e1e0dd1",
+        "name": "",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "format": "\n<div ng-init=\"sensors = []\">\n    <div ng-repeat=\"sensor in sensors\">\n        <h4>Sensor type: {{sensor.type}} (ID: {{sensor.id}})</h4>\n        <div ng-if=\"sensor.type == 'SOIL'\">\n            <p>Moisture: {{sensor.moisture}}</p>\n        </div>\n        <div ng-if=\"sensor.type == 'DHT_SENSOR'\">\n            <p>Temperature: {{sensor.temperature}}°C</p>\n            <p>Humidity: {{sensor.humidity}}%</p>\n        </div>\n    </div>\n</div>\n\n<script>\n    (function(scope) {\n        scope.$watch('msg', function(msg) {\n            if (msg.payload.sensors) {\n                scope.sensors = msg.payload.sensors;\n            }\n        });\n    })\n    (scope);\n</script>",
+        "storeOutMessages": true,
+        "fwdInMessages": true,
+        "resendOnRefresh": true,
+        "templateScope": "local",
+        "className": "",
+        "x": 380,
+        "y": 80,
+        "wires": [
+            []
+        ]
     }
 ]
