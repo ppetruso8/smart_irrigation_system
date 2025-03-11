@@ -4,13 +4,30 @@
 
 // Pin assignments 
 const int relay = 26;
-const int soilMoisture = 34;
-const int moistureThreshold = 500;  // Calibrate!
+
+// sensors
+enum SensorType : byte {SOIL, DHT_SENSOR};
+struct Sensor {
+  int id;
+  int pin;
+  SensorType type;
+  bool active;
+  DHT* dht;   // DHT instance pointer 
+};
+
+// array of created sensors
+const int max_num_sensors = 6;
+Sensor sensors[max_num_sensors] = {
+  {1, 34, SOIL, true, nullptr},
+  {2, 35, SOIL, true, nullptr},
+  {3, 32, SOIL, false, nullptr},
+  {4, 33, SOIL, false, nullptr},
+  {1, 4, DHT_SENSOR, true, nullptr},
+  {2, 2, DHT_SENSOR, false, nullptr}
+};
 
 // DHT Temperature and Humidity Sensor
-#define DHTPIN 4
 #define DHTTYPE DHT11
-DHT dht(DHTPIN, DHTTYPE);
 
 // WiFi and MQTT setup
 const char* ssid = "Pity";
@@ -37,9 +54,6 @@ bool isTempWater = false;
 // Variables for watering
 int amount = 1;
 int pulses = 0;
-
-// function declarations???
-//...
 
 // MQTT callback function
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -96,7 +110,12 @@ void setup() {
   digitalWrite(relay, HIGH);
 
   // Initialize temperature and humidity sensor
-  dht.begin();
+  for (int i = 0; i < max_num_sensors; i++) {
+    if (sensors[i].active && sensors[i].type == DHT_SENSOR) {
+        sensors[i].dht = new DHT(sensors[i].pin, DHTTYPE);
+        sensors[i].dht->begin();
+      }
+  }
 
   // WiFi connection
   WiFi.begin(ssid, password);
@@ -176,24 +195,49 @@ void loop() {
 
 // Read sensors
 void takeReading() {
-  // Get the readings
-  int moistureValue = analogRead(soilMoisture);
-  float humidity = dht.readHumidity();
-  float temperature = dht.readTemperature();
+  // create array of sensors
+  String msg = "{\"sensors\": [";
+  for (int i = 0; i < max_num_sensors; i++) {
+    if (!sensors[i].active) {
+      continue; 
+    }
 
-  if (isnan(humidity) || isnan(temperature)) {
-    client.publish("irrigation/notice", "{\"error\":\"error_reading_dht_sensor\"}");
-    return;
+    if (i != 0) {
+      msg += ",";
+    }
+
+    msg += "{\"id\":"; 
+    msg += sensors[i].id; 
+    msg += ",\"type\":\"";
+    msg += (sensors[i].type == SOIL ? "SOIL" : "DHT_SENSOR");
+    msg += "\",";
+
+    // soil moisture sensors
+    if (sensors[i].type == SOIL) {
+      int moistureValue = analogRead(sensors[i].pin);
+      msg += "\"moisture\":"; 
+      msg += moistureValue;
+    }
+
+    // dht sensor
+    else if (sensors[i].type == DHT_SENSOR && sensors[i].dht != nullptr) {
+      float humidity = sensors[i].dht->readHumidity();
+      float temperature = sensors[i].dht->readTemperature();
+
+      // Check if reading failed
+      if (isnan(humidity) || isnan(temperature)) {
+        client.publish("irrigation/notice", "{\"error\":\"error_reading_dht_sensor\"}");
+        msg += "\"error\":\"NA\"";
+      } else {
+        msg += "\"humidity\":"; 
+        msg += humidity; 
+        msg += ",\"temperature\":"; 
+        msg += temperature;
+      }
+    }
+    msg += "}";
   }
-
-  String msg = "{\"soil\":";
-  msg += moistureValue;
-  msg += ",\"temp\":";
-  msg += temperature;
-  msg += ",\"hum\":";
-  msg += humidity;
-  msg += "}";
-
+  msg += "]}";
   client.publish("irrigation/readings", msg.c_str());
 }
 
