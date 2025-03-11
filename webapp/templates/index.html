@@ -155,15 +155,15 @@
         <section id="hourly_forecast">
             <h4>2-Day Hourly Weather Forecast</h4>
             <section id="hourly_container">
-                {% for index, row in hourly.iterrows() %}
-                    <div class="hourly_item">
-                        <p class="time">{{ row['time'] }}</p>
-                        <p class="temp" title="Temperature">&nbsp🌡 {{ row['temperature_2m'] }}°C</p>
-                        <p class="precipitation" title="Precipitation">💧 {{ row['precipitation'] }}mm</p>
-                        <p class ="precipitation" title="Chance of Precipitation">☔ {{ row['precipitation_probability'] }}%</p>
-                        <p class ="humidity" title="Humidity">🌫️ {{ row['relativehumidity_2m'] }}%</p>
-                        <p class="weather_status">{{ row['weathercode'] }}</p>
-                    </div>
+                {% for time, temp, precip, precip_prob, humidity, weather in zip(hourly.time, hourly.temperature_2m, hourly.precipitation, hourly.precipitation_probability, hourly.relative_humidity_2m, hourly.weather_code) %}
+                <div class="hourly_item">
+                    <p class="time">{{ time }}</p>
+                    <p class="temp" title="Temperature">🌡 {{ temp }}°C</p>
+                    <p class="precipitation" title="Precipitation">💧 {{ precip }}mm</p>
+                    <p class="precipitation_probability" title="Chance of Precipitation">☔ {{ precip_prob }}%</p>
+                    <p class="humidity" title="Humidity">🌫️ {{ humidity }}%</p>
+                    <p class="weather_status">{{ weather }}</p>
+                </div>
                 {% endfor %}
             </section>
         </section>
@@ -171,14 +171,14 @@
         <section id="daily_forecast">
             <h4>5-Day Weather Forecast</h4>
             <section id="daily_container">
-                {% for index, row in daily.iterrows() %}
-                    <div class="daily_item">
-                        <p class="time">{{ row['time'] }}</p>
-                        <p class="temp" title="Highest Temperature">↑🌡 {{ row['temperature_2m_max'] }}°C</p>
-                        <p class="temp" title="Lowest Temperature">↓🌡 {{ row['temperature_2m_min'] }}°C</p>
-                        <p class="precipitation" title="Precipitation">💧 {{ row['precipitation_sum'] }}mm</p>
-                        <p class="weather_status">{{ row['weathercode'] }}</p>
-                    </div>
+                {% for time, temp_max, temp_min, precip_sum, weather in zip(daily.time, daily.temperature_2m_max, daily.temperature_2m_min, daily.precipitation_sum, daily.weather_code) %}
+                <div class="daily_item">
+                    <p class="time">{{ time }}</p>
+                    <p class="temp" title="Highest Temperature">↑🌡 {{ temp_max }}°C</p>
+                    <p class="temp" title="Lowest Temperature">↓🌡 {{ temp_min }}°C</p>
+                    <p class="precipitation" title="Precipitation">💧 {{ precip_sum }}mm</p>
+                    <p class="weather_status">{{ weather }}</p>
+                </div>
                 {% endfor %}
             </section>
         </section>        

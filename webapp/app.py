@@ -8,13 +8,7 @@ import requests
 
 from forms import SensorForm, LocationForm, RegistrationForm, LoginForm, FertilizationForm, PairingForm, UserDetailsForm, ChangePasswordForm
 
-from openmeteopy import OpenMeteo
-from openmeteopy.hourly import HourlyForecast
-from openmeteopy.daily import DailyForecast
-from openmeteopy.options import ForecastOptions
-import pandas as pd
-
-import time
+from datetime import datetime
 
 NODE_RED = "" 
 
@@ -103,9 +97,6 @@ def index():
     weather_current = get_current_weather(latitude, longitude)
     forecast_hourly, forecast_daily = get_forecast(latitude, longitude)
 
-    forecast_hourly = forecast_hourly.iloc[:48] # 48h hourly forecast
-    forecast_daily = forecast_daily.iloc[:5]    # 5 day forecast
-
     # weather code translation dictionary
     weather_codes = {0: "Clear Sky", 1: "Mainly Clear Sky", 2: "Partly Cloudy", 3: "Cloudy",
                      45: "Fog", 48: "Depositing Rime Fog", 51: "Light Drizzle", 
@@ -118,17 +109,16 @@ def index():
                      95: "Thunderstorms", 96: "Thunderstorm with Slight Hail", 
                      99: "Thunderstorm with Heavy Hail"}
     # replace weather codes with actual strings
-    forecast_hourly["weathercode"] = forecast_hourly["weathercode"].replace(weather_codes)
-    forecast_daily["weathercode"] = forecast_daily["weathercode"].replace(weather_codes)
+    forecast_hourly["weather_code"] = [weather_codes[code] for code in forecast_hourly["weather_code"]]
+    forecast_daily["weather_code"] = [weather_codes[code] for code in forecast_daily["weather_code"]]
     weather_current["weather_code"] = weather_codes[weather_current["weather_code"]]
 
-    # ensure time is not an index
-    forecast_hourly.reset_index(inplace=True)
-    forecast_daily.reset_index(inplace=True)
-
     # change format of time to more readable
-    forecast_hourly['time'] = pd.to_datetime(forecast_hourly['time']).dt.strftime('%d %b %Y %H:%M')  
-    forecast_daily['time'] = pd.to_datetime(forecast_daily['time']).dt.strftime('%d %b %Y')
+    forecast_hourly["time"] = [datetime.strptime(time, "%Y-%m-%dT%H:%M").strftime("%d %b %Y %H:%M") for time in forecast_hourly["time"]]
+    forecast_daily["time"] = [datetime.strptime(time, "%Y-%m-%d").strftime("%d %b %Y") for time in forecast_daily["time"]]
+
+    print(forecast_daily)
+    print(forecast_hourly)
  
     # data from node-red
     # sensors, dht_sensors = get_sensors()
@@ -192,7 +182,7 @@ def index():
     return render_template("index.html", weather=weather_current, sensors=sensors, hourly=forecast_hourly, 
                            daily=forecast_daily, forms=forms, city=city, country=country,
                            location_form=location_form, dht_sensors=dht_sensors, pumps=fertilization_pumps,
-                           pump_forms=fertilization_forms)
+                           pump_forms=fertilization_forms, zip=zip)
 
 @app.route("/register", methods = ["GET", "POST"])
 def register():
@@ -408,28 +398,33 @@ def get_current_weather(lat, long):
     return None
 
 def get_forecast(lat, long):  
-    # https://github.com/m0rp43us/openmeteopy/blob/main/readme/WEATHER_FORECAST.md
-    # https://github.com/m0rp43us/openmeteopy/blob/main/notebooks/tutorial.ipynb
-    hourly = HourlyForecast()     
-    hourly = hourly.temperature_2m() 
-    hourly = hourly.precipitation()
-    hourly = hourly.windspeed_10m()
-    hourly = hourly.relativehumidity_2m()
-    hourly = hourly.precipitation_probability()
-    hourly = hourly.weathercode()
-
-    daily = DailyForecast()
-    daily = daily.temperature_2m_max()
-    daily = daily.temperature_2m_min()
-    daily = daily.precipitation_sum()
-
-    daily = daily.weathercode()
+    url=f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={long}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum&hourly=temperature_2m,relative_humidity_2m,precipitation_probability,precipitation,weather_code"
+    response = requests.get(url)
     
-    options = ForecastOptions(lat, long, forecast_days=1)
-    mgr = OpenMeteo(options, hourly=hourly, daily=daily)
-    meteo = mgr.get_pandas()
+    if response.status_code == 200:
+        data = response.json()
+        
+        # 48-hours hourly forecast
+        data["hourly"]["time"] = data["hourly"]["time"][:48]
+        data["hourly"]["temperature_2m"] = data["hourly"]["temperature_2m"][:48]
+        data["hourly"]["relative_humidity_2m"] = data["hourly"]["relative_humidity_2m"][:48]
+        data["hourly"]["precipitation_probability"] = data["hourly"]["precipitation_probability"][:48]
+        data["hourly"]["precipitation"] = data["hourly"]["precipitation"][:48]
+        data["hourly"]["weather_code"] = data["hourly"]["weather_code"][:48]
 
-    return meteo
+        # 5-day daily forecast
+        data["daily"]["time"] = data["daily"]["time"][:5]
+        data["daily"]["weather_code"] = data["daily"]["weather_code"][:5]
+        data["daily"]["temperature_2m_max"] = data["daily"]["temperature_2m_max"][:5]
+        data["daily"]["temperature_2m_min"] = data["daily"]["temperature_2m_min"][:5]
+        data["daily"]["precipitation_probability_max"] = data["daily"]["precipitation_probability_max"][:5]
+        data["daily"]["precipitation_sum"] = data["daily"]["precipitation_sum"][:5]
+
+        return data["hourly"], data["daily"]
+    else:
+        print(f"Error retrieving the weather API data: {response.status_code}")
+
+    return None
 
 def get_coordinates(city):
     city = city.strip()
