@@ -89,10 +89,15 @@ Sensor sensors[max_num_sensors] = {
 // WiFi and MQTT setup
 const char* ssid = "Pity";
 const char* password = "";
-const char* mqtt = "";
+const char* mqtt = "192.168.8.140";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
+
+// set station mode (ESP connecting to access point)
+WiFi.mode(WIFI_STA);
+// enable power saving mode for wifi
+WiFi.setSleep(true);
 
 // MQTT callback function
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -207,7 +212,7 @@ void setup() {
 }
 
 void loop() {
-  // Ensure MQTT works
+  // Ensure MQTT connection is established
   if (!client.connected()) {
     reconnect();
   }
@@ -260,8 +265,10 @@ void loop() {
 
     case IDLE:
     default:
-      // wait for commands
-      delay(100);
+      // switch into light sleep mode - wakes up upon receival of MQTT message 
+      Serial.println("Switching into light sleep");
+      esp_light_sleep_start(); 
+      Serial.println("Woke up from light sleep");
       break;
   }
 }
