@@ -297,7 +297,7 @@
         "type": "function",
         "z": "d27ff7acba5e037e",
         "name": "water",
-        "func": "let data = flow.get(\"sensorData\"); // array of sensors\nlet pumps = flow.get(\"pumpData\");  // array of pumps\n// weather forecast\nlet totalPrecip = parseFloat(flow.get(\"totalPrecipHourly\")) || 0; // total precipitation in mm today\nlet probPrecip = flow.get(\"probPrecip\") || []; // true if precipitation probability above 30\nlet hourlyPrecip = flow.get(\"hourlyRain\") || []; // array with hourly percipitation \n\n// ?? \nlet defaultWaterMode = flow.get(\"defWaterMode\") || \"AUTO\"; // automatic or user overrides\nlet customWaterAmount = flow.get(\"customWater\") || 0; // user defined amount for watering\nlet recheckActive = flow.get(\"isRecheckActive\") || false;\n\nlet moistureThreshold = 1500;    // wet soil\n\nlet outputMsgs = [];\n\ndata.forEach(sensor => {\n    // skip DHT sensors\n    if (sensor.type !== \"SOIL\") {\n        return;\n    }\n\n    let soilMoisture = sensor.moisture;\n    let pumpId = sensor.pump;\n    let command = \"\";\n    let env = \"INDOOR\"; // default environment\n\n    let pump = pumps.find(item => item.id === pumpId);\n    if (pump) {\n        env = pump.env;\n    }\n\n    \n\n    // User overriden watering mode\n    if (defaultWaterMode !== \"AUTO\") {\n        if (defaultWaterMode === \"CUSTOM\" && customWaterAmount > 0) {\n            command = \"WATER \" + pumpId.toString() + \" CUSTOM \" + customWaterAmount;\n            // flow.set(\"lastWateringMode\", msg.payload.substring(6,13));\n        } else {\n            command = \"WATER \" + pumpId.toString() + \" \" + defaultWaterMode;\n            // flow.set(\"lastWateringMode\", msg.payload.substring(6,));\n        }   \n        outputMsgs.push({ payload: command });\n        \n        return;\n    }\n\n    // INDOOR MODE\n    if (env === \"INDOOR\") {\n        if (soilMoisture <= moistureThreshold) {\n            command = \"IDLE \" + pumpId.toString();\n        } else if (soilMoisture <= 2000) {\n            command = \"WATER \" + pumpId.toString() + \" LIGHT\";\n        } else if (soilMoisture <= 2500) {\n            command = \"WATER \" + pumpId.toString() + \" MEDIUM\";\n        } else {\n            command = \"WATER \" + pumpId.toString() + \" HEAVY\";\n        }\n    }\n    // OUTDOOR MODE\n    else {\n        // check forecast (if rain is expected in next 4/6 hours)\n        let d = new Date().getUTCHours() // get current hour in UTC\n        // how many hours to check forecast for\n        let checkHrs = (d === 17) ? 6 : 4;  // if last check of the day, check next 6 hours\n        let checkMax = Math.min(d+checkHrs, hourlyPrecip.length) // get the upper boundary index for weather check\n\n        // get total precipitation mm and max precipitation probabilty in next x hours \n        let totalRainNextHours = 0;\n        let maxPrecipProb = 0;\n        for (var i = d; i < checkMax; i++) {\n            totalRainNextHours += hourlyPrecip[i];\n            \n            if (probPrecip[i] > maxPrecipProb) {\n                maxPrecipProb = probPrecip[i];\n            }\n        }\n\n        // determine if watering needed\n        if (soilMoisture<= moistureThreshold) {\n            command = \"IDLE \" + pumpId.toString();   // no need to water\n        }\n        else if (soilMoisture <= 2000) {\n            if (maxPrecipProb < 30) {\n                command = \"WATER \" + pumpId.toString() + \" LIGHT\";\n            } else {\n                command = \"IDLE \" + pumpId.toString();\n            }\n        } else if (soilMoisture <= 2500) {\n            if (maxPrecipProb < 30) {\n                command = \"WATER \" + pumpId.toString() + \" MEDIUM\";\n            } else if (totalRainNextHours < 2) {\n                command = \"WATER \" + pumpId.toString() + \" LIGHT\";\n            } else {\n                command = \"IDLE \" + pumpId.toString();\n            }\n        } else {    // soil is dry\n            if (maxPrecipProb < 30) {\n                command = \"WATER \" + pumpId.toString() + \" HEAVY\";\n            } else if (totalRainNextHours < 2) {\n                command = \"WATER \" + pumpId.toString() + \" MEDIUM\";\n            } else if (totalRainNextHours < 4) {\n                command = \"WATER \" + pumpId.toString() + \" LIGHT\";\n            } else {\n                command = \"IDLE \" + pumpId.toString();\n            }\n        }\n    }\n\n    outputMsgs.push({ payload: command })\n\n\n})\n\n\n// store chosen watering mode into flow for log\n// flow.set(\"lastWateringMode\", msg.payload.substring(6,));\n\n// recheck soil moisture after 10 minutes if watering\nif (!recheckActive) {\n    if (outputMsgs.some(msg => msg.payload.includes(\"WATER\"))) {\n        flow.set(\"isRecheckActive\", true);\n        setTimeout(() => {\n            // send READ message to trigger new reading and function execution\n            node.send({ payload: \"READ\"});  \n            }, 600000);   // recheck in 10 minutes\n    }\n} else {\n    flow.set(\"isRecheckActive\", false);    \n} \n\nreturn [outputMsgs];",
+        "func": "let data = flow.get(\"sensorData\"); // array of sensors\nlet pumps = flow.get(\"pumpData\");  // array of pumps\n// weather forecast\nlet totalPrecip = parseFloat(flow.get(\"totalPrecipHourly\")) || 0; // total precipitation in mm today\nlet probPrecip = flow.get(\"probPrecip\") || []; // true if precipitation probability above 30\nlet hourlyPrecip = flow.get(\"hourlyRain\") || []; // array with hourly percipitation \n\nlet recheckActive = flow.get(\"isRecheckActive\") || false;\nlet outputMsgs = [];    // output commands\n\nlet moistureThreshold = 1500;    // wet soil\n\n\ndata.forEach(sensor => {\n    // skip DHT sensors\n    if (sensor.type !== \"SOIL\") {\n        return;\n    }\n\n    let soilMoisture = sensor.moisture;\n    let pumpId = sensor.pump;\n    let command = \"\";\n\n    // set default values\n    let env = \"INDOOR\"; \n    let defaultWaterMode = \"AUTO\";\n    let customWaterAmount = 0;\n\n    // get associated pump\n    let pump = pumps.find(item => item.id === pumpId);\n    if (pump) {\n        env = pump.env;\n        defaultWaterMode = pump.currentWaterMode;\n        customWaterAmount = pump.amount;\n    }\n\n    // User overriden watering mode\n    if (defaultWaterMode !== \"AUTO\") {\n        if (defaultWaterMode === \"CUSTOM\" && customWaterAmount > 0) {\n            command = \"WATER \" + pumpId.toString() + \" CUSTOM \" + customWaterAmount;\n            // flow.set(\"lastWateringMode\", msg.payload.substring(6,13));\n        } else {\n            command = \"WATER \" + pumpId.toString() + \" \" + defaultWaterMode;\n            // flow.set(\"lastWateringMode\", msg.payload.substring(6,));\n        }   \n        outputMsgs.push({ payload: command });\n        \n        return;\n    }\n\n    // INDOOR MODE\n    if (env === \"INDOOR\") {\n        if (soilMoisture <= moistureThreshold) {\n            command = \"IDLE \" + pumpId.toString();\n        } else if (soilMoisture <= 2000) {\n            command = \"WATER \" + pumpId.toString() + \" LIGHT\";\n        } else if (soilMoisture <= 2500) {\n            command = \"WATER \" + pumpId.toString() + \" MEDIUM\";\n        } else {\n            command = \"WATER \" + pumpId.toString() + \" HEAVY\";\n        }\n    }\n    // OUTDOOR MODE\n    else {\n        // check forecast (if rain is expected in next 4/6 hours)\n        let d = new Date().getUTCHours() // get current hour in UTC\n        // how many hours to check forecast for\n        let checkHrs = (d === 17) ? 6 : 4;  // if last check of the day, check next 6 hours\n        let checkMax = Math.min(d+checkHrs, hourlyPrecip.length) // get the upper boundary index for weather check\n\n        // get total precipitation mm and max precipitation probabilty in next x hours \n        let totalRainNextHours = 0;\n        let maxPrecipProb = 0;\n        for (var i = d; i < checkMax; i++) {\n            totalRainNextHours += hourlyPrecip[i];\n            \n            if (probPrecip[i] > maxPrecipProb) {\n                maxPrecipProb = probPrecip[i];\n            }\n        }\n\n        // determine if watering needed\n        if (soilMoisture<= moistureThreshold) {\n            command = \"IDLE \" + pumpId.toString();   // no need to water\n        }\n        else if (soilMoisture <= 2000) {\n            if (maxPrecipProb < 30) {\n                command = \"WATER \" + pumpId.toString() + \" LIGHT\";\n            } else {\n                command = \"IDLE \" + pumpId.toString();\n            }\n        } else if (soilMoisture <= 2500) {\n            if (maxPrecipProb < 30) {\n                command = \"WATER \" + pumpId.toString() + \" MEDIUM\";\n            } else if (totalRainNextHours < 2) {\n                command = \"WATER \" + pumpId.toString() + \" LIGHT\";\n            } else {\n                command = \"IDLE \" + pumpId.toString();\n            }\n        } else {    // soil is dry\n            if (maxPrecipProb < 30) {\n                command = \"WATER \" + pumpId.toString() + \" HEAVY\";\n            } else if (totalRainNextHours < 2) {\n                command = \"WATER \" + pumpId.toString() + \" MEDIUM\";\n            } else if (totalRainNextHours < 4) {\n                command = \"WATER \" + pumpId.toString() + \" LIGHT\";\n            } else {\n                command = \"IDLE \" + pumpId.toString();\n            }\n        }\n    }\n\n    outputMsgs.push({ payload: command })\n\n\n})\n\n\n// store chosen watering mode into flow for log\n// flow.set(\"lastWateringMode\", msg.payload.substring(6,));\n\n// recheck soil moisture after 10 minutes if watering\nif (!recheckActive) {\n    if (outputMsgs.some(msg => msg.payload.includes(\"WATER\"))) {\n        flow.set(\"isRecheckActive\", true);\n        setTimeout(() => {\n            // send READ message to trigger new reading and function execution\n            node.send({ payload: \"READ\"});  \n            }, 600000);   // recheck in 10 minutes\n    }\n} else {\n    flow.set(\"isRecheckActive\", false);    \n} \n\nreturn [outputMsgs];",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -311,35 +311,6 @@
                 "ec61008359c39560",
                 "35a8bc56db8a3151",
                 "20eb51f4534b98e5"
-            ]
-        ]
-    },
-    {
-        "id": "54b2e13c8ec7b998",
-        "type": "ui_button",
-        "z": "d27ff7acba5e037e",
-        "name": "",
-        "group": "32058175d5771dde",
-        "order": 0,
-        "width": 0,
-        "height": 0,
-        "passthru": false,
-        "label": "manual watering",
-        "tooltip": "",
-        "color": "",
-        "bgcolor": "",
-        "className": "",
-        "icon": "",
-        "payload": "WATER",
-        "payloadType": "str",
-        "topic": "topic",
-        "topicType": "msg",
-        "x": 980,
-        "y": 420,
-        "wires": [
-            [
-                "96c4d266fd3b6eb0",
-                "35a8bc56db8a3151"
             ]
         ]
     },
@@ -503,7 +474,7 @@
         "type": "function",
         "z": "d27ff7acba5e037e",
         "name": "parse_forecast_api",
-        "func": "let data = JSON.parse(msg.payload);\nlet rain = data.hourly.rain;\nlet showers = data.hourly.showers;\nlet probability = data.hourly.precipitation_probability;\n\n// get total rain + showers in mm\nlet totalPrecipitationHourly = [];\nlet totalPrecip = 0;\nfor (var i = 0; i < 24; i++) {\n    totalPrecipitationHourly[i] = rain[i] + showers[i];\n    totalPrecip += rain[i] + showers[i];\n}\n\n// find maximum precipitation probability\nlet maxPrecipProb = Math.max(...probability);\n\n// save data in the flow\nflow.set(\"totalPrecipHourly\", totalPrecipitationHourly);\nflow.set(\"probabPrecip\", probability);\nflow.set(\"hourlyRain\", rain);\n\nmsg.payload = {\n    totalPrecipHourly: totalPrecipitationHourly,\n    totalPrecip: totalPrecip,\n    probabPrecip: probability,\n    hourlyRain: rain,\n    maxPrecipProb: maxPrecipProb\n}\n\nreturn msg;",
+        "func": "let data = JSON.parse(msg.payload);\nlet rain = data.hourly.rain;\nlet showers = data.hourly.showers;\nlet probability = data.hourly.precipitation_probability;\n\n// get total rain + showers in mm\nlet totalPrecipitationHourly = [];\nlet totalPrecip = 0;\nfor (var i = 0; i < 24; i++) {\n    totalPrecipitationHourly[i] = rain[i] + showers[i];\n    totalPrecip += rain[i] + showers[i];\n}\n\ntotalPrecip = Math.floor(totalPrecip*100)/100;\n\n// find maximum precipitation probability\nlet maxPrecipProb = Math.max(...probability);\n\n// save data in the flow\nflow.set(\"totalPrecipHourly\", totalPrecipitationHourly);\nflow.set(\"probabPrecip\", probability);\nflow.set(\"hourlyRain\", rain);\n\nmsg.payload = {\n    totalPrecipHourly: totalPrecipitationHourly,\n    totalPrecip: totalPrecip,\n    probabPrecip: probability,\n    hourlyRain: rain,\n    maxPrecipProb: maxPrecipProb\n}\n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -579,64 +550,11 @@
         "wires": []
     },
     {
-        "id": "03fce81cab059470",
-        "type": "ui_dropdown",
-        "z": "d27ff7acba5e037e",
-        "name": "",
-        "label": "Default watering mode",
-        "tooltip": "Select default watering mode. Automatic mode chooses optimal watering value based on soil moisture reading.",
-        "place": "Select option",
-        "group": "32058175d5771dde",
-        "order": 1,
-        "width": 0,
-        "height": 0,
-        "passthru": true,
-        "multiple": false,
-        "options": [
-            {
-                "label": "Light (20ml)",
-                "value": "LIGHT",
-                "type": "str"
-            },
-            {
-                "label": "Medium (50ml)",
-                "value": "MEDIUM",
-                "type": "str"
-            },
-            {
-                "label": "Heavy (100ml)",
-                "value": "HEAVY",
-                "type": "str"
-            },
-            {
-                "label": "Custom",
-                "value": "CUSTOM",
-                "type": "str"
-            },
-            {
-                "label": "Automatic",
-                "value": "AUTO",
-                "type": "str"
-            }
-        ],
-        "payload": "",
-        "topic": "payload",
-        "topicType": "msg",
-        "className": "",
-        "x": 460,
-        "y": 340,
-        "wires": [
-            [
-                "0b7ce3cd5e5c992c"
-            ]
-        ]
-    },
-    {
         "id": "0b7ce3cd5e5c992c",
         "type": "function",
         "z": "d27ff7acba5e037e",
         "name": "change_watering_mode",
-        "func": "let input = msg.payload;\nlet modes = [\"LIGHT\", \"MEDIUM\", \"HEAVY\"];\nlet selectedMode;\n\nif (modes.includes(input)) {\n    msg.payload = \"CHMOD \" + input;\n    selectedMode = input;\n\n} else if (input === \"CUSTOM\") {\n    var customWater = flow.get(\"customWater\")\n    if (!customWater || isNaN(customWater)) {\n        msg.payload = \"CHMOD CUSTOM\";\n    } else {\n        msg.payload = \"CHMOD CUSTOM \" + customWater;\n    }\n    selectedMode = \"CUSTOM\";\n\n} else if (input === \"AUTO\") {\n    msg.payload = \"CHMOD MEDIUM\"; // default value (will change automatically)\n    selectedMode === \"AUTO\";\n\n} else if (parseInt(input) > 0) { // handling custom value field   \n    msg.payload = \"CHMOD CUSTOM \" + input;\n    selectedMode = \"CUSTOM\";\n    flow.set(\"customWater\", parseInt(input));\n\n} else {\n    node.warn(\"Invalid input for CHMOD.\");\n    return null;\n}\n\nflow.set(\"defWaterMode\", selectedMode)\n\nreturn msg;",
+        "func": "let pumps = flow.get(\"pumpData\");\nlet updatedPump = msg.payload;\nlet pumpIndex = pumps.findIndex(pump => pump.id === updatedPump.id);\n\npumps[pumpIndex].currentWaterMode = updatedPump.currentWaterMode;\npumps[pumpIndex].env = updatedPump.env;\n\n// watering\nlet wateringModes = [\"LIGHT\", \"MEDIUM\", \"HEAVY\"];\nlet waterCommand = \"\";\n\nif (wateringModes.includes(updatedPump.currentWaterMode)) {\n    waterCommand = \"CHMOD \" + updatedPump.id.toString() + \" \" + updatedPump.currentWaterMode;\n\n} else if (updatedPump.currentWaterMode === \"CUSTOM\") {\n    waterCommand = \"CHMOD \" + updatedPump.id.toString() + \" CUSTOM \" + updatedPump.amount.toString();\n    pumps[pumpIndex].amount = parseInt(updatedPump.amount);\n\n} else if (updatedPump.currentWaterMode === \"AUTO\") {\n    waterCommand = \"CHMOD \" + updatedPump.id.toString() + \" MEDIUM\"; // default value (will change automatically)\n\n} else {\n    node.warn(\"Invalid input for CHMOD.\");\n    return null;\n}\n\n// environment\nlet envModes = [\"INDOOR\", \"OUTDOOR\"];\nlet envCommand = \"\";\n\nif (envModes.includes(updatedPump.env)) {\n    envCommand = \"SET_ENV \" + updatedPump.id.toString() + \" \" + updatedPump.env;\n} else {\n    node.warn(\"Invalid input for SET_ENV.\")\n    return nulll\n}\n\nflow.set(\"pumpData\", pumps);\n\nreturn [[{payload: waterCommand},{payload: envCommand}]];",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -644,7 +562,7 @@
         "finalize": "",
         "libs": [],
         "x": 950,
-        "y": 340,
+        "y": 320,
         "wires": [
             [
                 "9218897efed46d9e",
@@ -657,134 +575,6 @@
         "type": "debug",
         "z": "d27ff7acba5e037e",
         "name": "debug 4",
-        "active": false,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "false",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 1240,
-        "y": 380,
-        "wires": []
-    },
-    {
-        "id": "bbdeece177ba121e",
-        "type": "ui_text_input",
-        "z": "d27ff7acba5e037e",
-        "name": "",
-        "label": "Custom watering amount (ml)",
-        "tooltip": "Enter custom watering amount in milliliters. This value overrides selected mode.",
-        "group": "32058175d5771dde",
-        "order": 2,
-        "width": 0,
-        "height": 0,
-        "passthru": false,
-        "mode": "text",
-        "delay": "500",
-        "topic": "payload",
-        "sendOnBlur": true,
-        "className": "",
-        "topicType": "msg",
-        "x": 450,
-        "y": 380,
-        "wires": [
-            [
-                "ce57b3cc52e7cd01"
-            ]
-        ]
-    },
-    {
-        "id": "ce57b3cc52e7cd01",
-        "type": "change",
-        "z": "d27ff7acba5e037e",
-        "name": "",
-        "rules": [
-            {
-                "t": "set",
-                "p": "customWater",
-                "pt": "flow",
-                "to": "payload",
-                "tot": "msg"
-            }
-        ],
-        "action": "",
-        "property": "",
-        "from": "",
-        "to": "",
-        "reg": false,
-        "x": 720,
-        "y": 380,
-        "wires": [
-            [
-                "0b7ce3cd5e5c992c"
-            ]
-        ]
-    },
-    {
-        "id": "6005985f73c182d6",
-        "type": "ui_dropdown",
-        "z": "d27ff7acba5e037e",
-        "name": "",
-        "label": "Envrionment Irrigation Mode",
-        "tooltip": "",
-        "place": "Select option",
-        "group": "32058175d5771dde",
-        "order": 3,
-        "width": 0,
-        "height": 0,
-        "passthru": true,
-        "multiple": false,
-        "options": [
-            {
-                "label": "Indoor",
-                "value": "INDOOR",
-                "type": "str"
-            },
-            {
-                "label": "Outdoor",
-                "value": "OUTDOOR",
-                "type": "str"
-            }
-        ],
-        "payload": "",
-        "topic": "payload",
-        "topicType": "msg",
-        "className": "",
-        "x": 780,
-        "y": 500,
-        "wires": [
-            [
-                "fd928d2b9e1944a2"
-            ]
-        ]
-    },
-    {
-        "id": "fd928d2b9e1944a2",
-        "type": "function",
-        "z": "d27ff7acba5e037e",
-        "name": "set_env",
-        "func": "var env_setting = msg.payload;\n\nif (env_setting === \"INDOOR\") {\n    msg.payload = \"SET_ENV INDOOR\";\n} else if (env_setting === \"OUTDOOR\") {\n    msg.payload = \"SET_ENV OUTDOOR\";\n} else {\n    node.warn(\"Invalid input for SET_ENV.\");\n    return null;\n}\n\nflow.set(\"envMode\", env_setting);\n\nreturn msg;",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 1000,
-        "y": 500,
-        "wires": [
-            [
-                "1199cf16616d6f60",
-                "35a8bc56db8a3151"
-            ]
-        ]
-    },
-    {
-        "id": "1199cf16616d6f60",
-        "type": "debug",
-        "z": "d27ff7acba5e037e",
-        "name": "debug 5",
         "active": true,
         "tosidebar": true,
         "console": false,
@@ -793,7 +583,7 @@
         "statusVal": "",
         "statusType": "auto",
         "x": 1240,
-        "y": 500,
+        "y": 380,
         "wires": []
     },
     {
@@ -872,24 +662,6 @@
             [
                 "d4bc37cb6b14bcdd"
             ]
-        ]
-    },
-    {
-        "id": "96c4d266fd3b6eb0",
-        "type": "function",
-        "z": "d27ff7acba5e037e",
-        "name": "update_flow",
-        "func": "flow.set(\"lastWateringMode\", \"MANUAL\");\nreturn msg;",
-        "outputs": 1,
-        "timeout": 0,
-        "noerr": 0,
-        "initialize": "",
-        "finalize": "",
-        "libs": [],
-        "x": 1250,
-        "y": 420,
-        "wires": [
-            []
         ]
     },
     {
@@ -1024,7 +796,7 @@
         "order": 3,
         "width": 0,
         "height": 0,
-        "format": "\n<div ng-init=\"sensors = []\">\n    <div ng-repeat=\"sensor in sensors\">\n        <h4>Sensor type: {{sensor.type}} (ID: {{sensor.id}})</h4>\n        <div ng-if=\"sensor.type == 'SOIL'\">\n            <p>Moisture: {{sensor.moisture}}</p>\n        </div>\n        <div ng-if=\"sensor.type == 'DHT_SENSOR'\">\n            <p>Temperature: {{sensor.temperature}}°C</p>\n            <p>Humidity: {{sensor.humidity}}%</p>\n        </div>\n    </div>\n</div>\n\n<script>\n    (function(scope) {\n        scope.$watch('msg', function(msg) {\n            if (msg.payload.sensors) {\n                scope.sensors = msg.payload.sensors;\n            }\n        });\n    })\n    (scope);\n</script>",
+        "format": "\n<div ng-init=\"sensors = []\">\n    <div ng-repeat=\"sensor in sensors\">\n        <h4>Sensor: {{sensor.type}} (ID: {{sensor.id}})</h4>\n        <div ng-if=\"sensor.type == 'SOIL'\">\n            <p>Moisture: {{sensor.moisture}}</p>\n            <p>Pump: {{sensor.pump}}</p>\n        </div>\n        <div ng-if=\"sensor.type == 'DHT_SENSOR'\">\n            <p>Temperature: {{sensor.temperature}}°C</p>\n            <p>Humidity: {{sensor.humidity}}%</p>\n        </div>\n    </div>\n</div>\n\n<script>\n    (function(scope) {\n        scope.$watch('msg', function(msg) {\n            if (msg.payload.sensors) {\n                scope.sensors = msg.payload.sensors;\n            }\n        });\n    })\n    (scope);\n</script>",
         "storeOutMessages": true,
         "fwdInMessages": true,
         "resendOnRefresh": true,
@@ -1082,7 +854,7 @@
         "type": "function",
         "z": "d27ff7acba5e037e",
         "name": "store_pumps_sensors",
-        "func": "let data = msg.payload;\n\n// if (data.hasOwnProperty(\"pumps\")) {\n//     flow.set(\"pumpData\", data.pumps);\n//     msg.payload = data.pumps;\n// }\n// } else if (data.hasOwnProperty(\"sensors\")) {\n//     flow.set(\"sensorsRawData\", data.sensors);\n//     msg.payload = data.sensors;\n// } \n\nreturn msg;",
+        "func": "let data = msg.payload;\n\nif (data.hasOwnProperty(\"pumps\")) {\n    flow.set(\"pumpData\", data.pumps);\n    msg.payload = data;\n}\n// } else if (data.hasOwnProperty(\"sensors\")) {\n//     flow.set(\"sensorsRawData\", data.sensors);\n//     msg.payload = data.sensors;\n// } \n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -1093,7 +865,8 @@
         "y": 40,
         "wires": [
             [
-                "20eb51f4534b98e5"
+                "20eb51f4534b98e5",
+                "63d02a3976e94dc0"
             ]
         ]
     },
@@ -1109,7 +882,7 @@
         ],
         "repeat": "",
         "crontab": "",
-        "once": false,
+        "once": true,
         "onceDelay": 0.1,
         "topic": "",
         "payload": "GET_ALL",
@@ -1138,5 +911,28 @@
         "x": 600,
         "y": 40,
         "wires": []
+    },
+    {
+        "id": "63d02a3976e94dc0",
+        "type": "ui_template",
+        "z": "d27ff7acba5e037e",
+        "group": "32058175d5771dde",
+        "name": "",
+        "order": 4,
+        "width": 0,
+        "height": 0,
+        "format": "<div ng-init=\"pumps = []\">\n    <div ng-repeat=\"pump in pumps\">\n        <h3>Pump {{pump.id}}</h3>\n        <label>Watering Mode:</label>\n        <select ng-model=\"pump.currentWaterMode\" ng-change=\"updatePump(pump)\">\n            <option value = \"LIGHT\">Light</option>\n            <option value = \"MEDIUM\">Medium</option>\n            <option value = \"HEAVY\">Heavy</option>\n            <option value = \"CUSTOM\">Custom</option>\n            <option value = \"AUTO\">Automatic</option>\n        </select>\n        <div ng-if=\"pump.currentWaterMode=='CUSTOM'\">\n            <label>Custom Amount (ml):</label>\n            <input type=\"number\" ng-model=\"pump.amount\" ng-change=\"updatePump(pump)\"/>\n        </div>\n        <label>Environment:</label>\n        <select ng-model=\"pump.env\" ng-change=\"updatePump(pump)\">\n            <option value = \"INDOOR\">Indoor</option>\n            <option value = \"OUTDOOR\">Outdoor</option>\n        </select>\n        <hr/>\n    </div>\n</div>\n\n<script>\n    (function(scope) {\n        scope.$watch(\"msg\", function(msg) {\n            if (msg.payload.pumps) {\n                scope.pumps = msg.payload.pumps;\n            }\n        });\n\n        scope.updatePump = function(pump) {\n            scope.send({ payload: pump });\n        };\n    })(scope);\n</script>    ",
+        "storeOutMessages": true,
+        "fwdInMessages": false,
+        "resendOnRefresh": true,
+        "templateScope": "local",
+        "className": "",
+        "x": 640,
+        "y": 320,
+        "wires": [
+            [
+                "0b7ce3cd5e5c992c"
+            ]
+        ]
     }
 ]
