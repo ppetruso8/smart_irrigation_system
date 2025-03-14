@@ -29,14 +29,14 @@ enum EnvMode : byte { INDOOR,
 // int pulses = 0;
 
 // Pin assignments
-// const int relay = 26;
+// const int pump = 26;
 
-// relays
-enum RelayType : byte { WATERING,
-                        FERTILIZATION };
-struct Relay {
+// Pumps
+enum PumpType : byte { WATERING,
+                       FERTILIZATION };
+struct Pump {
   int id;
-  RelayType type;
+  PumpType type;
   int pin;
   bool active;
   WaterMode currentWaterMode;
@@ -47,19 +47,21 @@ struct Relay {
   int pulses;
 };
 
-// array of created relays
-const int max_num_relays = 3;
-Relay relays[max_num_relays] = {
-  { 1, WATERING, 26, true, MEDIUM, MEDIUM, false, INDOOR, 1, 0 },
-  { 2, WATERING, 25, false, MEDIUM, MEDIUM, false, INDOOR, 1, 0 },
-  { 3, FERTILIZATION, 27, true, MEDIUM, MEDIUM, false, INDOOR, 1, 0 }
+// Array of created pumps
+const int max_num_pumps = 5;
+Pump pumps[max_num_pumps] = {
+  { 1, WATERING, 25, true, MEDIUM, MEDIUM, false, INDOOR, 1, 0 },
+  { 2, WATERING, 26, false, MEDIUM, MEDIUM, false, INDOOR, 1, 0 },
+  { 3, WATERING, 27, false, MEDIUM, MEDIUM, false, INDOOR, 1, 0 },
+  { 4, FERTILIZATION, 18, true, MEDIUM, MEDIUM, false, INDOOR, 1, 0 },
+  { 5, FERTILIZATION, 19, false, MEDIUM, MEDIUM, false, INDOOR, 1, 0 },
 };
 
-// last called relay
-int last_relay = 0;
+// Reference for last called pump
+int last_pump = 0;
 
 
-// sensors
+// Sensors
 enum SensorType : byte { SOIL,
                          DHT_SENSOR };
 struct Sensor {
@@ -67,22 +69,22 @@ struct Sensor {
   int pin;
   SensorType type;
   bool active;
-  int relay;
+  int pump;
   DHT* dht;  // DHT instance pointer
 };
 
-// type of DHT sensor used
+// Type of DHT sensor used
 #define DHTTYPE DHT11
 
-// array of created sensors
+// Array of created sensors
 const int max_num_sensors = 6;
 Sensor sensors[max_num_sensors] = {
-  { 1, 34, SOIL, true, 1, nullptr },
-  { 2, 35, SOIL, true, 1, nullptr },
-  { 3, 32, SOIL, false, 1, nullptr },
-  { 4, 33, SOIL, false, 1, nullptr },
-  { 1, 4, DHT_SENSOR, true, 0, nullptr },
-  { 2, 2, DHT_SENSOR, false, 0, nullptr }
+  { 1, 32, SOIL, true, 1, nullptr },
+  { 2, 33, SOIL, true, 2, nullptr },
+  { 3, 34, SOIL, false, 1, nullptr },
+  { 4, 35, SOIL, false, 3, nullptr },
+  { 1, 2, DHT_SENSOR, true, 0, nullptr },   // 0 -> no pump for DHT sensor
+  { 2, 4, DHT_SENSOR, false, 0, nullptr } 
 };
 
 
@@ -94,14 +96,9 @@ const char* mqtt = "192.168.8.140";
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-// set station mode (ESP connecting to access point)
-WiFi.mode(WIFI_STA);
-// enable power saving mode for wifi
-WiFi.setSleep(true);
-
 // MQTT callback function
 void callback(char* topic, byte* payload, unsigned int length) {
-  // read the message
+  // Read the obtained message
   String command = "";
   for (unsigned int i = 0; i < length; i++) {
     command += (char)payload[i];
@@ -109,57 +106,57 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
   command.trim();
 
-  // confirm command on serial
+  // Confirm command on serial
   Serial.print("Received command: ");
   Serial.println(command);
 
-  // change mode or execute command
+  // Change mode or execute command
   if (command == "READ") {
     currentStatus = READ;
 
   } else if (command.startsWith("WATER")) {
+    int pump_id = command.substring(6, 1).toInt();
+    last_pump = pump_id;
     // automatic watering
     if (command.length() > 7) {
-      int relay_id = command.substring(6, 1).toInt();
-      relays[relay_id].isTempWater = true;
-      last_relay = relay_id;
+      pumps[pump_id].isTempWater = true;
       // isTempWater = true;
       String tempWatering = command.substring(8);
-      setWaterMode(tempWatering, true, relay_id);
+      setWaterMode(tempWatering, true, pump_id);
     }
 
     currentStatus = WATER;
 
   } else if (command.startsWith("FERTILIZE")) {
-    int relay_id = command.substring(10, 1).toInt();
-    last_relay = relay_id;
+    int pump_id = command.substring(10, 1).toInt();
+    last_pump = pump_id;
     currentStatus = FERTILIZE;
 
   } else if (command == "IDLE") {
     currentStatus = IDLE;
 
   } else if (command.startsWith("CHMOD")) {  // change watering mode
-    int relay_id = command.substring(6, 1).toInt();
+    int pump_id = command.substring(6, 1).toInt();
     String wateringMode = command.substring(8);
-    setWaterMode(wateringMode, false, relay_id);
+    setWaterMode(wateringMode, false, pump_id);
 
   } else if (command.startsWith("SET_ENV")) {  // change environment
-    int relay_id = command.substring(8, 1).toInt();
+    int pump_id = command.substring(8, 1).toInt();
     String envMode = command.substring(10);
-    setEnvMode(envMode, relay_id);
+    setEnvMode(envMode, pump_id);
 
   } else if (command.startsWith("SET_FERT_AMOUNT")) {
-    int relay_id = command.substring(16, 1).toInt();
+    int pump_id = command.substring(16, 1).toInt();
     int amount = command.substring(18).toInt();
-    setFertAmount(relay_id, amount);
+    setFertAmount(pump_id, amount);
 
   } else if (command.startsWith("CH_PUMP")) {
     int sensor_id = command.substring(8, 1).toInt();
-    int relay_id = command.substring(10, 1).toInt();
-    change_relay(sensor_id, relay_id);
+    int pump_id = command.substring(10, 1).toInt();
+    changePump(sensor_id, pump_id);
 
   } else if (command == "GET_ALL") {
-    send_all_data();
+    sendAllData();
     
   } else {
     client.publish("irrigation/notice", "{\"error\":\"invalid_command\"}");
@@ -170,23 +167,28 @@ void setup() {
   // Initialize serial communication for debugging
   Serial.begin(115200);
 
-  // Set relay pins as output and initialize to be off
-  for (int i = 0; i < max_num_relays; i++) {
-    if (relays[i].active) {
-      pinMode(relays[i].pin, OUTPUT);
-      digitalWrite(relays[i].pin, HIGH);
+  // Set station mode (ESP connecting to access point)
+  WiFi.mode(WIFI_STA);
+  // Enable power saving mode for WiFi
+  WiFi.setSleep(true);
+
+  // Initialize default pump pins and set to be off (HIGH)
+  for (int i = 0; i < max_num_pumps; i++) {
+    if (pumps[i].active) {
+      pinMode(pumps[i].pin, OUTPUT);
+      digitalWrite(pumps[i].pin, HIGH);
     }
   }
 
-  // // Relay pin as output
-  // pinMode(relay, OUTPUT);
+  // // pump pin as output
+  // pinMode(pump, OUTPUT);
 
-  // // Initialize relay to be OFF (pumps off)
-  // digitalWrite(relay, HIGH);
+  // // Initialize pump to be OFF (pumps off)
+  // digitalWrite(pump, HIGH);
 
-  // Initialize temperature and humidity sensor
+  // Initialize temperature and humidity sensors
   for (int i = 0; i < max_num_sensors; i++) {
-    if (sensors[i].active && sensors[i].type == DHT_SENSOR) {
+    if (sensors[i].type == DHT_SENSOR) {
       sensors[i].dht = new DHT(sensors[i].pin, DHTTYPE);
       sensors[i].dht->begin();
     }
@@ -228,38 +230,38 @@ void loop() {
     case WATER:
       WaterMode modeToUse;
 
-      if (relays[last_relay].isTempWater) {
-        modeToUse = relays[last_relay].tempWaterMode;
-        relays[last_relay].isTempWater = false;
+      if (pumps[last_pump].isTempWater) {
+        modeToUse = pumps[last_pump].tempWaterMode;
+        pumps[last_pump].isTempWater = false;
 
       } else {
-        modeToUse = relays[last_relay].currentWaterMode;
+        modeToUse = pumps[last_pump].currentWaterMode;
       }
 
       switch (modeToUse) {
         case LIGHT:
-          relays[last_relay].pulses = (relays[last_relay].env == INDOOR) ? 2 : 10;
+          pumps[last_pump].pulses = (pumps[last_pump].env == INDOOR) ? 2 : 10;
           break;
 
         case MEDIUM:
-          relays[last_relay].pulses = (relays[last_relay].env == INDOOR) ? 5 : 35;
+          pumps[last_pump].pulses = (pumps[last_pump].env == INDOOR) ? 5 : 35;
           break;
 
         case HEAVY:
-          relays[last_relay].pulses = (relays[last_relay].env == INDOOR) ? 10 : 70;
+          pumps[last_pump].pulses = (pumps[last_pump].env == INDOOR) ? 10 : 70;
           break;
 
         case CUSTOM:
-          relays[last_relay].pulses = relays[last_relay].amount / 10;  // 1 pulse = approx. 10ml
+          pumps[last_pump].pulses = pumps[last_pump].amount / 10;  // 1 pulse = approx. 10ml
           break;
       }
 
-      water(relays[last_relay].pulses, last_relay);
+      water(pumps[last_pump].pulses, last_pump);
       currentStatus = IDLE;
       break;
 
     case FERTILIZE:
-      fertilize(last_relay);
+      fertilize(last_pump);
       currentStatus = IDLE;
       break;
 
@@ -273,49 +275,63 @@ void loop() {
   }
 }
 
-// Read sensors
+// Get sensors' data
 void takeReading() {
-  // create array of sensors
+  // Create array of sensors for the output message
   String msg = "{\"sensors\": [";
+
   for (int i = 0; i < max_num_sensors; i++) {
-    if (!sensors[i].active) {
-      continue;
-    }
-
-    if (i != 0) {
-      msg += ",";
-    }
-
-    msg += "{\"id\":";
-    msg += sensors[i].id;
-    msg += ",\"type\":\"";
-    msg += (sensors[i].type == SOIL ? "SOIL" : "DHT_SENSOR");
-    msg += "\",";
-
-    // soil moisture sensors
+    // Determine if sensor is active
     if (sensors[i].type == SOIL) {
       int moistureValue = analogRead(sensors[i].pin);
-      msg += "\"moisture\":";
-      msg += moistureValue;
-    }
 
-    // dht sensor
-    else if (sensors[i].type == DHT_SENSOR && sensors[i].dht != nullptr) {
+      if (moistureValue > 0) {
+        sensors[i].active = true;
+      } else {
+        sensors[i].active = false;
+      }
+
+    } else if (sensors[i].type == DHT_SENSOR && sensors[i].dht != nullptr) {
       float humidity = sensors[i].dht->readHumidity();
       float temperature = sensors[i].dht->readTemperature();
 
-      // Check if reading failed
-      if (isnan(humidity) || isnan(temperature)) {
-        client.publish("irrigation/notice", "{\"error\":\"error_reading_dht_sensor\"}");
-        msg += "\"error\":\"NA\"";
+      if (!isnan(humidity) && !isnan(temperature)) {
+        sensors[i].active = true;
       } else {
+        sensors[i].active = false;
+      }
+    }
+
+    // Obtain readings if sensor is active
+    if (sensors[i].active) {
+      if (i != 0) {
+        msg += ",";
+      }
+
+      msg += "{\"id\":";
+      msg += sensors[i].id;
+      msg += ",\"type\":\"";
+      msg += (sensors[i].type == SOIL ? "SOIL" : "DHT_SENSOR");
+      msg += "\",";
+
+      if (sensors[i].type == SOIL) {
+        int moistureValue = analogRead(sensors[i].pin);
+        msg += "\"moisture\":";
+        msg += moistureValue;
+      } else if (sensors[i].type == DHT_SENSOR && sensors[i].dht != nullptr) {
+        float humidity = sensors[i].dht->readHumidity();
+        float temperature = sensors[i].dht->readTemperature();
         msg += "\"humidity\":";
         msg += humidity;
         msg += ",\"temperature\":";
         msg += temperature;
       }
-    }
+
     msg += "}";
+
+    } else {
+      continue;
+    }     
   }
   msg += "]}";
   client.publish("irrigation/readings", msg.c_str());
@@ -323,10 +339,14 @@ void takeReading() {
 
 
 // Watering
-void water(int pulses, int relay_id) {
-  if (relays[relay_id].pulses <= 0) {
+void water(int pulses, int pump_id) {
+  if (pumps[pump_id].pulses <= 0) {
     client.publish("irrigation/notice", "{\"error\":\"invalid_watering_amount\"}");
     return;
+  }
+
+  if (!pumps[pump_id].active) {
+    activatePump(pump_id);
   }
 
   String msg = "{\"notice\":\"watering_started(";
@@ -336,10 +356,10 @@ void water(int pulses, int relay_id) {
   client.publish("irrigation/notice", msg.c_str());
 
   // Watering in pulses
-  for (int i = 0; i < relays[relay_id].pulses; i++) {
-    digitalWrite(relays[relay_id].pin, LOW);   // Turn ON pump
+  for (int i = 0; i < pumps[pump_id].pulses; i++) {
+    digitalWrite(pumps[pump_id].pin, LOW);   // Turn ON pump
     delay(250);                                // Wait for ON duration (approx. 10ml per pulse)
-    digitalWrite(relays[relay_id].pin, HIGH);  // Turn OFF pump
+    digitalWrite(pumps[pump_id].pin, HIGH);  // Turn OFF pump
     delay(250);                                // Wait for OFF duration
   }
 
@@ -347,25 +367,30 @@ void water(int pulses, int relay_id) {
   client.publish("irrigation/notice", "{\"notice\":\"watering_finished\"}");
 }
 
-void fertilize(int relay_id) {
-  if (relays[relay_id].amount <= 0) {
+// Fertilization
+void fertilize(int pump_id) {
+  if (pumps[pump_id].amount <= 0) {
     client.publish("irrigation/notice", "{\"error\":\"invalid_fertilization_amount\"}");
     return;
   }
 
-  relays[relay_id].pulses = relays[relay_id].amount / 10;
+  if (!pumps[pump_id].active) {
+    activatePump(pump_id);
+  }
+
+  pumps[pump_id].pulses = pumps[pump_id].amount / 10;
 
   String msg = "{\"notice\":\"fertilization_started(";
-  msg += relays[relay_id].amount;
+  msg += pumps[pump_id].amount;
   msg += ")\"}";
 
   client.publish("irrigation/notice", msg.c_str());
 
   // Fertilization in pulses
-  for (int i = 0; i < relays[relay_id].pulses; i++) {
-    digitalWrite(relays[relay_id].pin, LOW);   // Turn ON pump
+  for (int i = 0; i < pumps[pump_id].pulses; i++) {
+    digitalWrite(pumps[pump_id].pin, LOW);   // Turn ON pump
     delay(250);                                // Wait for ON duration (approx. 10ml per pulse)
-    digitalWrite(relays[relay_id].pin, HIGH);  // Turn OFF pump
+    digitalWrite(pumps[pump_id].pin, HIGH);  // Turn OFF pump
     delay(250);                                // Wait for OFF duration
   }
 
@@ -373,30 +398,31 @@ void fertilize(int relay_id) {
   client.publish("irrigation/notice", "{\"notice\":\"fertilization_finished\"}");
 }
 
-void setWaterMode(String mode, bool temp, int relay_id) {
+// Change watering mode for pump
+void setWaterMode(String mode, bool temp, int pump_id) {
   if (mode == "LIGHT") {
     if (!temp) {
-      relays[relay_id].currentWaterMode = LIGHT;
+      pumps[pump_id].currentWaterMode = LIGHT;
     } else {
-      relays[relay_id].tempWaterMode = LIGHT;
+      pumps[pump_id].tempWaterMode = LIGHT;
     }
 
   } else if (mode == "MEDIUM") {
     if (!temp) {
-      relays[relay_id].currentWaterMode = MEDIUM;
+      pumps[pump_id].currentWaterMode = MEDIUM;
     } else {
-      relays[relay_id].tempWaterMode = MEDIUM;
+      pumps[pump_id].tempWaterMode = MEDIUM;
     }
 
   } else if (mode == "HEAVY") {
     if (!temp) {
-      relays[relay_id].currentWaterMode = HEAVY;
+      pumps[pump_id].currentWaterMode = HEAVY;
     } else {
-      relays[relay_id].tempWaterMode = HEAVY;
+      pumps[pump_id].tempWaterMode = HEAVY;
     }
 
   } else if (mode.startsWith("CUSTOM")) {
-    // if custom amount is provided
+    // If custom amount is provided
     if (mode.length() > 6) {
       String wateringAmount = mode.substring(7);  //extract the amount of ml for watering
       int amount = wateringAmount.toInt();
@@ -406,19 +432,19 @@ void setWaterMode(String mode, bool temp, int relay_id) {
         return;
 
       } else if (amount > 1000) {
-        // limit max amount to 1l
-        relays[relay_id].amount = 1000;
+        // Limit max amount to 1l
+        pumps[pump_id].amount = 1000;
         mode = "CUSTOM 1000";
 
       } else {
-        relays[relay_id].amount = amount;
+        pumps[pump_id].amount = amount;
       }
     }
 
     if (!temp) {
-      relays[relay_id].currentWaterMode = CUSTOM;
+      pumps[pump_id].currentWaterMode = CUSTOM;
     } else {
-      relays[relay_id].tempWaterMode = CUSTOM;
+      pumps[pump_id].tempWaterMode = CUSTOM;
     }
 
   } else {
@@ -437,13 +463,14 @@ void setWaterMode(String mode, bool temp, int relay_id) {
   client.publish("irrigation/notice", msg.c_str());
 }
 
-void setEnvMode(String mode, int relay_id) {
+// Set environment type for pump
+void setEnvMode(String mode, int pump_id) {
   if (mode == "INDOOR") {
-    relays[relay_id].env = INDOOR;
+    pumps[pump_id].env = INDOOR;
     client.publish("irrigation/notice", "{\"notice\":\"env_set_indoor\"}");
 
   } else if (mode == "OUTDOOR") {
-    relays[relay_id].env = OUTDOOR;
+    pumps[pump_id].env = OUTDOOR;
     client.publish("irrigation/notice", "{\"notice\":\"env_set_outdoor\"}");
 
   } else {
@@ -451,7 +478,8 @@ void setEnvMode(String mode, int relay_id) {
   }
 }
 
-void setFertAmount(int relay_id, int amount) {
+// Change amount of ml used for fertilization
+void setFertAmount(int pump_id, int amount) {
   if (amount <= 0) {
     client.publish("irrigation/notice", "{\"error\":\"invalid_fertilization_amount\"}");
     return;
@@ -460,7 +488,7 @@ void setFertAmount(int relay_id, int amount) {
     amount = 1000;
   }
 
-  relays[relay_id].amount = amount;
+  pumps[pump_id].amount = amount;
   String msg = "{\"notice\":\"fertilization_amount_set(";
   msg += amount;
   msg += ")\"}";
@@ -468,51 +496,72 @@ void setFertAmount(int relay_id, int amount) {
   client.publish("irrigation/notice", msg.c_str());
 }
 
-void change_relay(int sensor_id, int relay_id) {
+// Change pump assignment for the sensor
+void changePump(int sensor_id, int pump_id) {
   bool exists = false;
-  for (int i = 0; i < max_num_relays; i++) {
-    if (relays[i].id == relay_id) {
+  int old_pump = sensors[sensor_id].pump;
+
+  for (int i = 0; i < max_num_pumps; i++) {
+    if (pumps[i].id == pump_id) {
       exists = true;
-      relays[i].active = true;
+      pumps[i].active = true;
       break;
     }
   }
 
   if (exists) {
-    sensors[sensor_id].relay = relay_id;
+    sensors[sensor_id].pump = pump_id;
     String msg = "{\"notice\":\"sensor(";
     msg += sensor_id;
-    msg += ")_relay_set(";
-    msg += relay_id;
+    msg += ")_pump_set(";
+    msg += pump_id;
     msg += ")\"}";
     client.publish("irrigation/notice", msg.c_str());
 
+    // Deactivate old pump if not used
+    bool keep_pump_active = false;
+    for (int i = 0; i < max_num_sensors; i++) {
+      if (i == sensor_id) {
+        continue;
+      }
+
+      if (old_pump == sensors[i].pump) {
+        keep_pump_active = true;
+        break;
+      }
+    }
+
+    if (!keep_pump_active) {
+      deactivatePump(old_pump);
+    }
+
   } else {
-    client.publish("irrigation/notice", "{\"error\":\"invalid_relay\"}");
+    client.publish("irrigation/notice", "{\"error\":\"invalid_pump\"}");
     return;
   }
 }
 
-void send_all_data() {
+// Send data about pumps and sensors
+void sendAllData() {
   String json = "{";
 
-  // active pumps
+  // Active pumps
   json += "\"pumps\":[";
 
-  for (int i = 0; i < max_num_relays; i++) {
-      if (relays[i].active) {
+  for (int i = 0; i < max_num_pumps; i++) {
+      if (pumps[i].active) {
           if (i != 0) {
               json += ",";
           }
-          json += "{\"id\":" + String(relays[i].id) + ",";
-          json += "\"type\":\"" + String((relays[i].type == WATERING) ? "WATERING" : "FERTILIZATION") + "\",";
-          json += "\"pin\":" + String(relays[i].pin) + ",";
+          json += "{\"id\":" + String(pumps[i].id) + ",";
+          json += "\"type\":\"" + String((pumps[i].type == WATERING) ? "WATERING" : "FERTILIZATION") + "\",";
+          json += "\"pin\":" + String(pumps[i].pin) + ",";
           json += "\"currentWaterMode\":\"" + String(
-              (relays[i].currentWaterMode == LIGHT) ? "LIGHT" :
-              (relays[i].currentWaterMode == MEDIUM) ? "MEDIUM" :
-              (relays[i].currentWaterMode == HEAVY) ? "HEAVY" : "CUSTOM") + "\",";
-          json += "\"env\":\"" + String((relays[i].env == INDOOR) ? "INDOOR" : "OUTDOOR") + "\",";
-          json += "\"amount\":" + String(relays[i].amount) + "}";
+              (pumps[i].currentWaterMode == LIGHT) ? "LIGHT" :
+              (pumps[i].currentWaterMode == MEDIUM) ? "MEDIUM" :
+              (pumps[i].currentWaterMode == HEAVY) ? "HEAVY" : "CUSTOM") + "\",";
+          json += "\"env\":\"" + String((pumps[i].env == INDOOR) ? "INDOOR" : "OUTDOOR") + "\",";
+          json += "\"amount\":" + String(pumps[i].amount) + "}";
       }
   }
 
@@ -530,16 +579,34 @@ void send_all_data() {
           json += "{\"id\":" + String(sensors[i].id) + ",";
           json += "\"pin\":" + String(sensors[i].pin) + ",";
           json += "\"type\":\"" + String((sensors[i].type == SOIL) ? "SOIL" : "DHT_SENSOR") + "\",";
-          json += "\"relay\":" + String(sensors[i].relay) + "}";
+          json += "\"pump\":" + String(sensors[i].pump) + "}";
       }
   }
 
   json += "]}";
 
   client.publish("irrigation/data", json.c_str());
-
 }
 
+// Activate pump if not active
+void activatePump(int pump_id) {
+  if (!pumps[pump_id].active) {
+      pinMode(pumps[pump_id].pin, OUTPUT);
+      digitalWrite(pumps[pump_id].pin, HIGH);
+      pumps[pump_id].active = true;
+      Serial.print("Pump ");
+      Serial.print(pump_id);
+      Serial.println(" activated.");
+  }
+}
+
+// Deactivate pump
+void deactivatePump(int pump_id) {
+  pumps[pump_id].active = false;
+  // Change pump pin mode to INPUT to preserve battery
+  pinMode(pumps[pump_id].pin, INPUT); 
+  digitalWrite(pumps[pump_id].pin, LOW);
+}
 
 // Reconnect to MQTT broker
 void reconnect() {
