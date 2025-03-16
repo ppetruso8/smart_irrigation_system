@@ -13,23 +13,12 @@ StatusMode currentStatus = IDLE;
 enum WaterMode : byte { LIGHT,
                         MEDIUM,
                         HEAVY,
-                        CUSTOM };
+                        CUSTOM,
+                        AUTO };
 
 // Irrigation modes (based on environment)
 enum EnvMode : byte { INDOOR,
                       OUTDOOR };
-// EnvMode currentEnv = INDOOR;
-
-// WaterMode currentWaterMode = MEDIUM;
-// WaterMode tempWaterMode = MEDIUM; // automatic watering mode select
-// bool isTempWater = false;
-
-// Variables for watering
-// int amount = 1;
-// int pulses = 0;
-
-// Pin assignments
-// const int pump = 26;
 
 // Pumps
 enum PumpType : byte { WATERING,
@@ -50,15 +39,16 @@ struct Pump {
 // Array of created pumps (default initialization)
 const int max_num_pumps = 5;
 Pump pumps[max_num_pumps] = {
-  { 1, WATERING, 25, true, MEDIUM, MEDIUM, false, INDOOR, 1, 0 },
-  { 2, WATERING, 26, true, MEDIUM, MEDIUM, false, INDOOR, 1, 0 },
-  { 3, WATERING, 27, false, MEDIUM, MEDIUM, false, INDOOR, 1, 0 },
+  { 1, WATERING, 25, true, AUTO, MEDIUM, false, INDOOR, 1, 0 },
+  { 2, WATERING, 26, true, AUTO, MEDIUM, false, INDOOR, 1, 0 },
+  { 3, WATERING, 27, false, AUTO, MEDIUM, false, INDOOR, 1, 0 },
   { 4, FERTILIZATION, 18, true, MEDIUM, MEDIUM, false, INDOOR, 1, 0 },
   { 5, FERTILIZATION, 19, false, MEDIUM, MEDIUM, false, INDOOR, 1, 0 },
 };
 
-// Reference for last called pump
+// Reference for last called pump and sensor
 int last_pump = 0;
+int last_sensor = 0; 
 
 
 // Sensors
@@ -127,11 +117,12 @@ void callback(char* topic, byte* payload, unsigned int length) {
     int pump_id = command.substring(6,7).toInt();
     int pump_index = getPumpIndex(pump_id);
     last_pump = pump_index;
+    last_sensor = command.substring(8,9).toInt();
     // automatic watering
-    if (command.length() > 7) {
+    if (command.length() > 9) {
       pumps[pump_index].isTempWater = true;
       // isTempWater = true;
-      String tempWatering = command.substring(8);
+      String tempWatering = command.substring(10);
       setWaterMode(tempWatering, true, pump_index);
     }
 
@@ -202,12 +193,6 @@ void setup() {
     }
   }
 
-  // // pump pin as output
-  // pinMode(pump, OUTPUT);
-
-  // // Initialize pump to be OFF (pumps off)
-  // digitalWrite(pump, HIGH);
-
   // Initialize temperature and humidity sensors
   for (int i = 0; i < max_num_sensors; i++) {
     if (sensors[i].type == DHT_SENSOR) {
@@ -277,9 +262,10 @@ void loop() {
         case CUSTOM:
           pumps[last_pump].pulses = pumps[last_pump].amount / 10;  // 1 pulse = approx. 10ml
           break;
+          
       }
 
-      water(pumps[last_pump].pulses, last_pump);
+      water(pumps[last_pump].pulses, last_pump, last_sensor);
       currentStatus = IDLE;
       break;
 
@@ -343,6 +329,7 @@ void takeReading() {
         int moistureValue = analogRead(sensors[i].pin);
         msg += ",\"moisture\":";
         msg += moistureValue;
+
       } else if (sensors[i].type == DHT_SENSOR && sensors[i].dht != nullptr) {
         float humidity = sensors[i].dht->readHumidity();
         float temperature = sensors[i].dht->readTemperature();
@@ -365,13 +352,15 @@ void takeReading() {
 
 
 // Watering
-void water(int pulses, int pump_id) {
+void water(int pulses, int pump_id, int sensor_id) {
   if (!pumps[pump_id].active) {
     activatePump(pump_id);
   }
 
   String msg = "{\"notice\":\"watering_started(";
   msg += pumps[pump_id].id;
+  msg += ",";
+  msg += sensor_id;
   msg += ",";
   msg += pulses * 10;
   msg += ")\"}";
@@ -448,6 +437,11 @@ void setWaterMode(String mode, bool temp, int pump_id) {
       pumps[pump_id].currentWaterMode = HEAVY;
     } else {
       pumps[pump_id].tempWaterMode = HEAVY;
+    }
+  }
+    else if (mode == "AUTO") {
+    if (!temp) {
+      pumps[pump_id].currentWaterMode = AUTO;
     }
 
   } else if (mode.startsWith("CUSTOM")) {
@@ -575,7 +569,8 @@ void sendAllData() {
     msg_pumps += "\"currentWaterMode\":\"" + String(
         (pumps[i].currentWaterMode == LIGHT) ? "LIGHT" :
         (pumps[i].currentWaterMode == MEDIUM) ? "MEDIUM" :
-        (pumps[i].currentWaterMode == HEAVY) ? "HEAVY" : "CUSTOM") + "\",";
+        (pumps[i].currentWaterMode == HEAVY) ? "HEAVY" : 
+        (pumps[i].currentWaterMode == AUTO) ? "AUTO" : "CUSTOM") + "\",";
     msg_pumps += "\"env\":\"" + String((pumps[i].env == INDOOR) ? "INDOOR" : "OUTDOOR") + "\",";
     msg_pumps += "\"amount\":" + String(pumps[i].amount) + "}";
   }
