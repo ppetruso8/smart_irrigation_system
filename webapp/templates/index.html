@@ -18,13 +18,10 @@
                     </form>
             
                     <h5>Settings</h5>
+                    <p>Pump: {{ sensor.pump }}</p>
                     <form action="" method="POST" novalidate>
                         {{ forms[sensor_no].hidden_tag() }}
                         <input type="hidden" name="sensor" value="{{ sensor_no }}">
-                        
-                        {{ forms[sensor_no].pump.label }}
-                        {{ forms[sensor_no].pump() }}
-                        </br>
                         {{ forms[sensor_no].env.label }}
                         {{ forms[sensor_no].env() }}
                         </br>
@@ -57,7 +54,7 @@
         </section>
 
         <form action="/send_command" method="post">
-            <input type="hidden" name="command" value="READ">
+            <input type="hidden" name="command" value="GET_ALL">
             <button class=update_button type="submit">Update Readings</button>
         </form>
 

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, request, url_for, flash
+from flask import Flask, render_template, redirect, request, url_for, flash, session
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from database import get_db, close_db
@@ -10,14 +10,17 @@ from forms import SensorForm, LocationForm, RegistrationForm, LoginForm, Fertili
 
 from datetime import datetime
 
-NODE_RED = "http://127.0.0.1:1880/" 
+NODE_RED = "http://127.0.0.1:1880/"
+
+# REMOVE
+def_data = """{"sensors":[{"id":1,"pin":32,"active":1,"type":"SOIL","pump":1,"moisture":3063},{"id":2,"pin":33,"active":1,"type":"SOIL","pump":2,"moisture":3038},{"id":3,"pin":34,"active":0,"type":"SOIL","pump":3,"moisture":253},{"id":4,"pin":35,"active":0,"type":"SOIL","pump":1,"moisture":0},{"id":1,"pin":4,"active":1,"type":"DHT_SENSOR","humidity":43,"temperature":20},{"id":2,"pin":16,"active":0,"type":"DHT_SENSOR","humidity":-1,"temperature":-1}],"pumps":[{"id":1,"type":"WATERING","pin":25,"active":1,"currentWaterMode":"LIGHT","env":"INDOOR","amount":1},{"id":2,"type":"WATERING","pin":26,"active":1,"currentWaterMode":"AUTO","env":"INDOOR","amount":1},{"id":3,"type":"WATERING","pin":27,"active":0,"currentWaterMode":"AUTO","env":"INDOOR","amount":1},{"id":4,"type":"FERTILIZATION","pin":18,"active":1,"currentWaterMode":"MEDIUM","env":"INDOOR","amount":1},{"id":5,"type":"FERTILIZATION","pin":19,"active":0,"currentWaterMode":"MEDIUM","env":"INDOOR","amount":1}]}"""
 
 app = Flask(__name__)
 app.teardown_appcontext(close_db)      
 app.config["SECRET_KEY"] = "my-secret-key"     
-# app.config["SESSION_PERMANENT"] = False     
-# app.config["SESSION_TYPE"] = "filesystem"   
-# Session(app)
+app.config["SESSION_PERMANENT"] = False     
+app.config["SESSION_TYPE"] = "filesystem"   
+Session(app)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -47,11 +50,7 @@ def load_user(user_id):
                     user["has_node_red_permission"], user["country"])
     return None
 
-sensors = {1: {"moisture": 1, "pump": 1, "env": "Indoor", "mode": "Automatic"},
-               2: {"moisture": 2, "pump": 2, "env": "Outdoor", "mode": "MANUAL LIGHT"}}
-dht_sensors = {1: {"temperature": 1, "humidity": 1}, 2: {"temperature": 2, "humidity": 2}}
-# fertilization_pumps = {1: {"amount": 50, "last": "2025-10-03 15:00"}, 2: {"amount": 60, "last": "2025-10-03 14:00"}}
-fertilization_pumps = {}
+
 @app.route("/", methods = ["GET", "POST"])
 @login_required
 def index():
@@ -84,7 +83,7 @@ def index():
             print("Error updating city data")
 
         # send city data to raspberry pi
-        send_command(f"SET: {city}, {latitude}, {longitude}") 
+        send_command(f"SET_LOC {city}, {latitude}, {longitude}") 
 
         return redirect(url_for("index", _anchor="weather"))
 
@@ -112,6 +111,7 @@ def index():
     forecast_daily["time"] = [datetime.strptime(time, "%Y-%m-%d").strftime("%d %b %Y") for time in forecast_daily["time"]]
 
     # data from node-red
+    sensors, dht_sensors, water_pumps, fertilization_pumps = get_data()
     # sensors, dht_sensors = get_sensors()
     # fertilization_pumps = get_fertilization_pumps()
     
@@ -122,9 +122,8 @@ def index():
     # default form fill-in
     for sensor_no, sensor in sensors.items():
         form = forms[sensor_no]
-        form.pump.default = sensor["pump"]
-        form.env.default = sensor["env"]
-        form.mode.default = sensor["mode"]
+        form.env.default = sensor["env"].lower().capitalize()
+        form.mode.default = sensor["mode"].lower().capitalize()
         form.process()
       
     # fertilization 
@@ -139,36 +138,45 @@ def index():
         if request.form.get("sensor"):
             sensor_no = int(request.form.get("sensor"))
 
-            form = forms.get(sensor_no)
+            form = SensorForm(request.form)
 
             if form.validate_on_submit():
-                new_pump = form.pump.data
                 new_env = form.env.data
                 new_mode = form.mode.data
 
+
                 # update Raspberry Pi
                 print("Updating Raspberry Pi")
-                sensors[sensor_no]["pump"] = new_pump
-                sensors[sensor_no]["env"] = new_env
-                sensors[sensor_no]["mode"] = new_mode
+                session["sensors_soil"][sensor_no]["env"] = new_env
+                session["sensors_soil"][sensor_no]["mode"] = new_mode
 
-                forms[sensor_no] = SensorForm(data=sensors[sensor_no])
+                send_command(f"CHMOD {session['sensors_soil'][sensor_no]['pump']} {new_mode.upper()}")
+                send_command(f"SET_ENV {session['sensors_soil'][sensor_no]['pump']} {new_env.upper()}")
+
+                forms[sensor_no] = SensorForm(data=session["sensors_soil"][sensor_no])
 
                 return redirect(url_for("index"))
+            else:
+                print(f"Form failed: {form.errors}")
         # updating fertilization setting
         elif request.form.get("fertilization_pump"):
             pump_no = int(request.form.get("fertilization_pump"))
 
-            form = fertilization_forms.get(pump_no)
+            form = FertilizationForm(request.form)
+
+            if request.form.get("amount"):
+                form.amount.data = int(request.form.get("amount"))
 
             if form.validate_on_submit():
-                new_amount = form.amount.data
+                new_amount = int(form.amount.data)
 
-                # update Raspberry Pi
+                # update Node-Red
                 print("Updating Raspberry Pi")
-                fertilization_pumps[pump_no]["amount"] = new_amount
+                session["pumps_fert"][pump_no]["amount"] = new_amount
+                send_command(f"SET_FERT_AMOUNT {pump_no} {new_amount}")
+                
 
-                fertilization_pumps[pump_no] = FertilizationForm(data=fertilization_pumps[pump_no])
+                session["pumps_fert"][pump_no] = FertilizationForm(data=session["pumps_fert"][pump_no])
 
                 return redirect(url_for("index"))  # refresh the page
 
@@ -234,6 +242,7 @@ def login():
 @app.route("/logout")
 @login_required
 def logout():
+    session.clear()
     logout_user()
     return redirect(url_for("login"))
 
@@ -350,20 +359,37 @@ def statistics():
 
 @app.route("/send_command", methods=["POST"])
 @login_required
-def send_command():
-    command = request.form.get("command")
+def send_command(command = None):
+    if not command:
+        command = request.form.get("command")
+
+    print(command)
 
     if not command:
         print("No command")
         return redirect(url_for("index"))
         
-    print(command)
 
     if current_user.has_node_red_permission:
-        if "READ" in command:
-            msg = get_sensors()
+        if "GET_ALL" in command:
+            send_node_red_command("GET_ALL")
+            msg = get_data()
+
+        elif "WATER" in command:
+            sensor = int(command.split()[1])
+
+            pump = session["sensors_soil"][sensor]["pump"]
+            command = f"WATER {pump} {sensor}"
+            msg = send_node_red_command(command)
+
+        elif "FERTILIZE" in command:
+            pump = int(command.split()[1])
+            command = f"FERTILIZE {pump}"
+            msg = send_node_red_command(command)
+
         else:
             msg = send_node_red_command(command)
+
         
         if msg:
             print("Success")
@@ -439,33 +465,77 @@ def send_node_red_command(command):
     """ Send command to Node-Red using HTTP POST request
     """
     payload = {"command": command}
-    response = requests.post(f"{NODE_RED}/control", json=payload)
+    response = requests.post(f"{NODE_RED}control", json=payload)
 
     if response.status_code == 200:
-        print(response)
-        return response.json()
+        return "Success"
     else:
         print(f"Error sending command to Node-Red: {response.status_code}")
     return None
 
-def get_sensors():
+def get_data():
     """ Retrieve sensor data from Node-Red using HTTP GET request
     """
-    response = requests.get(f"{NODE_RED}/sensor-data")
+    response = requests.get(f"{NODE_RED}data")
 
     if response.status_code == 200:
-        print(response)
-        return response.json()
+        data = response.json()
+
+        sensors_soil = {}
+        sensors_dht = {}
+        pumps_water = {}
+        pumps_fert = {}
+
+        # extract all pumps
+        pump_data = {pump["id"]: pump for pump in data.get("pumps") if pump.get("active") == 1}
+
+        # categorize sensors
+        for sensor in data.get("sensors"):
+            if sensor.get("active") == 1:
+                if sensor["type"] == "SOIL":
+                    pump = pump_data.get(sensor["pump"])    # pump "object"
+                    sensors_soil[sensor['id']] = {
+                        "moisture": sensor["moisture"],
+                        "pump": sensor["pump"],
+                        "env": pump["env"],
+                        "mode": pump["currentWaterMode"]
+                    }
+                elif sensor["type"] == "DHT_SENSOR":
+                    sensors_dht[sensor["id"]] = {
+                        "temperature": sensor["temperature"],
+                        "humidity": sensor["humidity"]
+                    }
+
+        # categorize pumps
+        for pump_id, pump in pump_data.items():
+            if pump["type"] == "WATERING":
+                pumps_water[pump_id] = {
+                    "type": pump["type"],
+                    "mode": pump["currentWaterMode"],
+                    "amount": pump["amount"],
+                    "env": pump["env"] 
+                }
+            elif pump["type"] == "FERTILIZATION":
+                pumps_fert[pump_id] = {
+                    "amount": pump["amount"],
+                    "last": "NA",
+                    "env": pump["env"]
+                }
+
+            session["sensors_soil"] = sensors_soil
+            session["sensors_dht"] = sensors_dht
+            session["pumps_water"] = pumps_water
+            session["pumps_fert"] = pumps_fert
+
+        return sensors_soil, sensors_dht, pumps_water, pumps_fert
     else:
         print(f"Error fetching sensor data from Node-Red: {response.status_code}")
-
-    # UPDATE DICTS
-    return None
+        return {}, {}, {}, {}
 
 def get_location():
     """ Get selected location for forecast from Node-Red
     """
-    response = requests.post(f"{NODE_RED}/location")
+    response = requests.post(f"{NODE_RED}location")
 
     if response.status_code == 200:
         print(response)
@@ -474,17 +544,6 @@ def get_location():
         print(f"Error sending command to Node-Red: {response.status_code}")
     return None
 
-def get_fertilization_pumps():
-    """ Retrieve sensor data from Node-Red using HTTP GET request
-    """
-    response = requests.get(f"{NODE_RED}/fertilization")
-
-    if response.status_code == 200:
-        print(response)
-        return response.json()
-    else:
-        print(f"Error fetching sensor data from Node-Red: {response.status_code}")
-    return None
 
 def get_pairing_code():
     """Obtain pairing code from Raspberry Pi

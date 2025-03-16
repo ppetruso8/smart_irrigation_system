@@ -5,14 +5,13 @@ from wtforms.validators import InputRequired, EqualTo, Length, NumberRange
 
 class SensorForm(FlaskForm):
     sensor = IntegerField()
-    pump = IntegerField("Pump:", validators=[InputRequired()])
     env = SelectField("Environment:", choices=["Indoor", "Outdoor"])
-    mode = SelectField("Watering Mode:", choices=["Automatic", "Manual Light", "Manual Normal", "Manual Heavy"])
+    mode = SelectField("Watering Mode:", choices=["Automatic", "Light", "Normal", "Heavy"])
     submit = SubmitField("Update Settings")
 
 class FertilizationForm(FlaskForm):
     fertilization_pump = IntegerField()
-    amount = IntegerField("Amount (mm):", validators=[InputRequired(), NumberRange(10,250)])
+    amount = IntegerField("Amount (ml):", validators=[InputRequired(), NumberRange(10,250)])
     submit = SubmitField("Update Setting")
 
 class LocationForm(FlaskForm):
