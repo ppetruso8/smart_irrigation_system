@@ -228,7 +228,7 @@
         "upload": false,
         "swaggerDoc": "",
         "x": 80,
-        "y": 660,
+        "y": 740,
         "wires": [
             [
                 "64a99cfa8ceea933"
@@ -248,7 +248,7 @@
         "finalize": "",
         "libs": [],
         "x": 290,
-        "y": 660,
+        "y": 740,
         "wires": [
             [
                 "9b790e487fcb9bfd"
@@ -263,7 +263,7 @@
         "statusCode": "",
         "headers": {},
         "x": 530,
-        "y": 660,
+        "y": 740,
         "wires": []
     },
     {
@@ -319,10 +319,10 @@
         "type": "http request",
         "z": "d27ff7acba5e037e",
         "name": "current weather api ",
-        "method": "GET",
+        "method": "use",
         "ret": "txt",
         "paytoqs": "ignore",
-        "url": "https://api.open-meteo.com/v1/forecast?latitude=51.898&longitude=-8.4706&current_weather=true",
+        "url": "",
         "tls": "",
         "persist": false,
         "proxy": "",
@@ -330,31 +330,11 @@
         "authType": "",
         "senderr": false,
         "headers": [],
-        "x": 310,
-        "y": 1180,
+        "x": 1190,
+        "y": 1300,
         "wires": [
             [
                 "40da37c3a039ece7"
-            ]
-        ]
-    },
-    {
-        "id": "562d551e6ea129af",
-        "type": "inject",
-        "z": "d27ff7acba5e037e",
-        "name": "weather api",
-        "props": [],
-        "repeat": "",
-        "crontab": "",
-        "once": true,
-        "onceDelay": 0.1,
-        "topic": "",
-        "x": 90,
-        "y": 1060,
-        "wires": [
-            [
-                "c0388066fca0e290",
-                "ba1b3d895e52848a"
             ]
         ]
     },
@@ -370,8 +350,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 570,
-        "y": 1180,
+        "x": 1450,
+        "y": 1300,
         "wires": [
             [
                 "1cd47af34da9410b",
@@ -387,7 +367,7 @@
         "type": "ui_text",
         "z": "d27ff7acba5e037e",
         "group": "56688f1969147e9e",
-        "order": 5,
+        "order": 2,
         "width": 0,
         "height": 0,
         "name": "",
@@ -399,8 +379,8 @@
         "font": "",
         "fontSize": 16,
         "color": "#000000",
-        "x": 830,
-        "y": 1120,
+        "x": 1710,
+        "y": 1240,
         "wires": []
     },
     {
@@ -408,7 +388,7 @@
         "type": "ui_text",
         "z": "d27ff7acba5e037e",
         "group": "56688f1969147e9e",
-        "order": 1,
+        "order": 5,
         "width": 0,
         "height": 0,
         "name": "",
@@ -420,8 +400,8 @@
         "font": "",
         "fontSize": 16,
         "color": "#000000",
-        "x": 830,
-        "y": 1160,
+        "x": 1710,
+        "y": 1280,
         "wires": []
     },
     {
@@ -429,7 +409,7 @@
         "type": "ui_text",
         "z": "d27ff7acba5e037e",
         "group": "56688f1969147e9e",
-        "order": 2,
+        "order": 6,
         "width": 0,
         "height": 0,
         "name": "",
@@ -441,8 +421,8 @@
         "font": "",
         "fontSize": 16,
         "color": "#000000",
-        "x": 840,
-        "y": 1200,
+        "x": 1720,
+        "y": 1320,
         "wires": []
     },
     {
@@ -450,10 +430,10 @@
         "type": "http request",
         "z": "d27ff7acba5e037e",
         "name": "forecast 1d api",
-        "method": "GET",
+        "method": "use",
         "ret": "txt",
         "paytoqs": "ignore",
-        "url": "https://api.open-meteo.com/v1/forecast?latitude=51.898&longitude=-8.4706&hourly=precipitation_probability,rain,showers&forecast_days=1",
+        "url": "",
         "tls": "",
         "persist": false,
         "proxy": "",
@@ -461,8 +441,8 @@
         "authType": "",
         "senderr": false,
         "headers": [],
-        "x": 300,
-        "y": 1000,
+        "x": 1180,
+        "y": 1120,
         "wires": [
             [
                 "a7a08a6b4dad935f"
@@ -481,8 +461,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 570,
-        "y": 1000,
+        "x": 1450,
+        "y": 1120,
         "wires": [
             [
                 "5f96e176689cce61",
@@ -503,8 +483,8 @@
         "complete": "false",
         "statusVal": "",
         "statusType": "auto",
-        "x": 580,
-        "y": 1080,
+        "x": 1460,
+        "y": 1200,
         "wires": []
     },
     {
@@ -512,7 +492,7 @@
         "type": "ui_text",
         "z": "d27ff7acba5e037e",
         "group": "56688f1969147e9e",
-        "order": 3,
+        "order": 4,
         "width": 0,
         "height": 0,
         "name": "",
@@ -524,8 +504,8 @@
         "font": "",
         "fontSize": 16,
         "color": "#000000",
-        "x": 890,
-        "y": 980,
+        "x": 1770,
+        "y": 1100,
         "wires": []
     },
     {
@@ -533,7 +513,7 @@
         "type": "ui_text",
         "z": "d27ff7acba5e037e",
         "group": "56688f1969147e9e",
-        "order": 4,
+        "order": 3,
         "width": 0,
         "height": 0,
         "name": "",
@@ -545,8 +525,8 @@
         "font": "",
         "fontSize": 16,
         "color": "#000000",
-        "x": 880,
-        "y": 1020,
+        "x": 1760,
+        "y": 1140,
         "wires": []
     },
     {
@@ -722,31 +702,6 @@
         "wires": []
     },
     {
-        "id": "8dee672ec47f757f",
-        "type": "inject",
-        "z": "d27ff7acba5e037e",
-        "name": "",
-        "props": [
-            {
-                "p": "payload"
-            }
-        ],
-        "repeat": "",
-        "crontab": "",
-        "once": false,
-        "onceDelay": 0.1,
-        "topic": "",
-        "payload": "WATER 1",
-        "payloadType": "str",
-        "x": 1240,
-        "y": 120,
-        "wires": [
-            [
-                "35a8bc56db8a3151"
-            ]
-        ]
-    },
-    {
         "id": "130afca86a9ccf1f",
         "type": "mqtt in",
         "z": "d27ff7acba5e037e",
@@ -772,7 +727,7 @@
         "type": "ui_text",
         "z": "d27ff7acba5e037e",
         "group": "56688f1969147e9e",
-        "order": 6,
+        "order": 7,
         "width": 0,
         "height": 0,
         "name": "",
@@ -784,8 +739,8 @@
         "font": "",
         "fontSize": 16,
         "color": "#000000",
-        "x": 850,
-        "y": 1240,
+        "x": 1730,
+        "y": 1360,
         "wires": []
     },
     {
@@ -1106,7 +1061,7 @@
         "finalize": "",
         "libs": [],
         "x": 310,
-        "y": 720,
+        "y": 800,
         "wires": [
             [
                 "3c4d08b0a01ca613",
@@ -1128,7 +1083,7 @@
         "statusVal": "",
         "statusType": "auto",
         "x": 500,
-        "y": 840,
+        "y": 920,
         "wires": []
     },
     {
@@ -1141,7 +1096,7 @@
         "upload": false,
         "swaggerDoc": "",
         "x": 90,
-        "y": 720,
+        "y": 800,
         "wires": [
             [
                 "0a6d12aa732bc45b"
@@ -1163,7 +1118,7 @@
         "expiry": "",
         "broker": "5d42f12891b474f7",
         "x": 940,
-        "y": 720,
+        "y": 800,
         "wires": []
     },
     {
@@ -1181,17 +1136,26 @@
                 "case": false
             },
             {
+                "t": "cont",
+                "v": "SET_LOC",
+                "vt": "str"
+            },
+            {
                 "t": "else"
             }
         ],
         "checkall": "true",
         "repair": false,
-        "outputs": 2,
-        "x": 550,
-        "y": 720,
+        "outputs": 3,
+        "x": 530,
+        "y": 800,
         "wires": [
             [
                 "8cc0b7f1f99c0f2b"
+            ],
+            [
+                "5ee49e6e39806bf4",
+                "3c4d08b0a01ca613"
             ],
             [
                 "53a7c22a0b44879b"
@@ -1211,11 +1175,244 @@
         "finalize": "",
         "libs": [],
         "x": 730,
-        "y": 760,
+        "y": 860,
         "wires": [
             [
                 "3c4d08b0a01ca613",
                 "8cc0b7f1f99c0f2b"
+            ]
+        ]
+    },
+    {
+        "id": "19a66b9f64c1c03b",
+        "type": "ui_text_input",
+        "z": "d27ff7acba5e037e",
+        "name": "",
+        "label": "Location: ",
+        "tooltip": "Enter location for the weather forecast.",
+        "group": "56688f1969147e9e",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "passthru": false,
+        "mode": "text",
+        "delay": 300,
+        "topic": "payload",
+        "sendOnBlur": true,
+        "className": "",
+        "topicType": "msg",
+        "x": 60,
+        "y": 1180,
+        "wires": [
+            [
+                "4897ae51d0ceb2e6"
+            ]
+        ]
+    },
+    {
+        "id": "a5d62346e48c329b",
+        "type": "http in",
+        "z": "d27ff7acba5e037e",
+        "name": "",
+        "url": "/location",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 90,
+        "y": 860,
+        "wires": [
+            [
+                "ba280cb6201a910c"
+            ]
+        ]
+    },
+    {
+        "id": "39d62ff274109513",
+        "type": "function",
+        "z": "d27ff7acba5e037e",
+        "name": "get_location",
+        "func": "let location = msg.payload;\n\nlocation = location.trim().replace(\" \", \"+\");\n\nlet url = \"https://geocoding-api.open-meteo.com/v1/search?name=\" + location + \"&count=10&language=en&format=json\"\n\nmsg.url = url;\nmsg.method = \"GET\";\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 350,
+        "y": 1180,
+        "wires": [
+            [
+                "e7b8a7e5248a2028",
+                "67dd47eb0cf057c7"
+            ]
+        ]
+    },
+    {
+        "id": "e7b8a7e5248a2028",
+        "type": "http request",
+        "z": "d27ff7acba5e037e",
+        "name": "",
+        "method": "use",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 510,
+        "y": 1180,
+        "wires": [
+            [
+                "8c12922e37e7e7f5",
+                "67dd47eb0cf057c7"
+            ]
+        ]
+    },
+    {
+        "id": "8c12922e37e7e7f5",
+        "type": "function",
+        "z": "d27ff7acba5e037e",
+        "name": "process_location",
+        "func": "if (msg.payload.results && msg.payload.results.length > 0) {\n    let result = msg.payload.results[0];\n\n    let location = {\n        city: result.name,\n        country: result.country,\n        latitude: result.latitude,\n        longitude: result.longitude\n    };\n\n    flow.set(\"location\", location);\n\n    msg.payload = location;\n} else if (msg.payload.city) {\n    return msg;\n} else {\n    node.warn(\"Error: City not found\")\n    return null;\n}\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 690,
+        "y": 1180,
+        "wires": [
+            [
+                "67dd47eb0cf057c7",
+                "e4c34d33ac3f7cc8",
+                "abe6a850fc4de9a0"
+            ]
+        ]
+    },
+    {
+        "id": "67dd47eb0cf057c7",
+        "type": "debug",
+        "z": "d27ff7acba5e037e",
+        "name": "debug 9",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 640,
+        "y": 1100,
+        "wires": []
+    },
+    {
+        "id": "4897ae51d0ceb2e6",
+        "type": "trigger",
+        "z": "d27ff7acba5e037e",
+        "name": "",
+        "op1": "",
+        "op2": "",
+        "op1type": "nul",
+        "op2type": "payl",
+        "duration": "1",
+        "extend": true,
+        "overrideDelay": false,
+        "units": "s",
+        "reset": "",
+        "bytopic": "all",
+        "topic": "topic",
+        "outputs": 1,
+        "x": 200,
+        "y": 1180,
+        "wires": [
+            [
+                "39d62ff274109513"
+            ]
+        ]
+    },
+    {
+        "id": "e4c34d33ac3f7cc8",
+        "type": "function",
+        "z": "d27ff7acba5e037e",
+        "name": "1d_forecast",
+        "func": "let location = flow.get(\"location\")\n\nif (!location) {\n    node.error(\"Location not set\");\n    return null;\n} else {\n    msg.url = \"https://api.open-meteo.com/v1/forecast?latitude=\" + location.latitude + \"&longitude=\" + location.longitude + \"&hourly=precipitation_probability,rain,showers&forecast_days=1\";\n    msg.method = \"GET\";\n}\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 930,
+        "y": 1160,
+        "wires": [
+            [
+                "ba1b3d895e52848a"
+            ]
+        ]
+    },
+    {
+        "id": "abe6a850fc4de9a0",
+        "type": "function",
+        "z": "d27ff7acba5e037e",
+        "name": "current_weather",
+        "func": "let location = flow.get(\"location\")\n\nif (!location) {\n    node.error(\"Location not set\");\n    return null;\n} else {\n    msg.url = \"https://api.open-meteo.com/v1/forecast?latitude=\" + location.latitude + \"&longitude=\" + location.longitude + \"&current_weather=true\";\n    msg.method = \"GET\";\n}\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 940,
+        "y": 1220,
+        "wires": [
+            [
+                "c0388066fca0e290"
+            ]
+        ]
+    },
+    {
+        "id": "ba280cb6201a910c",
+        "type": "function",
+        "z": "d27ff7acba5e037e",
+        "name": "send_location",
+        "func": "let location = flow.get(\"location\");\n\nif (!location) {\n    msg.payload = {error: \"No location set\"};\n    msg.statusCode = 404;\n} else {\n    msg.payload = {\n        city: location.city,\n        country: location.country,\n        latitude: location.latitude,\n        longitude: location.longitude\n    };\n}\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 300,
+        "y": 860,
+        "wires": [
+            [
+                "9b790e487fcb9bfd"
+            ]
+        ]
+    },
+    {
+        "id": "5ee49e6e39806bf4",
+        "type": "function",
+        "z": "d27ff7acba5e037e",
+        "name": "set_location",
+        "func": "let command = msg.payload;\nlet splitCmd = command.split(\" \");\n\nlet location = {\n    city: splitCmd[1],\n    country: splitCmd[2],\n    latitude: splitCmd[3],\n    longitude: splitCmd[4]\n};\n\nmsg.payload = location;\nflow.set(\"location\", location);\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 710,
+        "y": 820,
+        "wires": [
+            [
+                "8c12922e37e7e7f5",
+                "3c4d08b0a01ca613"
             ]
         ]
     }

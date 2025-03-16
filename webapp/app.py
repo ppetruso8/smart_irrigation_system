@@ -57,8 +57,11 @@ def index():
     location_form = LocationForm()
     city = None
     # retrieve forecast location data from Node-Red
-    # city, country, latitude, longitude = get_location()
-    # country = current_user.country
+    city, country, latitude, longitude = get_location() 
+    
+    if city and "+" in city:
+        city.replace("+", " ")
+
     if not city:
         # default location - Cork
         city = "Cork"
@@ -66,11 +69,9 @@ def index():
         latitude = 51.898
         longitude = -8.4706
 
-    location_form.location.default = city
-    location_form.process()
-
     # get coordinates of user-submitted location
     if location_form.validate_on_submit():
+        print("a")
         city = location_form.location.data
         lat, long, name, country = get_coordinates(city)
 
@@ -79,13 +80,19 @@ def index():
             longitude = float(long)
             city = city
             country = country
+
+            # send city data to raspberry pi
+            send_command(f"SET_LOC {city.replace(' ', '+')} {country} {latitude} {longitude}") 
         else: 
             print("Error updating city data")
 
-        # send city data to raspberry pi
-        send_command(f"SET_LOC {city}, {latitude}, {longitude}") 
+        
 
         return redirect(url_for("index", _anchor="weather"))
+    
+    location_form.location.default = city
+    location_form.process()
+    print(location_form)
 
     weather_current = get_current_weather(latitude, longitude)
     forecast_hourly, forecast_daily = get_forecast(latitude, longitude)
@@ -450,6 +457,7 @@ def get_coordinates(city):
     city = city.replace(" ", "+")
     url = f"https://geocoding-api.open-meteo.com/v1/search?name={city}&count=10&language=en&format=json"
     response = requests.get(url)
+    print(response.status_code)
 
     if response.status_code == 200:
         data = response.json()
@@ -535,14 +543,25 @@ def get_data():
 def get_location():
     """ Get selected location for forecast from Node-Red
     """
-    response = requests.post(f"{NODE_RED}location")
+    response = requests.get(f"{NODE_RED}location")
+    print(response)
 
     if response.status_code == 200:
-        print(response)
-        return response.json()
+        data = response.json()
+        city = data.get("city")
+        country = data.get("country")
+        latitude = data.get("latitude")
+        longitude = data.get("longitude")
+        print(data)
+        
+        return city, country, latitude, longitude
+    
+    elif response.status_code == 404:
+        print("No location set")
+        return None, None, None, None
     else:
-        print(f"Error sending command to Node-Red: {response.status_code}")
-    return None
+        print(f"Failed to get location: {response.status_code}")
+        return None, None, None, None
 
 
 def get_pairing_code():
