@@ -223,12 +223,12 @@
         "type": "http in",
         "z": "d27ff7acba5e037e",
         "name": "",
-        "url": "/sensor-data",
+        "url": "/data",
         "method": "get",
         "upload": false,
         "swaggerDoc": "",
-        "x": 100,
-        "y": 980,
+        "x": 80,
+        "y": 660,
         "wires": [
             [
                 "64a99cfa8ceea933"
@@ -240,7 +240,7 @@
         "type": "function",
         "z": "d27ff7acba5e037e",
         "name": "parse_data",
-        "func": "var sensorData = flow.get(\"sensorData\") || {};\nmsg.payload = sensorData;\nreturn msg;",
+        "func": "let sensorData = flow.get(\"sensorData\") || {};\nlet pumpData = flow.get(\"pumpData\") || {};\n\nmsg.payload = {\n    sensors: sensorData,\n    pumps: pumpData\n};\n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -248,7 +248,7 @@
         "finalize": "",
         "libs": [],
         "x": 290,
-        "y": 980,
+        "y": 660,
         "wires": [
             [
                 "9b790e487fcb9bfd"
@@ -262,8 +262,8 @@
         "name": "",
         "statusCode": "",
         "headers": {},
-        "x": 450,
-        "y": 980,
+        "x": 530,
+        "y": 660,
         "wires": []
     },
     {
@@ -331,7 +331,7 @@
         "senderr": false,
         "headers": [],
         "x": 310,
-        "y": 840,
+        "y": 1180,
         "wires": [
             [
                 "40da37c3a039ece7"
@@ -346,11 +346,11 @@
         "props": [],
         "repeat": "",
         "crontab": "",
-        "once": false,
+        "once": true,
         "onceDelay": 0.1,
         "topic": "",
         "x": 90,
-        "y": 720,
+        "y": 1060,
         "wires": [
             [
                 "c0388066fca0e290",
@@ -371,7 +371,7 @@
         "finalize": "",
         "libs": [],
         "x": 570,
-        "y": 840,
+        "y": 1180,
         "wires": [
             [
                 "1cd47af34da9410b",
@@ -400,7 +400,7 @@
         "fontSize": 16,
         "color": "#000000",
         "x": 830,
-        "y": 780,
+        "y": 1120,
         "wires": []
     },
     {
@@ -421,7 +421,7 @@
         "fontSize": 16,
         "color": "#000000",
         "x": 830,
-        "y": 820,
+        "y": 1160,
         "wires": []
     },
     {
@@ -442,7 +442,7 @@
         "fontSize": 16,
         "color": "#000000",
         "x": 840,
-        "y": 860,
+        "y": 1200,
         "wires": []
     },
     {
@@ -462,7 +462,7 @@
         "senderr": false,
         "headers": [],
         "x": 300,
-        "y": 660,
+        "y": 1000,
         "wires": [
             [
                 "a7a08a6b4dad935f"
@@ -482,7 +482,7 @@
         "finalize": "",
         "libs": [],
         "x": 570,
-        "y": 660,
+        "y": 1000,
         "wires": [
             [
                 "5f96e176689cce61",
@@ -504,7 +504,7 @@
         "statusVal": "",
         "statusType": "auto",
         "x": 580,
-        "y": 740,
+        "y": 1080,
         "wires": []
     },
     {
@@ -525,7 +525,7 @@
         "fontSize": 16,
         "color": "#000000",
         "x": 890,
-        "y": 640,
+        "y": 980,
         "wires": []
     },
     {
@@ -546,7 +546,7 @@
         "fontSize": 16,
         "color": "#000000",
         "x": 880,
-        "y": 680,
+        "y": 1020,
         "wires": []
     },
     {
@@ -649,7 +649,7 @@
         "type": "function",
         "z": "d27ff7acba5e037e",
         "name": "log_idle",
-        "func": "let data = msg.payload;\nlet splitMsg = data.split(\" \"); // IDLE pumpID sensorID\n\nif (splitMsg[0] === \"IDLE\") {\n    let sensors = flow.get(\"sensorData\");\n    let pumps = flow.get(\"pumpData\");\n\n    let pumpId = parseInt(splitMsg[1]);\n    let sensorId = parseInt(splitMsg[2]);\n\n    let pump = pumps.find(p => p.id === pumpId);\n    let sensor = sensors.find(s => s.id === sensorId && s.type === \"SOIL\");\n\n    let date = new Date();\n    let formatted_date = date.toLocaleString(\"en-GB\", {\n    day: \"2-digit\",\n    month: \"short\",\n    year: \"numeric\",\n    hour: \"2-digit\",\n    minute: \"2-digit\",\n    hour12: false\n    }).replace(\",\", \"\");\n    \n    data = {}\n    data.sensor = sensorId;\n    data.pump = pumpId;\n    data.timestamp = formatted_date;\n    data.waterAmount = 0;\n    data.env = pump.env;\n    data.moisture = sensor.moisture;\n\n    msg.payload = data;\n    node.warn(data)\n    return msg;\n}",
+        "func": "let data = msg.payload;\nlet splitMsg = data.split(\" \"); // IDLE pumpID sensorID\n\nif (splitMsg[0] === \"IDLE\") {\n    let sensors = flow.get(\"sensorData\");\n    let pumps = flow.get(\"pumpData\");\n\n    let pumpId = parseInt(splitMsg[1]);\n    let sensorId = parseInt(splitMsg[2]);\n\n    let pump = pumps.find(p => p.id === pumpId);\n    let sensor = sensors.find(s => s.id === sensorId && s.type === \"SOIL\");\n\n    let date = new Date();\n    let formatted_date = date.toLocaleString(\"en-GB\", {\n    day: \"2-digit\",\n    month: \"short\",\n    year: \"numeric\",\n    hour: \"2-digit\",\n    minute: \"2-digit\",\n    hour12: false\n    }).replace(\",\", \"\");\n    \n    data = {}\n    data.sensor = sensorId;\n    data.pump = pumpId;\n    data.timestamp = formatted_date;\n    data.waterAmount = 0;\n    data.env = pump.env;\n    data.moisture = sensor.moisture;\n\n    msg.payload = data;\n    return msg;\n}",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -785,7 +785,7 @@
         "fontSize": 16,
         "color": "#000000",
         "x": 850,
-        "y": 900,
+        "y": 1240,
         "wires": []
     },
     {
@@ -817,7 +817,7 @@
         "type": "function",
         "z": "d27ff7acba5e037e",
         "name": "process_notice",
-        "func": "let data = msg.payload;\n\n// log error or notice messages from ESP\nnode.warn(\"Message: \" + JSON.stringify(data));\n\n// check notice contains information about watering \nif (data.hasOwnProperty(\"notice\") && data.notice.includes(\"watering_started\")) {\n    // msg: watering_started(pumpID, sensorID, amount)\n    let sensors = flow.get(\"sensorData\");\n    let pumps = flow.get(\"pumpData\");\n\n    let splitMsg = data.notice.split(\"(\");\n    let values = splitMsg[1].split(\",\");\n    \n    let pumpId = parseInt(values[0]);\n    let sensorId = parseInt(values[1]);\n    let amount = parseInt(values[2].substring(0,values[2].length-1));\n\n    let sensor = sensors.find(s => s.id === sensorId && s.type === \"SOIL\");\n    let pump = pumps.find(p => p.id === pumpId);\n\n    let date = new Date();\n    let formatted_date = date.toLocaleString(\"en-GB\", {\n    day: \"2-digit\",\n    month: \"short\",\n    year: \"numeric\",\n    hour: \"2-digit\",\n    minute: \"2-digit\",\n    hour12: false\n    }).replace(\",\", \"\");    \n\n    // manage data for log\n    data.pump = pumpId;\n    data.sensor = sensorId;\n    data.moisture = sensor.moisture;\n    data.timestamp = formatted_date;\n    data.waterAmount = amount;\n    data.env = pump.env;\n\n    msg.payload = data;\n    return msg;\n}\n\nif (data.hasOwnProperty(\"notice\") && data.notice.includes(\"pump_set\")) {\n    let sensors = flow.get(\"sensorData\");\n    let pumps = flow.get(\"pumpData\");\n    let splitMsg = data.notice.split(\"(\");\n    let pumpId = parseInt(splitMsg[1].substring(0,1));\n\n    let pump = pumps.find(p => p.id === pumpId);\n    pump.active = 1;\n    flow.set(\"pumpData\", pumps);\n\n    // contains sensor update info\n    if (splitMsg.length === 3) {\n        let sensorId = parseInt(splitMsg[2].substring(0,1));\n        let index = sensors.findIndex(s => s.id === sensorId);\n        \n        sensors[index].pump = pumpId;\n        flow.set(\"sensorData\", sensors);\n    }\n    \n    msg.payload = \"UPDATE\";\n    return msg;\n}\n\nif (data.hasOwnProperty(\"notice\") && data.notice.includes(\"pump_unset\")) {\n    let pumps = flow.get(\"pumpData\");\n    let splitMsg = data.notice.split(\"(\");\n    let pumpId = parseInt(splitMsg[1].substring(0,1));\n\n    let pump = pumps.find(p => p.id === pumpId);\n    pump.active = 0;\n    flow.set(\"pumpData\", pumps);\n\n    msg.payload = \"UPDATE\";\n    return msg;\n}\nreturn null;",
+        "func": "let data = msg.payload;\n\n// log error or notice messages from ESP\nnode.warn(\"Message: \" + JSON.stringify(data));\n\nif (data.hasOwnProperty(\"notice\")) {\n    let sensors = flow.get(\"sensorData\");\n    let pumps = flow.get(\"pumpData\");\n    // watering\n    if (data.notice.includes(\"watering_started\")) {\n        // msg: watering_started(pumpID, sensorID, amount)\n        let splitMsg = data.notice.split(\"(\");\n        let values = splitMsg[1].split(\",\");\n        \n        let pumpId = parseInt(values[0]);\n        let sensorId = parseInt(values[1]);\n        let amount = parseInt(values[2].substring(0,values[2].length-1));\n\n        let sensor = sensors.find(s => s.id === sensorId && s.type === \"SOIL\");\n        let pump = pumps.find(p => p.id === pumpId);\n\n        let date = new Date();\n        let formatted_date = date.toLocaleString(\"en-GB\", {\n        day: \"2-digit\",\n        month: \"short\",\n        year: \"numeric\",\n        hour: \"2-digit\",\n        minute: \"2-digit\",\n        hour12: false\n        }).replace(\",\", \"\");    \n\n        // manage data for log\n        data.pump = pumpId;\n        data.sensor = sensorId;\n        data.moisture = sensor.moisture;\n        data.timestamp = formatted_date;\n        data.waterAmount = amount;\n        data.env = pump.env;\n\n        msg.payload = data;\n    }\n\n    // pump set active or pump asssignment to sensor\n    else if (data.notice.includes(\"pump_set\")) {\n        let splitMsg = data.notice.split(\"(\");\n        let pumpId = parseInt(splitMsg[1].substring(0,1));\n\n        let pump = pumps.find(p => p.id === pumpId);\n        pump.active = 1;\n        flow.set(\"pumpData\", pumps);\n\n        // contains sensor update info\n        if (splitMsg.length === 3) {\n            let sensorId = parseInt(splitMsg[2].substring(0,1));\n            let index = sensors.findIndex(s => s.id === sensorId);\n            \n            sensors[index].pump = pumpId;\n            flow.set(\"sensorData\", sensors);\n        }\n        \n        msg.payload = \"UPDATE\";\n    }\n\n    // pump set inactive\n    else if (data.notice.includes(\"pump_unset\")) {\n        let splitMsg = data.notice.split(\"(\");\n        let pumpId = parseInt(splitMsg[1].substring(0,1));\n\n        let pump = pumps.find(p => p.id === pumpId);\n        pump.active = 0;\n        flow.set(\"pumpData\", pumps);\n\n        msg.payload = \"UPDATE\";\n    }\n\n    return msg;\n}\n\n\n\n\n\n\nreturn null;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -1090,6 +1090,132 @@
             ],
             [
                 "d4bc37cb6b14bcdd"
+            ]
+        ]
+    },
+    {
+        "id": "0a6d12aa732bc45b",
+        "type": "function",
+        "z": "d27ff7acba5e037e",
+        "name": "handle_command",
+        "func": "let command = msg.payload.command;\n\n\nmsg.payload = command;\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 310,
+        "y": 720,
+        "wires": [
+            [
+                "3c4d08b0a01ca613",
+                "675b189997db0a03",
+                "9b790e487fcb9bfd"
+            ]
+        ]
+    },
+    {
+        "id": "3c4d08b0a01ca613",
+        "type": "debug",
+        "z": "d27ff7acba5e037e",
+        "name": "debug 8",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 500,
+        "y": 840,
+        "wires": []
+    },
+    {
+        "id": "8b6b7be419aec468",
+        "type": "http in",
+        "z": "d27ff7acba5e037e",
+        "name": "",
+        "url": "/control",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 90,
+        "y": 720,
+        "wires": [
+            [
+                "0a6d12aa732bc45b"
+            ]
+        ]
+    },
+    {
+        "id": "8cc0b7f1f99c0f2b",
+        "type": "mqtt out",
+        "z": "d27ff7acba5e037e",
+        "name": "",
+        "topic": "irrigation/control",
+        "qos": "0",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "5d42f12891b474f7",
+        "x": 940,
+        "y": 720,
+        "wires": []
+    },
+    {
+        "id": "675b189997db0a03",
+        "type": "switch",
+        "z": "d27ff7acba5e037e",
+        "name": "",
+        "property": "payload",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "regex",
+                "v": "(WATER|GET_ALL)",
+                "vt": "str",
+                "case": false
+            },
+            {
+                "t": "else"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 550,
+        "y": 720,
+        "wires": [
+            [
+                "8cc0b7f1f99c0f2b"
+            ],
+            [
+                "53a7c22a0b44879b"
+            ]
+        ]
+    },
+    {
+        "id": "53a7c22a0b44879b",
+        "type": "function",
+        "z": "d27ff7acba5e037e",
+        "name": "handle_web_app",
+        "func": "let pumps = flow.get(\"pumpData\");\nlet command = msg.payload;\nlet splitCmd = command.split(\" \");\n\nif (splitCmd[0] === \"CHMOD\") {\n    let pumpId = parseInt(splitCmd[1]);\n    let newMode = splitCmd[2];\n\n    let pumpIndex = pumps.findIndex(pump => pump.id === pumpId);\n    let wateringModes = [\"LIGHT\", \"MEDIUM\", \"HEAVY\", \"AUTO\"];\n\n    if (wateringModes.includes(newMode)) {\n        msg.payload = command;\n        pumps[pumpIndex].currentWaterMode = newMode;\n        flow.set(\"pumpData\", pumps);\n    } else {\n        node.warn(\"Invalid input for CHMOD.\");\n        return null;\n    }\n}\n\nelse if (splitCmd[0] === \"SET_ENV\") {\n    let pumpId = parseInt(splitCmd[1]);\n    let newEnv = splitCmd[2];\n\n    let pumpIndex = pumps.findIndex(pump => pump.id === pumpId);\n    let envModes = [\"INDOOR\", \"OUTDOOR\"];\n    \n    if (envModes.includes(newEnv)) {\n        msg.payload = command;\n        pumps[pumpIndex].env = newEnv;\n        flow.set(\"pumpData\", pumps);\n    } else {\n        node.warn(\"Invalid input for SET_ENV.\");\n        return null;\n    }\n}\n\n// fertilization\nelse if (splitCmd[0] === \"SET_FERT_AMOUNT\") {\n    let pumpId = parseInt(splitCmd[1]);\n    let amount = parseInt(splitCmd[2]);\n\n    let pumpIndex = pumps.findIndex(pump => pump.id === pumpId);\n\n    pumps[pumpIndex].amount = amount;\n    flow.set(\"pumpData\", pumps);\n    msg.payload = command;\n}\n\nelse {\n    node.warn(\"Invalid command from web app.\");\n    return null;\n}\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 730,
+        "y": 760,
+        "wires": [
+            [
+                "3c4d08b0a01ca613",
+                "8cc0b7f1f99c0f2b"
             ]
         ]
     }
