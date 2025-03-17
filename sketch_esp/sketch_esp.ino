@@ -42,8 +42,8 @@ Pump pumps[max_num_pumps] = {
   { 1, WATERING, 25, true, AUTO, MEDIUM, false, INDOOR, 1, 0 },
   { 2, WATERING, 26, true, AUTO, MEDIUM, false, INDOOR, 1, 0 },
   { 3, WATERING, 27, false, AUTO, MEDIUM, false, INDOOR, 1, 0 },
-  { 4, FERTILIZATION, 18, true, MEDIUM, MEDIUM, false, INDOOR, 1, 0 },
-  { 5, FERTILIZATION, 19, false, MEDIUM, MEDIUM, false, INDOOR, 1, 0 },
+  { 4, FERTILIZATION, 18, true, MEDIUM, MEDIUM, false, INDOOR, 50, 0 },
+  { 5, FERTILIZATION, 19, false, MEDIUM, MEDIUM, false, INDOOR, 50, 0 },
 };
 
 // Reference for last called pump and sensor
@@ -380,46 +380,40 @@ void water(int pulses, int pump_id, int sensor_id) {
 }
 
 // Fertilization
-void fertilize(int pump_id) {
-  for (int i = 0; i < max_num_pumps; i++) {
-    if (pumps[i].id == pump_id) {
-      if (pumps[i].amount <= 0) {
-        client.publish("irrigation/notice", "{\"error\":\"invalid_fertilization_amount\"}");
-        return;
-      }
-
-      if (!pumps[i].active) {
-        activatePump(pump_id);
-      }
-
-      pumps[i].pulses = pumps[i].amount / 10;
-
-      String msg = "{\"notice\":\"fertilization_started(";
-      msg += pumps[i].id;
-      msg += ",";
-      msg += pumps[i].amount;
-      msg += ")\"}";
-
-      client.publish("irrigation/notice", msg.c_str());
-
-      // Fertilization in pulses
-      for (int j = 0; j < pumps[i].pulses; j++) {
-        digitalWrite(pumps[i].pin, LOW);   // Turn ON pump
-        delay(250);                                // Wait for ON duration (approx. 10ml per pulse)
-        digitalWrite(pumps[i].pin, HIGH);  // Turn OFF pump
-        delay(250);                                // Wait for OFF duration
-      }
-
-      msg = "{\"notice\":\"fertilization_finished(";
-      msg += pumps[i].id;
-      msg += ")\"}";
-
-      delay(200);
-      client.publish("irrigation/notice", msg.c_str());
-      
-      break;
-    }
+void fertilize(int i) {
+  if (pumps[i].amount <= 0) {
+    client.publish("irrigation/notice", "{\"error\":\"invalid_fertilization_amount\"}");
+    return;
   }
+
+  if (!pumps[i].active) {
+    activatePump(i);
+  }
+
+  pumps[i].pulses = pumps[i].amount / 10;
+
+  String msg = "{\"notice\":\"fertilization_started(";
+  msg += pumps[i].id;
+  msg += ",";
+  msg += pumps[i].amount;
+  msg += ")\"}";
+
+  client.publish("irrigation/notice", msg.c_str());
+
+  // Fertilization in pulses
+  for (int j = 0; j < pumps[i].pulses; j++) {
+    digitalWrite(pumps[i].pin, LOW);   // Turn ON pump
+    delay(250);                                // Wait for ON duration (approx. 10ml per pulse)
+    digitalWrite(pumps[i].pin, HIGH);  // Turn OFF pump
+    delay(250);                                // Wait for OFF duration
+  }
+
+  msg = "{\"notice\":\"fertilization_finished(";
+  msg += pumps[i].id;
+  msg += ")\"}";
+
+  delay(200);
+  client.publish("irrigation/notice", msg.c_str());
 }
 
 // Change watering mode for pump
