@@ -6,7 +6,7 @@ CREATE TABLE users
     username TEXT NOT NULL UNIQUE,
     email TEXT NOT NULL,
     password TEXT NOT NULL,
-    has_node_red_permission BIT DEFAULT 0,     
+    has_node_red_permission INTEGER DEFAULT 0,     
     country TEXT DEFAULT 'Not Provided'
 );
 
