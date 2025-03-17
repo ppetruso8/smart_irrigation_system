@@ -395,6 +395,8 @@ void fertilize(int pump_id) {
       pumps[i].pulses = pumps[i].amount / 10;
 
       String msg = "{\"notice\":\"fertilization_started(";
+      msg += pumps[i].id;
+      msg += ",";
       msg += pumps[i].amount;
       msg += ")\"}";
 
@@ -408,8 +410,12 @@ void fertilize(int pump_id) {
         delay(250);                                // Wait for OFF duration
       }
 
+      msg = "{\"notice\":\"fertilization_finished(";
+      msg += pumps[i].id;
+      msg += ")\"}";
+
       delay(200);
-      client.publish("irrigation/notice", "{\"notice\":\"fertilization_finished\"}");
+      client.publish("irrigation/notice", msg.c_str());
       
       break;
     }
@@ -488,13 +494,20 @@ void setWaterMode(String mode, bool temp, int pump_id) {
 
 // Set environment type for pump
 void setEnvMode(String mode, int pump_id) {
+  String msg = "{\"notice\":\"env_set(";
   if (mode == "INDOOR") {
     pumps[pump_id].env = INDOOR;
-    client.publish("irrigation/notice", "{\"notice\":\"env_set_indoor\"}");
+
+    msg += pumps[pump_id].id;
+    msg += ",indoor)\"}";
+    client.publish("irrigation/notice", msg.c_str());
 
   } else if (mode == "OUTDOOR") {
     pumps[pump_id].env = OUTDOOR;
-    client.publish("irrigation/notice", "{\"notice\":\"env_set_outdoor\"}");
+
+    msg += pumps[pump_id].id;
+    msg += ",outdoor)\"}";
+    client.publish("irrigation/notice", msg.c_str());
 
   } else {
     client.publish("irrigation/notice", "{\"error\":\"invalid_env\"}");
@@ -513,6 +526,8 @@ void setFertAmount(int pump_id, int amount) {
   
   pumps[pump_id].amount = amount;
   String msg = "{\"notice\":\"fertilization_amount_set(";
+  msg += pumps[pump_id].id;
+  msg += ",";
   msg += amount;
   msg += ")\"}";
 

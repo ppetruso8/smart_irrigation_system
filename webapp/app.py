@@ -134,7 +134,6 @@ def index():
         form.process()
       
     # fertilization 
-    
     for pump_no, pump in fertilization_pumps.items():
         form = fertilization_forms[pump_no]
         form.amount.default = pump["amount"]
@@ -524,16 +523,17 @@ def get_data():
                     "env": pump["env"] 
                 }
             elif pump["type"] == "FERTILIZATION":
+                last_fert = data.get("fert", {}).get(str(pump_id), {})
                 pumps_fert[pump_id] = {
                     "amount": pump["amount"],
-                    "last": "NA",
+                    "last": last_fert.get("timestamp", "No data"),
                     "env": pump["env"]
                 }
 
-            session["sensors_soil"] = sensors_soil
-            session["sensors_dht"] = sensors_dht
-            session["pumps_water"] = pumps_water
-            session["pumps_fert"] = pumps_fert
+        session["sensors_soil"] = sensors_soil
+        session["sensors_dht"] = sensors_dht
+        session["pumps_water"] = pumps_water
+        session["pumps_fert"] = pumps_fert
 
         return sensors_soil, sensors_dht, pumps_water, pumps_fert
     else:
