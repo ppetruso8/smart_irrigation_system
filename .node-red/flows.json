@@ -8,26 +8,6 @@
         "env": []
     },
     {
-        "id": "f39649b35540991f",
-        "type": "serial-port",
-        "name": "",
-        "serialport": "/dev/ttyUSB0",
-        "serialbaud": "9600",
-        "databits": 8,
-        "parity": "none",
-        "stopbits": 1,
-        "waitfor": "",
-        "dtr": "none",
-        "rts": "none",
-        "cts": "none",
-        "dsr": "none",
-        "newline": "\\n",
-        "bin": "false",
-        "out": "char",
-        "addchar": "",
-        "responsetimeout": 10000
-    },
-    {
         "id": "93adbbc9bc8eeabe",
         "type": "ui_base",
         "theme": {
@@ -196,6 +176,26 @@
         "willMsg": {},
         "userProps": "",
         "sessionExpiry": ""
+    },
+    {
+        "id": "41c4ceb8772de4c3",
+        "type": "ui_tab",
+        "name": "Pairing",
+        "icon": "dashboard",
+        "order": 2,
+        "disabled": false,
+        "hidden": false
+    },
+    {
+        "id": "e16fb3a027e5bb64",
+        "type": "ui_group",
+        "name": "Code",
+        "tab": "41c4ceb8772de4c3",
+        "order": 1,
+        "disp": true,
+        "width": 6,
+        "collapse": false,
+        "className": ""
     },
     {
         "id": "0f25c96d5a604298",
@@ -877,7 +877,7 @@
         "z": "d27ff7acba5e037e",
         "group": "32058175d5771dde",
         "name": "pumps_ui",
-        "order": 4,
+        "order": 1,
         "width": 0,
         "height": 0,
         "format": "<div ng-init=\"pumps = []\">\n    <h2>Watering</h2>\n    <div ng-repeat=\"pump in pumps\">\n        <div ng-if=\"pump.type=='WATERING'\">\n            <h3>Pump {{pump.id}}</h3>\n            <div ng-if=\"pump.active == 1\">\n                <label>Watering Mode:</label>\n                <select ng-model=\"pump.currentWaterMode\" ng-change=\"updatePump(pump)\">\n                    <option value = \"LIGHT\">Light</option>\n                    <option value = \"MEDIUM\">Medium</option>\n                    <option value = \"HEAVY\">Heavy</option>\n                    <option value = \"CUSTOM\">Custom</option>\n                    <option value = \"AUTO\">Automatic</option>\n                </select>\n                <div ng-if=\"pump.currentWaterMode=='CUSTOM'\">\n                    <label>Custom Amount (ml):</label>\n                    <input type=\"number\" ng-model=\"pump.amount\" ng-change=\"updatePump(pump)\"/>\n                </div>\n\n                <label>Environment:</label>\n                <select ng-model=\"pump.env\" ng-change=\"updatePump(pump)\">\n                    <option value = \"INDOOR\">Indoor</option>\n                    <option value = \"OUTDOOR\">Outdoor</option>\n                </select>\n\n                <button ng-click=\"water(pump)\">Manual Watering</button>\n                <button ng-click=\"deactivatePump(pump)\">Deactivate</button>\n            </div>\n\n            <div ng-if=\"pump.active == 0\">\n                <p>Status: Inactive</p>\n                <button ng-click=\"activatePump(pump)\">Activate</button>\n            </div>\n        <hr/>\n        </div>\n    </div>\n\n    <h2>Fertilization</h2>\n    <div ng-repeat=\"pump in pumps\">\n        <div ng-if=\"pump.type=='FERTILIZATION'\">\n            <h3>Pump {{pump.id}}</h3>\n            <div ng-if=\"pump.active == 1\">\n                <label>Amount (ml):</label>\n                <input type=\"number\" ng-model=\"pump.amount\" ng-change=\"updatePump(pump)\"/>\n                <button ng-click=\"fertilize(pump)\">Fertilize</button>\n                <button ng-click=\"deactivatePump(pump)\">Deactivate</button>\n            </div>\n\n            <div ng-if=\"pump.active == 0\">\n                <p>Status: Inactive</p>\n                <button ng-click=\"activatePump(pump)\">Activate</button>\n            </div>\n        </div>\n    </div>\n\n</div>\n\n<script>\n    (function(scope) {\n        scope.$watch(\"msg\", function(msg) {\n            if (msg.payload.pumps) {\n                scope.pumps = msg.payload.pumps;\n            }\n        });\n\n        scope.updatePump = function(pump) {\n            scope.send({ payload: pump });\n        };\n\n        scope.water = function(pump) {\n            scope.send({ payload: \"WATER \" + pump.id  })\n        };\n\n        scope.fertilize = function(pump) {\n            scope.send({ payload: \"FERTILIZE \" + pump.id })\n        };\n\n        scope.activatePump = function(pump) {\n            scope.send({ payload: \"SET_STATUS 1 P \" + pump.id })\n        };\n\n        scope.deactivatePump = function(pump) {\n            scope.send({ payload: \"SET_STATUS 0 P \" + pump.id })\n        };\n    })(scope);\n</script>    ",
@@ -1080,8 +1080,8 @@
         "complete": "false",
         "statusVal": "",
         "statusType": "auto",
-        "x": 500,
-        "y": 960,
+        "x": 520,
+        "y": 920,
         "wires": []
     },
     {
@@ -1602,5 +1602,103 @@
                 "8c12922e37e7e7f5"
             ]
         ]
+    },
+    {
+        "id": "b9f621089bc6ea80",
+        "type": "http in",
+        "z": "d27ff7acba5e037e",
+        "name": "",
+        "url": "/pair",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 80,
+        "y": 920,
+        "wires": [
+            [
+                "b621f48c90536d12"
+            ]
+        ]
+    },
+    {
+        "id": "b621f48c90536d12",
+        "type": "function",
+        "z": "d27ff7acba5e037e",
+        "name": "send_code",
+        "func": "let code = flow.get(\"pairingCode\");\nmsg.payload = { code: code};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 290,
+        "y": 920,
+        "wires": [
+            [
+                "9b790e487fcb9bfd"
+            ]
+        ]
+    },
+    {
+        "id": "23c22e858afbd25b",
+        "type": "inject",
+        "z": "d27ff7acba5e037e",
+        "name": "",
+        "props": [],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 70,
+        "y": 980,
+        "wires": [
+            [
+                "42b1edcf235f3245"
+            ]
+        ]
+    },
+    {
+        "id": "42b1edcf235f3245",
+        "type": "function",
+        "z": "d27ff7acba5e037e",
+        "name": "generate_pairing_code",
+        "func": "let code = Math.floor(100000 + Math.random() * 90000);\nflow.set(\"pairingCode\", code);\n\nlet codeWarn = \"PAIRING CODE: \" + code;\nnode.warn(codeWarn);\n\nmsg.payload = code;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 260,
+        "y": 980,
+        "wires": [
+            [
+                "51ac4a909c09cb26",
+                "3c4d08b0a01ca613"
+            ]
+        ]
+    },
+    {
+        "id": "51ac4a909c09cb26",
+        "type": "ui_text",
+        "z": "d27ff7acba5e037e",
+        "group": "e16fb3a027e5bb64",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Pairing Code:",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "className": "",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#000000",
+        "x": 500,
+        "y": 980,
+        "wires": []
     }
 ]

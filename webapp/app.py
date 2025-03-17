@@ -38,7 +38,7 @@ class User(UserMixin):
         self.email = email
         self.country = country
         self.password_hash = password_hash
-        self.has_node_red_permission = bool(has_node_red_permission)
+        self.has_node_red_permission = has_node_red_permission
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -46,8 +46,8 @@ def load_user(user_id):
     db = get_db()
     user = db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
     if user:
-        return User(user["id"], user["username"], user["password"], user["email"], 
-                    user["has_node_red_permission"], user["country"])
+        return User(user["id"], user["username"], user["email"], user["country"],
+                    user["password"], user["has_node_red_permission"])
     return None
 
 
@@ -256,13 +256,14 @@ def logout():
 @login_required
 def settings():
     form = PairingForm()
-    code = "123456"
-    # code = get_pairing_code()
+    # code = "123456"
+    code = int(get_pairing_code())
+
     db = get_db()
     user = db.execute("SELECT * FROM users WHERE id = ?;", (current_user.id,)).fetchone()
 
     if form.validate_on_submit():
-        user_code = form.code.data
+        user_code = int(form.code.data)
 
         if user_code == code:
             db = get_db()
@@ -373,10 +374,12 @@ def send_command(command = None):
 
     if not command:
         print("No command")
-        return redirect(url_for("index"))
-        
+        return redirect(url_for("index"))   
 
-    if current_user.has_node_red_permission:
+    if current_user.has_node_red_permission == 1:
+        print(current_user)
+        print(current_user.has_node_red_permission)
+        print(current_user.id)
         if "GET_ALL" in command:
             send_node_red_command("GET_ALL")
             msg = get_data()
@@ -402,7 +405,7 @@ def send_command(command = None):
         else:
             print(f"Failed to send command: {command}")
     else:
-        print("You don't have permission to control the system.")
+        flash("You don't have permission to control the system. Please pair the Raspberry Pi device in settings first.")
     return redirect(url_for("index"))
     
 @app.errorhandler(404)
@@ -567,11 +570,14 @@ def get_location():
 def get_pairing_code():
     """Obtain pairing code from Raspberry Pi
     """
-    response = requests.get(f"{NODE_RED}/pair")
+    response = requests.get(f"{NODE_RED}pair")
 
     if response.status_code == 200:
-        print(response)
-        return response.json()
+        data = response.json()
+        code = data.get("code", 000000)
+
+        print(code)
+        return code
     else:
         print(f"Error fetching sensor data from Node-Red: {response.status_code}")
     return None
