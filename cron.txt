@@ -1,3 +1,0 @@
-# running script every 2 hours between 6am and 5pm 
-0 6-18/2 * * * python3 /home/pi/fyp/main.py
-

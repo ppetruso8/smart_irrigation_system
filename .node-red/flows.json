@@ -240,7 +240,7 @@
         "type": "function",
         "z": "d27ff7acba5e037e",
         "name": "parse_data",
-        "func": "let sensorData = flow.get(\"sensorData\") || {};\nlet pumpData = flow.get(\"pumpData\") || {};\n\nmsg.payload = {\n    sensors: sensorData,\n    pumps: pumpData\n};\n\nreturn msg;",
+        "func": "let sensorData = flow.get(\"sensorData\") || {};\nlet pumpData = flow.get(\"pumpData\") || {};\nlet lastFert = flow.get(\"lastFert\") || {};\n\nmsg.payload = {\n    sensors: sensorData,\n    pumps: pumpData,\n    fert: lastFert\n};\n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -283,8 +283,8 @@
         "topic": "",
         "payload": "READ",
         "payloadType": "str",
-        "x": 1000,
-        "y": 120,
+        "x": 980,
+        "y": 140,
         "wires": [
             [
                 "083c4b7369ede12a",
@@ -350,7 +350,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1450,
+        "x": 1410,
         "y": 1300,
         "wires": [
             [
@@ -379,7 +379,7 @@
         "font": "",
         "fontSize": 16,
         "color": "#000000",
-        "x": 1710,
+        "x": 1670,
         "y": 1240,
         "wires": []
     },
@@ -400,7 +400,7 @@
         "font": "",
         "fontSize": 16,
         "color": "#000000",
-        "x": 1710,
+        "x": 1670,
         "y": 1280,
         "wires": []
     },
@@ -421,7 +421,7 @@
         "font": "",
         "fontSize": 16,
         "color": "#000000",
-        "x": 1720,
+        "x": 1680,
         "y": 1320,
         "wires": []
     },
@@ -461,7 +461,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1450,
+        "x": 1410,
         "y": 1120,
         "wires": [
             [
@@ -483,7 +483,7 @@
         "complete": "false",
         "statusVal": "",
         "statusType": "auto",
-        "x": 1460,
+        "x": 1420,
         "y": 1200,
         "wires": []
     },
@@ -504,7 +504,7 @@
         "font": "",
         "fontSize": 16,
         "color": "#000000",
-        "x": 1770,
+        "x": 1730,
         "y": 1100,
         "wires": []
     },
@@ -525,7 +525,7 @@
         "font": "",
         "fontSize": 16,
         "color": "#000000",
-        "x": 1760,
+        "x": 1720,
         "y": 1140,
         "wires": []
     },
@@ -541,8 +541,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1000,
-        "y": 460,
+        "x": 940,
+        "y": 480,
         "wires": [
             [
                 "9218897efed46d9e",
@@ -562,15 +562,15 @@
         "complete": "false",
         "statusVal": "",
         "statusType": "auto",
-        "x": 820,
-        "y": 360,
+        "x": 760,
+        "y": 380,
         "wires": []
     },
     {
         "id": "d4bc37cb6b14bcdd",
         "type": "csv",
         "z": "d27ff7acba5e037e",
-        "name": "",
+        "name": "csv_water",
         "spec": "rfc",
         "sep": ",",
         "hdrin": true,
@@ -582,8 +582,8 @@
         "strings": true,
         "include_empty_strings": "",
         "include_null_values": "",
-        "x": 970,
-        "y": 40,
+        "x": 980,
+        "y": 60,
         "wires": [
             [
                 "d5db91812b763d19"
@@ -602,7 +602,7 @@
         "overwriteFile": "false",
         "encoding": "none",
         "x": 1270,
-        "y": 40,
+        "y": 60,
         "wires": [
             []
         ]
@@ -657,8 +657,8 @@
         "complete": "false",
         "statusVal": "",
         "statusType": "auto",
-        "x": 1380,
-        "y": 200,
+        "x": 1220,
+        "y": 140,
         "wires": []
     },
     {
@@ -697,8 +697,8 @@
         "correl": "",
         "expiry": "",
         "broker": "5d42f12891b474f7",
-        "x": 1380,
-        "y": 300,
+        "x": 1120,
+        "y": 280,
         "wires": []
     },
     {
@@ -739,7 +739,7 @@
         "font": "",
         "fontSize": 16,
         "color": "#000000",
-        "x": 1730,
+        "x": 1690,
         "y": 1360,
         "wires": []
     },
@@ -758,8 +758,8 @@
         "resendOnRefresh": true,
         "templateScope": "local",
         "className": "",
-        "x": 610,
-        "y": 320,
+        "x": 550,
+        "y": 340,
         "wires": [
             [
                 "9218897efed46d9e",
@@ -772,7 +772,7 @@
         "type": "function",
         "z": "d27ff7acba5e037e",
         "name": "process_notice",
-        "func": "let data = msg.payload;\n\n// log error or notice messages from ESP\nnode.warn(\"Message: \" + JSON.stringify(data));\n\nif (data.hasOwnProperty(\"notice\")) {\n    let sensors = flow.get(\"sensorData\");\n    let pumps = flow.get(\"pumpData\");\n\n    // update UI upon notice receival by default\n    msg.payload = \"UPDATE\";\n\n    // watering\n    if (data.notice.includes(\"watering_started\")) {\n        // msg: watering_started(pumpID, sensorID, amount)\n        let splitMsg = data.notice.split(\"(\");\n        let values = splitMsg[1].split(\",\");\n        \n        let pumpId = parseInt(values[0]);\n        let sensorId = parseInt(values[1]);\n        let amount = parseInt(values[2].substring(0,values[2].length-1));\n\n        let sensor = sensors.find(s => s.id === sensorId && s.type === \"SOIL\");\n        let pump = pumps.find(p => p.id === pumpId);\n\n        let date = new Date();\n        let formatted_date = date.toLocaleString(\"en-GB\", {\n        day: \"2-digit\",\n        month: \"short\",\n        year: \"numeric\",\n        hour: \"2-digit\",\n        minute: \"2-digit\",\n        hour12: false\n        }).replace(\",\", \"\");    \n\n        // manage data for log\n        data.pump = pumpId;\n        data.sensor = sensorId;\n        data.moisture = sensor.moisture;\n        data.timestamp = formatted_date;\n        data.waterAmount = amount;\n        data.env = pump.env;\n\n        msg.payload = data;\n    }\n\n    // pump set active or pump asssignment to sensor\n    else if (data.notice.includes(\"pump_set\")) {\n        let splitMsg = data.notice.split(\"(\");\n        let pumpId = parseInt(splitMsg[1].substring(0,1));\n\n        let pump = pumps.find(p => p.id === pumpId);\n        pump.active = 1;\n        flow.set(\"pumpData\", pumps);\n\n        // contains sensor update info\n        if (splitMsg.length === 3) {\n            let sensorId = parseInt(splitMsg[2].substring(0,1));\n            let index = sensors.findIndex(s => s.id === sensorId);\n            \n            sensors[index].pump = pumpId;\n            flow.set(\"sensorData\", sensors);\n        }\n    \n    }\n\n    // pump set inactive\n    else if (data.notice.includes(\"pump_unset\")) {\n        let splitMsg = data.notice.split(\"(\");\n        let pumpId = parseInt(splitMsg[1].substring(0,1));\n\n        let pump = pumps.find(p => p.id === pumpId);\n        pump.active = 0;\n        flow.set(\"pumpData\", pumps);\n    }\n\n    return msg;\n}\n\n\n\n\n\n\nreturn null;",
+        "func": "let data = msg.payload;\n\n// log error or notice messages from ESP\nnode.warn(\"Message: \" + JSON.stringify(data));\n\nif (data.hasOwnProperty(\"notice\")) {\n    let sensors = flow.get(\"sensorData\");\n    let pumps = flow.get(\"pumpData\");\n\n    // update UI upon notice receival by default\n    msg.payload = \"UPDATE\";\n\n    // watering\n    if (data.notice.includes(\"watering_started\")) {\n        // msg: watering_started(pumpID, sensorID, amount)\n        let splitMsg = data.notice.split(\"(\");\n        let values = splitMsg[1].split(\",\");\n        \n        let pumpId = parseInt(values[0]);\n        let sensorId = parseInt(values[1]);\n        let amount = parseInt(values[2].substring(0,values[2].length-1));\n\n        let sensor = sensors.find(s => s.id === sensorId && s.type === \"SOIL\");\n        let pump = pumps.find(p => p.id === pumpId);\n\n        let date = new Date();\n        let formatted_date = date.toLocaleString(\"en-GB\", {\n        day: \"2-digit\",\n        month: \"short\",\n        year: \"numeric\",\n        hour: \"2-digit\",\n        minute: \"2-digit\",\n        hour12: false\n        }).replace(\",\", \"\");    \n\n        // manage data for log\n        data.pump = pumpId;\n        data.sensor = sensorId;\n        data.moisture = sensor.moisture;\n        data.timestamp = formatted_date;\n        data.waterAmount = amount;\n        data.env = pump.env;\n\n        msg.payload = data;\n    }\n\n    // pump set active or pump asssignment to sensor\n    else if (data.notice.includes(\"pump_set\")) {\n        let splitMsg = data.notice.split(\"(\");\n        let pumpId = parseInt(splitMsg[1].substring(0,1));\n\n        let pump = pumps.find(p => p.id === pumpId);\n        pump.active = 1;\n        flow.set(\"pumpData\", pumps);\n\n        // contains sensor update info\n        if (splitMsg.length === 3) {\n            let sensorId = parseInt(splitMsg[2].substring(0,1));\n            let index = sensors.findIndex(s => s.id === sensorId);\n            \n            sensors[index].pump = pumpId;\n            flow.set(\"sensorData\", sensors);\n        }\n    \n    }\n\n    // pump set inactive\n    else if (data.notice.includes(\"pump_unset\")) {\n        let splitMsg = data.notice.split(\"(\");\n        let pumpId = parseInt(splitMsg[1].substring(0,1));\n\n        let pump = pumps.find(p => p.id === pumpId);\n        pump.active = 0;\n        flow.set(\"pumpData\", pumps);\n    }\n\n    else if (data.notice.includes(\"fertilization_started\")) {\n        let splitMsg = data.notice.split(\"(\");\n        let values = splitMsg[1].split(\",\");\n        let pumpId = parseInt(values[0]);\n        let amount = parseInt(values[1].substring(0,-1));\n\n        let date = new Date();\n        let formatted_date = date.toLocaleString(\"en-GB\", {\n            day: \"2-digit\",\n            month: \"short\",\n            year: \"numeric\",\n            hour: \"2-digit\",\n            minute: \"2-digit\",\n            hour12: false\n        }).replace(\",\", \"\");\n\n        data.fert = 1;\n        data.pumpId = pumpId;\n        data.amount = amount;\n        data.timestamp = formatted_date;\n        msg.payload = data;\n\n        // save most recent fertilization data into the flow\n        let fertData = flow.get(\"lastFert\") || {};\n        fertData[pumpId] = {\n            timestamp: formatted_date,\n            amount: amount\n        }\n\n        flow.set(\"lastFert\", fertData);\n    }\n\n    return msg;\n}\n\nreturn null;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -825,8 +825,7 @@
         "wires": [
             [
                 "20eb51f4534b98e5",
-                "e29d4f378020f376",
-                "9cd49f64ca1c0a6a"
+                "4b7225d59a78a2fd"
             ]
         ]
     },
@@ -847,8 +846,8 @@
         "topic": "",
         "payload": "GET_ALL",
         "payloadType": "str",
-        "x": 1000,
-        "y": 160,
+        "x": 980,
+        "y": 180,
         "wires": [
             [
                 "35a8bc56db8a3151"
@@ -887,8 +886,8 @@
         "resendOnRefresh": true,
         "templateScope": "local",
         "className": "",
-        "x": 600,
-        "y": 460,
+        "x": 540,
+        "y": 480,
         "wires": [
             [
                 "83e5945683e998c8"
@@ -916,8 +915,8 @@
         "checkall": "true",
         "repair": false,
         "outputs": 2,
-        "x": 790,
-        "y": 460,
+        "x": 730,
+        "y": 480,
         "wires": [
             [
                 "26bc4ad2b8edb0dc",
@@ -940,8 +939,8 @@
         "complete": "false",
         "statusVal": "",
         "statusType": "auto",
-        "x": 880,
-        "y": 560,
+        "x": 820,
+        "y": 580,
         "wires": []
     },
     {
@@ -956,8 +955,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 310,
-        "y": 460,
+        "x": 250,
+        "y": 480,
         "wires": [
             [
                 "63d02a3976e94dc0"
@@ -970,8 +969,8 @@
         "z": "d27ff7acba5e037e",
         "name": "",
         "events": "all",
-        "x": 120,
-        "y": 380,
+        "x": 60,
+        "y": 400,
         "wires": [
             [
                 "9cd49f64ca1c0a6a",
@@ -991,8 +990,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 310,
-        "y": 320,
+        "x": 250,
+        "y": 340,
         "wires": [
             [
                 "b550b59d364fc311",
@@ -1012,15 +1011,15 @@
         "complete": "false",
         "statusVal": "",
         "statusType": "auto",
-        "x": 460,
-        "y": 380,
+        "x": 400,
+        "y": 400,
         "wires": []
     },
     {
         "id": "aa80139673ea7f9f",
         "type": "switch",
         "z": "d27ff7acba5e037e",
-        "name": "",
+        "name": "data||csv",
         "property": "payload",
         "propertyType": "msg",
         "rules": [
@@ -1036,15 +1035,14 @@
         "checkall": "false",
         "repair": false,
         "outputs": 2,
-        "x": 490,
+        "x": 500,
         "y": 40,
         "wires": [
             [
-                "e29d4f378020f376",
-                "9cd49f64ca1c0a6a"
+                "3cd73cc03c4febe6"
             ],
             [
-                "d4bc37cb6b14bcdd"
+                "2501ea220d950b3a"
             ]
         ]
     },
@@ -1083,7 +1081,7 @@
         "statusVal": "",
         "statusType": "auto",
         "x": 500,
-        "y": 920,
+        "y": 960,
         "wires": []
     },
     {
@@ -1131,7 +1129,7 @@
         "rules": [
             {
                 "t": "regex",
-                "v": "(WATER|GET_ALL)",
+                "v": "(WATER|GET_ALL|FERTILIZE)",
                 "vt": "str",
                 "case": false
             },
@@ -1154,8 +1152,7 @@
                 "8cc0b7f1f99c0f2b"
             ],
             [
-                "5ee49e6e39806bf4",
-                "3c4d08b0a01ca613"
+                "5ee49e6e39806bf4"
             ],
             [
                 "53a7c22a0b44879b"
@@ -1175,7 +1172,7 @@
         "finalize": "",
         "libs": [],
         "x": 730,
-        "y": 860,
+        "y": 820,
         "wires": [
             [
                 "3c4d08b0a01ca613",
@@ -1201,12 +1198,15 @@
         "sendOnBlur": true,
         "className": "",
         "topicType": "msg",
-        "x": 60,
+        "x": 100,
         "y": 1180,
         "wires": [
             [
                 "4897ae51d0ceb2e6"
             ]
+        ],
+        "inputLabels": [
+            "{{msg.payload}}"
         ]
     },
     {
@@ -1238,7 +1238,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 350,
+        "x": 390,
         "y": 1180,
         "wires": [
             [
@@ -1263,7 +1263,7 @@
         "authType": "",
         "senderr": false,
         "headers": [],
-        "x": 510,
+        "x": 550,
         "y": 1180,
         "wires": [
             [
@@ -1284,7 +1284,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 690,
+        "x": 730,
         "y": 1180,
         "wires": [
             [
@@ -1306,8 +1306,8 @@
         "complete": "false",
         "statusVal": "",
         "statusType": "auto",
-        "x": 640,
-        "y": 1100,
+        "x": 680,
+        "y": 1060,
         "wires": []
     },
     {
@@ -1327,7 +1327,7 @@
         "bytopic": "all",
         "topic": "topic",
         "outputs": 1,
-        "x": 200,
+        "x": 240,
         "y": 1180,
         "wires": [
             [
@@ -1347,7 +1347,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 930,
+        "x": 970,
         "y": 1160,
         "wires": [
             [
@@ -1367,7 +1367,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 940,
+        "x": 980,
         "y": 1220,
         "wires": [
             [
@@ -1408,11 +1408,198 @@
         "finalize": "",
         "libs": [],
         "x": 710,
-        "y": 820,
+        "y": 880,
         "wires": [
             [
-                "8c12922e37e7e7f5",
-                "3c4d08b0a01ca613"
+                "3c4d08b0a01ca613",
+                "d274d8733e658526"
+            ]
+        ]
+    },
+    {
+        "id": "2cdba979076c7633",
+        "type": "csv",
+        "z": "d27ff7acba5e037e",
+        "name": "csv_fert",
+        "spec": "rfc",
+        "sep": ",",
+        "hdrin": true,
+        "hdrout": "none",
+        "multi": "one",
+        "ret": "\\r\\n",
+        "temp": "timestamp,pumpId,amount",
+        "skip": "0",
+        "strings": true,
+        "include_empty_strings": "",
+        "include_null_values": "",
+        "x": 980,
+        "y": 20,
+        "wires": [
+            [
+                "bc429e528b2a3f46"
+            ]
+        ]
+    },
+    {
+        "id": "bc429e528b2a3f46",
+        "type": "file",
+        "z": "d27ff7acba5e037e",
+        "name": "",
+        "filename": "/home/pi/fyp/fertilization.csv",
+        "filenameType": "str",
+        "appendNewline": false,
+        "createDir": false,
+        "overwriteFile": "false",
+        "encoding": "none",
+        "x": 1280,
+        "y": 20,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "2501ea220d950b3a",
+        "type": "switch",
+        "z": "d27ff7acba5e037e",
+        "name": "fertilization||watering",
+        "property": "payload.fert",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "nnull"
+            },
+            {
+                "t": "else"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 720,
+        "y": 60,
+        "wires": [
+            [
+                "2cdba979076c7633"
+            ],
+            [
+                "d4bc37cb6b14bcdd"
+            ]
+        ]
+    },
+    {
+        "id": "3cd73cc03c4febe6",
+        "type": "link out",
+        "z": "d27ff7acba5e037e",
+        "name": "link out 1",
+        "mode": "link",
+        "links": [
+            "abbd9d99b626c236"
+        ],
+        "x": 625,
+        "y": 20,
+        "wires": []
+    },
+    {
+        "id": "abbd9d99b626c236",
+        "type": "link in",
+        "z": "d27ff7acba5e037e",
+        "name": "link in 1",
+        "links": [
+            "3cd73cc03c4febe6",
+            "4b7225d59a78a2fd"
+        ],
+        "x": 105,
+        "y": 360,
+        "wires": [
+            [
+                "e29d4f378020f376",
+                "9cd49f64ca1c0a6a"
+            ]
+        ]
+    },
+    {
+        "id": "4b7225d59a78a2fd",
+        "type": "link out",
+        "z": "d27ff7acba5e037e",
+        "name": "link out 2",
+        "mode": "link",
+        "links": [
+            "abbd9d99b626c236"
+        ],
+        "x": 495,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "d274d8733e658526",
+        "type": "link out",
+        "z": "d27ff7acba5e037e",
+        "name": "link out 3",
+        "mode": "link",
+        "links": [
+            "80c0ac79022b9ef6",
+            "108723215eb4d72c"
+        ],
+        "x": 875,
+        "y": 880,
+        "wires": []
+    },
+    {
+        "id": "80c0ac79022b9ef6",
+        "type": "link in",
+        "z": "d27ff7acba5e037e",
+        "name": "link in 2",
+        "links": [
+            "d274d8733e658526"
+        ],
+        "x": 25,
+        "y": 1100,
+        "wires": [
+            [
+                "d2a8d107f61a6a21"
+            ]
+        ]
+    },
+    {
+        "id": "d2a8d107f61a6a21",
+        "type": "change",
+        "z": "d27ff7acba5e037e",
+        "name": "",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.city",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 140,
+        "y": 1100,
+        "wires": [
+            [
+                "19a66b9f64c1c03b"
+            ]
+        ]
+    },
+    {
+        "id": "108723215eb4d72c",
+        "type": "link in",
+        "z": "d27ff7acba5e037e",
+        "name": "link in 3",
+        "links": [
+            "d274d8733e658526"
+        ],
+        "x": 605,
+        "y": 1140,
+        "wires": [
+            [
+                "8c12922e37e7e7f5"
             ]
         ]
     }
