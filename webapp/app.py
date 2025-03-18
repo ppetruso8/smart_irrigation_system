@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, request, url_for, flash, session
+from flask import Flask, render_template, redirect, request, url_for, flash, session, jsonify
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from database import get_db, close_db
@@ -9,6 +9,7 @@ import requests
 from forms import SensorForm, LocationForm, RegistrationForm, LoginForm, FertilizationForm, PairingForm, UserDetailsForm, ChangePasswordForm
 
 from datetime import datetime
+import pandas as pd
 
 NODE_RED = "http://127.0.0.1:1880/"
 
@@ -407,7 +408,15 @@ def send_command(command = None):
     else:
         flash("You don't have permission to control the system. Please pair the Raspberry Pi device in settings first.")
     return redirect(url_for("index"))
-    
+
+@app.route("/stats_data")
+def stats_data():
+    data = pd.read_csv("../readings.csv")
+    data = data.dropna()
+    data["timestamp"] = pd.to_datetime(data["timestamp"], format="%d/%m/%Y %H:%M").dt.strftime("%Y-%m-%dT%H:%M:%S")
+    return jsonify(data.to_dict(orient="records"))
+
+
 @app.errorhandler(404)
 def page_not_found(error):
     return render_template("error.html", error=error)
@@ -565,7 +574,6 @@ def get_location():
     else:
         print(f"Failed to get location: {response.status_code}")
         return None, None, None, None
-
 
 def get_pairing_code():
     """Obtain pairing code from Raspberry Pi
