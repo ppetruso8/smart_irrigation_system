@@ -76,6 +76,7 @@
             // chart settings
             chart2.title("Soil Moisture and Watering Over Time (Pump 2)");
             chart2.xAxis().title("Time");
+            chart2.xAxis().labels().format("{%value}{type:date}");
             chart2.yAxis().title("Soil Moisture");
             chart2.yAxis(1).title("Watering Amount (ml)").orientation("right");
             chart2.container("container_pump2");

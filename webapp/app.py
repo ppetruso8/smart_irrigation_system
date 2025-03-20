@@ -8,7 +8,7 @@ import requests
 
 from forms import SensorForm, LocationForm, RegistrationForm, LoginForm, FertilizationForm, PairingForm, UserDetailsForm, ChangePasswordForm
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import pandas as pd
 
 NODE_RED = "http://127.0.0.1:1880/"
@@ -56,23 +56,30 @@ def load_user(user_id):
 @login_required
 def index():
     location_form = LocationForm()
-    city = None
+
     # retrieve forecast location data from Node-Red
     city, country, latitude, longitude = get_location() 
     
+    # check if location setting changed
+    if "city" in session and (city != session["city"] or city.replace("+", " ") != session["city"]):
+        session["last_weather_update"] = None
+        session["last_cur_weather_update"] = None
+    
     if city and "+" in city:
         city.replace("+", " ")
-
-    if not city:
-        # default location - Cork
+    
+    # set default location - Cork
+    if not city or "location" not in session:
         city = "Cork"
         country = "Ireland"
         latitude = 51.898
         longitude = -8.4706
+        session["location"] = (city, country, latitude, longitude)
+        session["last_weather_update"] = None
+        session["last_cur_weather_update"] = None
 
-    # get coordinates of user-submitted location
+    # user changing location
     if location_form.validate_on_submit():
-        print("a")
         city = location_form.location.data
         lat, long, name, country = get_coordinates(city)
 
@@ -82,18 +89,21 @@ def index():
             city = city
             country = country
 
-            # send city data to raspberry pi
+            session["location"] = (city, country, latitude, longitude)
+            session["last_weather_update"] = None
+            session["last_cur_weather_update"] = None
+
+            # send location data to Node-Red
             send_command(f"SET_LOC {city.replace(' ', '+')} {country} {latitude} {longitude}") 
         else: 
-            print("Error updating city data")
+            flash("Error updating location.")
 
-        
 
         return redirect(url_for("index", _anchor="weather"))
     
+    # prefill the form
     location_form.location.default = city
     location_form.process()
-    print(location_form)
 
     weather_current = get_current_weather(latitude, longitude)
     forecast_hourly, forecast_daily = get_forecast(latitude, longitude)
@@ -109,32 +119,33 @@ def index():
                      82: "Violent Rain Showers", 85: "Slight Snow Showers", 86: "Heavy Snow Showers",
                      95: "Thunderstorms", 96: "Thunderstorm with Slight Hail", 
                      99: "Thunderstorm with Heavy Hail"}
-    # replace weather codes with actual strings
-    forecast_hourly["weather_code"] = [weather_codes[code] for code in forecast_hourly["weather_code"]]
-    forecast_daily["weather_code"] = [weather_codes[code] for code in forecast_daily["weather_code"]]
-    weather_current["weather_code"] = weather_codes[weather_current["weather_code"]]
-
-    # change format of time to more readable
-    forecast_hourly["time"] = [datetime.strptime(time, "%Y-%m-%dT%H:%M").strftime("%d %b %Y %H:%M") for time in forecast_hourly["time"]]
-    forecast_daily["time"] = [datetime.strptime(time, "%Y-%m-%d").strftime("%d %b %Y") for time in forecast_daily["time"]]
+    
+    try:
+        # replace weather codes with actual strings
+        forecast_hourly["weather_code"] = [weather_codes[code] for code in forecast_hourly["weather_code"]]
+        forecast_daily["weather_code"] = [weather_codes[code] for code in forecast_daily["weather_code"]]
+        weather_current["weather_code"] = weather_codes[weather_current["weather_code"]]
+        # change format of time to more readable
+        forecast_hourly["time"] = [datetime.strptime(time, "%Y-%m-%dT%H:%M").strftime("%d %b %Y %H:%M") for time in forecast_hourly["time"]]
+        forecast_daily["time"] = [datetime.strptime(time, "%Y-%m-%d").strftime("%d %b %Y") for time in forecast_daily["time"]]
+    except:
+        pass
 
     # data from node-red
     sensors, dht_sensors, water_pumps, fertilization_pumps = get_data()
-    # sensors, dht_sensors = get_sensors()
-    # fertilization_pumps = get_fertilization_pumps()
     
     # create form for each sensor for updating the settings
     forms = {sensor_id: SensorForm(data=data) for sensor_id, data in sensors.items()}
     fertilization_forms = {pump_id: FertilizationForm(data=data) for pump_id, data in fertilization_pumps.items()}
 
-    # default form fill-in
+    # prefill sensor forms with data
     for sensor_no, sensor in sensors.items():
         form = forms[sensor_no]
         form.env.default = sensor["env"].lower().capitalize()
         form.mode.default = sensor["mode"].lower().capitalize()
         form.process()
       
-    # fertilization 
+    # prefill fertilization forms with data
     for pump_no, pump in fertilization_pumps.items():
         form = fertilization_forms[pump_no]
         form.amount.default = pump["amount"]
@@ -151,9 +162,7 @@ def index():
                 new_env = form.env.data
                 new_mode = form.mode.data
 
-
-                # update Raspberry Pi
-                print("Updating Raspberry Pi")
+                # update Node-Red
                 session["sensors_soil"][sensor_no]["env"] = new_env
                 session["sensors_soil"][sensor_no]["mode"] = new_mode
 
@@ -164,7 +173,8 @@ def index():
 
                 return redirect(url_for("index"))
             else:
-                print(f"Form failed: {form.errors}")
+                flash(f"There was a problem while updating data: {form.errors}")
+        
         # updating fertilization setting
         elif request.form.get("fertilization_pump"):
             pump_no = int(request.form.get("fertilization_pump"))
@@ -185,7 +195,7 @@ def index():
 
                 session["pumps_fert"][pump_no] = FertilizationForm(data=session["pumps_fert"][pump_no])
 
-                return redirect(url_for("index"))  # refresh the page
+                return redirect(url_for("index"))
 
     return render_template("index.html", weather=weather_current, sensors=sensors, hourly=forecast_hourly, 
                            daily=forecast_daily, forms=forms, city=city, country=country,
@@ -232,7 +242,7 @@ def login():
         db = get_db()
         user = db.execute("SELECT * FROM users WHERE username = ?;", (username,)).fetchone()
         
-        if not user:     # !!!make into one
+        if not user:
             form.password.errors.append("Incorrect information!")
         elif not check_password_hash(user["password"], password):
             form.password.errors.append("Incorrect information!")
@@ -257,7 +267,6 @@ def logout():
 @login_required
 def settings():
     form = PairingForm()
-    # code = "123456"
     code = int(get_pairing_code())
 
     db = get_db()
@@ -299,9 +308,6 @@ def edit_account():
         form.country.default = user["country"]
         form.process()  
 
-    if request.method == "POST":
-        print("POST request received")
-
     if form.validate_on_submit():
         email = form.email.data
         country = form.country.data
@@ -336,7 +342,6 @@ def change_password():
     form = ChangePasswordForm()
     message = ""
     if form.validate_on_submit():
-        user_id = current_user.id
         new_password = form.password.data
         confirm_password = form.confirm_password.data
 
@@ -371,16 +376,13 @@ def send_command(command = None):
     if not command:
         command = request.form.get("command")
 
-    print(command)
+    print(f"Received command: {command}")
 
     if not command:
-        print("No command")
+        flash("Error obtaining command.")
         return redirect(url_for("index"))   
 
     if current_user.has_node_red_permission == 1:
-        print(current_user)
-        print(current_user.has_node_red_permission)
-        print(current_user.id)
         if "GET_ALL" in command:
             send_node_red_command("GET_ALL")
             msg = get_data()
@@ -402,9 +404,9 @@ def send_command(command = None):
 
         
         if msg:
-            print("Success")
+            print("Command sent successfully.")
         else:
-            print(f"Failed to send command: {command}")
+            flash(f"Failed to send command: {command}")
     else:
         flash("You don't have permission to control the system. Please pair the Raspberry Pi device in settings first.")
     return redirect(url_for("index"))
@@ -413,8 +415,18 @@ def send_command(command = None):
 def stats_data():
     data = pd.read_csv("../readings.csv")
     data = data.dropna()
-    data["timestamp"] = pd.to_datetime(data["timestamp"], format="%d/%m/%Y %H:%M").dt.strftime("%Y-%m-%dT%H:%M:%S")
-    return jsonify(data.to_dict(orient="records"))
+    data["timestamp"] = pd.to_datetime(data["timestamp"], format="%d/%m/%Y %H:%M")
+    
+    # get only latest 10 days
+    latest = data["timestamp"].max()
+    start = latest - pd.Timedelta(days = 10)
+    data = data[data["timestamp"] >= start]
+    
+    # prepare data for AnyChart
+    data["timestamp"] = data["timestamp"].dt.strftime("%Y-%m-%dT%H:%M:%S")
+    data = data.to_dict(orient="records")
+    
+    return jsonify(data)
 
 
 @app.errorhandler(404)
@@ -423,52 +435,81 @@ def page_not_found(error):
 
 """ Weather API """
 def get_current_weather(lat, long):
+    # use cached data if request made within 30 minutes from last request
+    if "last_cur_weather_update" in session and session["last_cur_weather_update"]:
+        last_update = datetime.strptime(session["last_cur_weather_update"], "%Y-%m-%dT%H:%M:%S")
+        if datetime.now() - last_update < timedelta(minutes=30):
+            return session["cur_weather"]
+
+    # Weather information is provided by https://open-meteo.com, (CC BY 4.0) https://creativecommons.org/licenses/by/4.0/, with changes to output format
     url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={long}&current=temperature_2m,relative_humidity_2m,precipitation,rain,weather_code,wind_speed_10m,wind_direction_10m,precipitation_probability"
-    response = requests.get(url)
     
-    if response.status_code == 200:
-        data = response.json()
-        return data["current"]
-    else:
-        print(f"Error retrieving the weather API data: {response.status_code}")
-
-    return None
-
-def get_forecast(lat, long):  
-    url=f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={long}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum&hourly=temperature_2m,relative_humidity_2m,precipitation_probability,precipitation,weather_code"
-    response = requests.get(url)
-    
-    if response.status_code == 200:
-        data = response.json()
+    try:
+        response = requests.get(url)
         
-        # 48-hours hourly forecast
-        data["hourly"]["time"] = data["hourly"]["time"][:48]
-        data["hourly"]["temperature_2m"] = data["hourly"]["temperature_2m"][:48]
-        data["hourly"]["relative_humidity_2m"] = data["hourly"]["relative_humidity_2m"][:48]
-        data["hourly"]["precipitation_probability"] = data["hourly"]["precipitation_probability"][:48]
-        data["hourly"]["precipitation"] = data["hourly"]["precipitation"][:48]
-        data["hourly"]["weather_code"] = data["hourly"]["weather_code"][:48]
-
-        # 5-day daily forecast
-        data["daily"]["time"] = data["daily"]["time"][:5]
-        data["daily"]["weather_code"] = data["daily"]["weather_code"][:5]
-        data["daily"]["temperature_2m_max"] = data["daily"]["temperature_2m_max"][:5]
-        data["daily"]["temperature_2m_min"] = data["daily"]["temperature_2m_min"][:5]
-        data["daily"]["precipitation_probability_max"] = data["daily"]["precipitation_probability_max"][:5]
-        data["daily"]["precipitation_sum"] = data["daily"]["precipitation_sum"][:5]
-
-        return data["hourly"], data["daily"]
-    else:
-        print(f"Error retrieving the weather API data: {response.status_code}")
-
+        if response.status_code == 200:
+            data = response.json()
+            session["cur_weather"] = data["current"]
+            session["last_cur_weather_update"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+            return data["current"]
+           
+    except requests.exceptions.RequestException as e:
+        if response.status_code != 200:
+            flash(f"Error retrieving the weather data: {response.status_code}")
+    
     return None
+
+def get_forecast(lat, long):
+    # use cached data if request made within 30 minutes from last request
+    if "last_weather_update" in session and session["last_weather_update"]:
+        last_update = datetime.strptime(session["last_weather_update"], "%Y-%m-%dT%H:%M:%S")
+        if datetime.now() - last_update < timedelta(minutes=30):
+            return session["weather_hourly"], session["weather_daily"]  
+
+    # Weather information is provided by https://open-meteo.com, (CC BY 4.0) https://creativecommons.org/licenses/by/4.0/, with changes to output format 
+    url=f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={long}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum&hourly=temperature_2m,relative_humidity_2m,precipitation_probability,precipitation,weather_code"
+
+    try:
+        response = requests.get(url)
+        
+        if response.status_code == 200:
+            data = response.json()
+            
+            # 48-hours hourly forecast
+            data["hourly"]["time"] = data["hourly"]["time"][:48]
+            data["hourly"]["temperature_2m"] = data["hourly"]["temperature_2m"][:48]
+            data["hourly"]["relative_humidity_2m"] = data["hourly"]["relative_humidity_2m"][:48]
+            data["hourly"]["precipitation_probability"] = data["hourly"]["precipitation_probability"][:48]
+            data["hourly"]["precipitation"] = data["hourly"]["precipitation"][:48]
+            data["hourly"]["weather_code"] = data["hourly"]["weather_code"][:48]
+
+            # 5-day daily forecast
+            data["daily"]["time"] = data["daily"]["time"][:5]
+            data["daily"]["weather_code"] = data["daily"]["weather_code"][:5]
+            data["daily"]["temperature_2m_max"] = data["daily"]["temperature_2m_max"][:5]
+            data["daily"]["temperature_2m_min"] = data["daily"]["temperature_2m_min"][:5]
+            data["daily"]["precipitation_probability_max"] = data["daily"]["precipitation_probability_max"][:5]
+            data["daily"]["precipitation_sum"] = data["daily"]["precipitation_sum"][:5]
+
+            session["weather_hourly"] = data["hourly"]
+            session["weather_daily"] = data["daily"]
+            session["last_weather_update"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+
+            return data["hourly"], data["daily"]
+        
+    except requests.exceptions.RequestException as e:
+        if response.status_code != 200:
+            flash(f"Error retrieving the weather API data: {response.status_code}")
+
+    return None, None
 
 def get_coordinates(city):
     city = city.strip()
     city = city.replace(" ", "+")
+
+    # Location data is provided by https://open-meteo.com, (CC BY 4.0) https://creativecommons.org/licenses/by/4.0/, with changes to output format
     url = f"https://geocoding-api.open-meteo.com/v1/search?name={city}&count=10&language=en&format=json"
     response = requests.get(url)
-    print(response.status_code)
 
     if response.status_code == 200:
         data = response.json()
@@ -513,7 +554,7 @@ def get_data():
             if sensor.get("active") == 1:
                 if sensor["type"] == "SOIL":
                     pump = pump_data.get(sensor["pump"])    # pump "object"
-                    sensors_soil[sensor['id']] = {
+                    sensors_soil[sensor["id"]] = {
                         "moisture": sensor["moisture"],
                         "pump": sensor["pump"],
                         "env": pump["env"],
@@ -549,14 +590,13 @@ def get_data():
 
         return sensors_soil, sensors_dht, pumps_water, pumps_fert
     else:
-        print(f"Error fetching sensor data from Node-Red: {response.status_code}")
+        flash(f"Error fetching sensor data from Node-Red: {response.status_code}")
         return {}, {}, {}, {}
 
 def get_location():
     """ Get selected location for forecast from Node-Red
     """
     response = requests.get(f"{NODE_RED}location")
-    print(response)
 
     if response.status_code == 200:
         data = response.json()
@@ -564,15 +604,16 @@ def get_location():
         country = data.get("country")
         latitude = data.get("latitude")
         longitude = data.get("longitude")
-        print(data)
+
+        session["city"] = city
         
         return city, country, latitude, longitude
     
     elif response.status_code == 404:
-        print("No location set")
+        print("No location set in Node-Red.")
         return None, None, None, None
     else:
-        print(f"Failed to get location: {response.status_code}")
+        flash(f"Failed to retrieve location from Node-RED: {response.status_code}")
         return None, None, None, None
 
 def get_pairing_code():
@@ -584,8 +625,7 @@ def get_pairing_code():
         data = response.json()
         code = data.get("code", 000000)
 
-        print(code)
         return code
     else:
-        print(f"Error fetching sensor data from Node-Red: {response.status_code}")
+        flash(f"Error fetching pairing code from Node-Red: {response.status_code}")
     return None

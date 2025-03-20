@@ -123,6 +123,7 @@
                 </div>
             </form>   
         </section>
+        <p><a href="https://open-meteo.com">Location data by Open-Meteo.com</a></p>
 
         <section id="current_weather">
             <h4>Current Weather</h4>
@@ -169,6 +170,7 @@
                 <p>{{ weather.wind_direction_10m }}°</p>
             </div>
         </section>
+        <p><a href="https://open-meteo.com">Weather data by Open-Meteo.com</a></p>
 
         <section id="hourly_forecast">
             <h4>2-Day Hourly Weather Forecast</h4>
@@ -199,8 +201,10 @@
                 </div>
                 {% endfor %}
             </section>
-        </section>        
+        </section> 
+        <p><a href="https://open-meteo.com">Weather data by Open-Meteo.com</a></p>       
     </section>
+    
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 
