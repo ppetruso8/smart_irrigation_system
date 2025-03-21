@@ -271,7 +271,7 @@
         "type": "function",
         "z": "d27ff7acba5e037e",
         "name": "parse_data",
-        "func": "let sensorData = flow.get(\"sensorData\") || {};\nlet pumpData = flow.get(\"pumpData\") || {};\nlet lastFert = flow.get(\"lastFert\") || {};\n\nlet updatedSensorData = structuredClone(sensorData);\n\nupdatedSensorData.forEach(sensor => {\n    if (sensor.type === \"SOIL\") {\n        if (sensor.moisture > 2500) {\n            sensor.moisture = \"DRY\";\n        } else if (sensor.moisture > 2000) {\n            sensor.moisture = \"SEMI-DRY\";\n        } else if (sensor.moisture > 1500) {\n            sensor.moisture = \"DAMP\";\n        } else {\n            sensor.moisture = \"WET\"\n        }\n    }\n});\n    \n\nmsg.payload = {\n    sensors: updatedSensorData,\n    pumps: pumpData,\n    fert: lastFert\n};\n\nreturn msg;",
+        "func": "let sensorData = flow.get(\"sensorData\") || {};\nlet pumpData = flow.get(\"pumpData\") || {};\nlet lastFert = flow.get(\"lastFert\") || {};\n\nlet updatedSensorData = JSON.parse(JSON.stringify(sensorData));\n\nupdatedSensorData.forEach(sensor => {\n    if (sensor.type === \"SOIL\") {\n        if (sensor.moisture > 2500) {\n            sensor.moisture = \"DRY\";\n        } else if (sensor.moisture > 2000) {\n            sensor.moisture = \"SEMI-DRY\";\n        } else if (sensor.moisture > 1500) {\n            sensor.moisture = \"DAMP\";\n        } else {\n            sensor.moisture = \"WET\"\n        }\n    }\n});\n    \n\nmsg.payload = {\n    sensors: updatedSensorData,\n    pumps: pumpData,\n    fert: lastFert\n};\n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -318,7 +318,6 @@
         "y": 140,
         "wires": [
             [
-                "083c4b7369ede12a",
                 "35a8bc56db8a3151"
             ]
         ]
@@ -573,29 +572,12 @@
         "finalize": "",
         "libs": [],
         "x": 940,
-        "y": 480,
+        "y": 520,
         "wires": [
             [
-                "9218897efed46d9e",
                 "35a8bc56db8a3151"
             ]
         ]
-    },
-    {
-        "id": "9218897efed46d9e",
-        "type": "debug",
-        "z": "d27ff7acba5e037e",
-        "name": "debug 4",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "false",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 760,
-        "y": 380,
-        "wires": []
     },
     {
         "id": "d4bc37cb6b14bcdd",
@@ -677,22 +659,6 @@
         ]
     },
     {
-        "id": "083c4b7369ede12a",
-        "type": "debug",
-        "z": "d27ff7acba5e037e",
-        "name": "debug 6",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "false",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 1240,
-        "y": 140,
-        "wires": []
-    },
-    {
         "id": "a8a888fa98dae805",
         "type": "mqtt in",
         "z": "d27ff7acba5e037e",
@@ -709,8 +675,7 @@
         "y": 120,
         "wires": [
             [
-                "0f25c96d5a604298",
-                "49f58424f2ecc968"
+                "0f25c96d5a604298"
             ]
         ]
     },
@@ -793,7 +758,6 @@
         "y": 340,
         "wires": [
             [
-                "9218897efed46d9e",
                 "35a8bc56db8a3151"
             ]
         ]
@@ -836,8 +800,7 @@
         "y": 200,
         "wires": [
             [
-                "67426dc7e1634013",
-                "20eb51f4534b98e5"
+                "67426dc7e1634013"
             ]
         ]
     },
@@ -913,7 +876,7 @@
         "order": 1,
         "width": 0,
         "height": 0,
-        "format": "<div ng-init=\"pumps = []\">\n    <h2>Watering</h2>\n    <div ng-repeat=\"pump in pumps\">\n        <div ng-if=\"pump.type=='WATERING'\">\n            <h3>Pump {{pump.id}}</h3>\n            <div ng-if=\"pump.active == 1\">\n                <label>Watering Mode:</label>\n                <select ng-model=\"pump.currentWaterMode\" ng-change=\"updatePump(pump)\">\n                    <option value = \"LIGHT\">Light</option>\n                    <option value = \"MEDIUM\">Medium</option>\n                    <option value = \"HEAVY\">Heavy</option>\n                    <option value = \"CUSTOM\">Custom</option>\n                    <option value = \"AUTO\">Automatic</option>\n                </select>\n                <div ng-if=\"pump.currentWaterMode=='CUSTOM'\">\n                    <label>Custom Amount (ml):</label>\n                    <input type=\"number\" ng-model=\"pump.amount\" ng-change=\"updatePump(pump)\"/>\n                </div>\n\n                <label>Environment:</label>\n                <select ng-model=\"pump.env\" ng-change=\"updatePump(pump)\">\n                    <option value = \"INDOOR\">Indoor</option>\n                    <option value = \"OUTDOOR\">Outdoor</option>\n                </select>\n\n                <button ng-click=\"water(pump)\">Manual Watering</button>\n                <button ng-click=\"deactivatePump(pump)\">Deactivate</button>\n            </div>\n\n            <div ng-if=\"pump.active == 0\">\n                <p>Status: Inactive</p>\n                <button ng-click=\"activatePump(pump)\">Activate</button>\n            </div>\n        <hr/>\n        </div>\n    </div>\n\n    <h2>Fertilization</h2>\n    <div ng-repeat=\"pump in pumps\">\n        <div ng-if=\"pump.type=='FERTILIZATION'\">\n            <h3>Pump {{pump.id}}</h3>\n            <div ng-if=\"pump.active == 1\">\n                <label>Amount (ml):</label>\n                <input type=\"number\" ng-model=\"pump.amount\" ng-change=\"updatePump(pump)\"/>\n                <button ng-click=\"fertilize(pump)\">Fertilize</button>\n                <button ng-click=\"deactivatePump(pump)\">Deactivate</button>\n            </div>\n\n            <div ng-if=\"pump.active == 0\">\n                <p>Status: Inactive</p>\n                <button ng-click=\"activatePump(pump)\">Activate</button>\n            </div>\n        </div>\n    </div>\n\n</div>\n\n<script>\n    (function(scope) {\n        scope.$watch(\"msg\", function(msg) {\n            if (msg.payload.pumps) {\n                scope.pumps = msg.payload.pumps;\n            }\n        });\n\n        scope.updatePump = function(pump) {\n            scope.send({ payload: pump });\n        };\n\n        scope.water = function(pump) {\n            scope.send({ payload: \"WATER \" + pump.id  })\n        };\n\n        scope.fertilize = function(pump) {\n            scope.send({ payload: \"FERTILIZE \" + pump.id })\n        };\n\n        scope.activatePump = function(pump) {\n            scope.send({ payload: \"SET_STATUS 1 P \" + pump.id })\n        };\n\n        scope.deactivatePump = function(pump) {\n            scope.send({ payload: \"SET_STATUS 0 P \" + pump.id })\n        };\n    })(scope);\n</script>    ",
+        "format": "<div ng-init=\"pumps = []\">\n    <h2>Watering</h2>\n    <div ng-repeat=\"pump in pumps\">\n        <div ng-if=\"pump.type=='WATERING'\">\n            <h3>Pump {{pump.id}}</h3>\n            <div ng-if=\"pump.active == 1\">\n                <label>Watering Mode:</label>\n                <select ng-model=\"pump.currentWaterMode\" ng-change=\"updatePump(pump)\">\n                    <option value = \"LIGHT\">Light</option>\n                    <option value = \"MEDIUM\">Medium</option>\n                    <option value = \"HEAVY\">Heavy</option>\n                    <option value = \"CUSTOM\">Custom</option>\n                    <option value = \"AUTO\">Automatic</option>\n                </select>\n                <div ng-if=\"pump.currentWaterMode=='CUSTOM'\">\n                    <label>Custom Amount (ml):</label>\n                    <input type=\"number\" ng-model=\"pump.amount\" ng-change=\"updatePump(pump)\"/>\n                </div>\n\n                <label>Environment:</label>\n                <select ng-model=\"pump.env\" ng-change=\"updatePump(pump)\">\n                    <option value = \"INDOOR\">Indoor</option>\n                    <option value = \"OUTDOOR\">Outdoor</option>\n                </select>\n\n                <button ng-click=\"water(pump)\">Manual Watering</button>\n                <button ng-click=\"deactivatePump(pump)\">Deactivate</button>\n            </div>\n\n            <div ng-if=\"pump.active == 0\">\n                <p>Status: Inactive</p>\n                <button ng-click=\"activatePump(pump)\">Activate</button>\n            </div>\n        <hr/>\n        </div>\n    </div>\n\n    <h2>Fertilization</h2>\n    <div ng-repeat=\"pump in pumps\">\n        <div ng-if=\"pump.type=='FERTILIZATION'\">\n            <h3>Pump {{pump.id}}</h3>\n            <div ng-if=\"pump.active == 1\">\n                <label>Amount (ml):</label>\n                <input type=\"number\" ng-model=\"pump.amount\" ng-change=\"updatePump(pump)\"/>\n                <button ng-click=\"fertilize(pump)\">Fertilize</button>\n                <button ng-click=\"deactivatePump(pump)\">Deactivate</button>\n                <br>\n                <br>\n                <h4>Schedule Fertilization</h4>\n                <div ng-if=\"schedules[pump.id].next\">\n                    <p>Next Fertilization: {{schedules[pump.id].next | date:'dd MMM yyyy'}}</p>\n                    <button ng-click=\"removeSchedule(pump)\">Remove Schedule</button>\n                </div>\n                <div ng-if=\"!schedules[pump.id].next\">\n                    <label>Interval (days):</label>\n                    <input type=\"number\" ng-model=\"scheduleData[pump.id].interval\" ng-disabled=\"schedules[pump.id].next\"/>\n                    <button ng-click=\"schedule(pump)\" ng-disabled=\"schedules[pump.id].next\">Set Schedule</button>\n                </div>                \n            </div>\n\n            <div ng-if=\"pump.active == 0\">\n                <p>Status: Inactive</p>\n                <button ng-click=\"activatePump(pump)\">Activate</button>\n            </div>\n            <hr />\n        </div>\n    </div>\n\n</div>\n\n<script>\n    (function(scope) {\n        scope.scheduleData = {};\n\n        scope.$watch(\"msg\", function(msg) {\n            if (msg.payload.pumps) {\n                scope.pumps = msg.payload.pumps;\n            }\n\n            if (msg.payload.schedules) {\n                scope.schedules = msg.payload.schedules;\n            }\n        });\n\n        scope.updatePump = function(pump) {\n            scope.send({ payload: pump });\n        };\n\n        scope.water = function(pump) {\n            scope.send({ payload: \"WATER \" + pump.id  })\n        };\n\n        scope.fertilize = function(pump) {\n            scope.send({ payload: \"FERTILIZE \" + pump.id })\n        };\n\n        scope.activatePump = function(pump) {\n            scope.send({ payload: \"SET_STATUS 1 P \" + pump.id })\n        };\n\n        scope.deactivatePump = function(pump) {\n            scope.send({ payload: \"SET_STATUS 0 P \" + pump.id })\n        };\n\n        scope.schedule = function(pump) {\n            let schedule = scope.scheduleData[pump.id];\n            console.log(\"Schedule data:\", schedule);\n\n            if (schedule && schedule.interval) {\n                scope.send({\n                    payload: {\n                        cmd: \"SET_SCHEDULE\",\n                        pumpId: pump.id,\n                        interval: schedule.interval,\n                        amount: pump.amount\n                    }\n                });\n            }\n        };\n\n        scope.removeSchedule = function(pump) {\n            scope.send({ payload: { cmd: \"REMOVE_SCHEDULE\", pumpId: pump.id } }); \n        };\n    })(scope);\n</script>    ",
         "storeOutMessages": true,
         "fwdInMessages": false,
         "resendOnRefresh": true,
@@ -923,7 +886,8 @@
         "y": 480,
         "wires": [
             [
-                "83e5945683e998c8"
+                "83e5945683e998c8",
+                "47a1fcc3474e115c"
             ]
         ]
     },
@@ -942,18 +906,26 @@
                 "case": false
             },
             {
+                "t": "hask",
+                "v": "cmd",
+                "vt": "str"
+            },
+            {
                 "t": "else"
             }
         ],
         "checkall": "true",
         "repair": false,
-        "outputs": 2,
+        "outputs": 3,
         "x": 730,
         "y": 480,
         "wires": [
             [
-                "26bc4ad2b8edb0dc",
                 "35a8bc56db8a3151"
+            ],
+            [
+                "435e784f2b1ef4be",
+                "47a1fcc3474e115c"
             ],
             [
                 "0b7ce3cd5e5c992c"
@@ -961,27 +933,11 @@
         ]
     },
     {
-        "id": "26bc4ad2b8edb0dc",
-        "type": "debug",
-        "z": "d27ff7acba5e037e",
-        "name": "debug 5",
-        "active": false,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "false",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 820,
-        "y": 580,
-        "wires": []
-    },
-    {
         "id": "9cd49f64ca1c0a6a",
         "type": "function",
         "z": "d27ff7acba5e037e",
         "name": "get_pumps",
-        "func": "let pumpData = flow.get(\"pumpData\");\nmsg.payload = { pumps: pumpData};\nreturn msg;",
+        "func": "let pumpData = flow.get(\"pumpData\");\nlet fertSchedule = flow.get(\"fertSchedule\") || {};\nmsg.payload = { pumps: pumpData, schedules: fertSchedule};\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -1027,26 +983,9 @@
         "y": 340,
         "wires": [
             [
-                "b550b59d364fc311",
-                "b9345f9042f243cf"
+                "b550b59d364fc311"
             ]
         ]
-    },
-    {
-        "id": "b9345f9042f243cf",
-        "type": "debug",
-        "z": "d27ff7acba5e037e",
-        "name": "debug 7",
-        "active": false,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "false",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 400,
-        "y": 400,
-        "wires": []
     },
     {
         "id": "aa80139673ea7f9f",
@@ -1095,27 +1034,11 @@
         "y": 800,
         "wires": [
             [
-                "3c4d08b0a01ca613",
                 "675b189997db0a03",
-                "9b790e487fcb9bfd"
+                "9b790e487fcb9bfd",
+                "67dd47eb0cf057c7"
             ]
         ]
-    },
-    {
-        "id": "3c4d08b0a01ca613",
-        "type": "debug",
-        "z": "d27ff7acba5e037e",
-        "name": "debug 8",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "false",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 520,
-        "y": 920,
-        "wires": []
     },
     {
         "id": "8b6b7be419aec468",
@@ -1208,7 +1131,6 @@
         "y": 820,
         "wires": [
             [
-                "3c4d08b0a01ca613",
                 "8cc0b7f1f99c0f2b"
             ]
         ]
@@ -1424,7 +1346,7 @@
         "y": 860,
         "wires": [
             [
-                "9b790e487fcb9bfd"
+                "5555b7bb681124d5"
             ]
         ]
     },
@@ -1444,7 +1366,6 @@
         "y": 880,
         "wires": [
             [
-                "3c4d08b0a01ca613",
                 "d274d8733e658526"
             ]
         ]
@@ -1539,7 +1460,8 @@
         "name": "link in 1",
         "links": [
             "3cd73cc03c4febe6",
-            "4b7225d59a78a2fd"
+            "4b7225d59a78a2fd",
+            "d5da2a1ed7d7d6b9"
         ],
         "x": 105,
         "y": 360,
@@ -1669,7 +1591,7 @@
         "y": 920,
         "wires": [
             [
-                "9b790e487fcb9bfd"
+                "3f21db058e18ed58"
             ]
         ]
     },
@@ -1697,7 +1619,7 @@
         "type": "function",
         "z": "d27ff7acba5e037e",
         "name": "generate_pairing_code",
-        "func": "let code = Math.floor(100000 + Math.random() * 90000);\nflow.set(\"pairingCode\", code);\n\nlet codeWarn = \"PAIRING CODE: \" + code;\nnode.warn(codeWarn);\n\nmsg.payload = code;\nreturn msg;",
+        "func": "// random number generation source: https://stackoverflow.com/a/21816636\nlet code = Math.floor(100000 + Math.random() * 90000);\nflow.set(\"pairingCode\", code);\n\nlet codeWarn = \"PAIRING CODE: \" + code;\nnode.warn(codeWarn);\n\nmsg.payload = code;\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -1708,8 +1630,7 @@
         "y": 980,
         "wires": [
             [
-                "51ac4a909c09cb26",
-                "3c4d08b0a01ca613"
+                "51ac4a909c09cb26"
             ]
         ]
     },
@@ -1732,6 +1653,135 @@
         "color": "#000000",
         "x": 500,
         "y": 980,
+        "wires": []
+    },
+    {
+        "id": "3f21db058e18ed58",
+        "type": "http response",
+        "z": "d27ff7acba5e037e",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 530,
+        "y": 920,
+        "wires": []
+    },
+    {
+        "id": "5555b7bb681124d5",
+        "type": "http response",
+        "z": "d27ff7acba5e037e",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 530,
+        "y": 860,
+        "wires": []
+    },
+    {
+        "id": "435e784f2b1ef4be",
+        "type": "function",
+        "z": "d27ff7acba5e037e",
+        "name": "fert_scheduling",
+        "func": "let data = msg.payload;\nlet schedules = flow.get(\"fertSchedule\") || {};\nlet pumpId = data.pumpId;\n\nif (data.cmd === \"SET_SCHEDULE\") {\n    let interval = parseInt(data.interval);\n    let amount = parseInt(data.amount);\n    \n    let last = new Date();\n    let next = new Date(last);\n    next.setDate(last.getDate() + interval);\n\n    schedules[pumpId] = {\n        interval: interval,\n        amount: amount,\n        last: last,\n        next: next\n    };\n\n    flow.set(\"fertSchedule\", schedules);\n} \n\nelse if (data.cmd === \"REMOVE_SCHEDULE\") {\n    delete schedules[pumpId];\n    flow.set(\"fertSchedule\", schedules)\n}\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 940,
+        "y": 480,
+        "wires": [
+            [
+                "d5da2a1ed7d7d6b9"
+            ]
+        ]
+    },
+    {
+        "id": "0de762bddff2b5df",
+        "type": "inject",
+        "z": "d27ff7acba5e037e",
+        "name": "Every day 7:30am",
+        "props": [],
+        "repeat": "",
+        "crontab": "30 07 * * *",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 90,
+        "y": 620,
+        "wires": [
+            [
+                "684e7313440e6d59"
+            ]
+        ]
+    },
+    {
+        "id": "684e7313440e6d59",
+        "type": "function",
+        "z": "d27ff7acba5e037e",
+        "name": "fertilization_scheduling",
+        "func": "let schedules = flow.get(\"fertSchedule\") || {};\nlet now = new Date();\n\nfor (let pumpId in schedules) {\n    let schedule = schedules[pumpId];\n\n    // get date of next run\n    let last = new Date(schedule.last);\n    let next = new Date(last);\n    next.setDate(last.getDate() + schedule.interval);\n\n    // fertilization due\n    if (now >= next) {\n        schedule.last = now;\n        next = new Date(now);\n        next.setDate(last.getDate() + schedule.interval);\n        schedule.next = next;\n        \n        let cmd = \"FERTILIZE \" + pumpId + \" \" + schedule.amount;\n        flow.set(\"fertSchedule\", schedules);\n        msg.payload = cmd;\n        node.send(msg);\n    }\n    \n}",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 320,
+        "y": 620,
+        "wires": [
+            [
+                "66b83fcb635ce3d4"
+            ]
+        ]
+    },
+    {
+        "id": "66b83fcb635ce3d4",
+        "type": "mqtt out",
+        "z": "d27ff7acba5e037e",
+        "name": "",
+        "topic": "irrigation/control",
+        "qos": "0",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "5d42f12891b474f7",
+        "x": 560,
+        "y": 620,
+        "wires": []
+    },
+    {
+        "id": "47a1fcc3474e115c",
+        "type": "debug",
+        "z": "d27ff7acba5e037e",
+        "name": "debug 4",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 780,
+        "y": 580,
+        "wires": []
+    },
+    {
+        "id": "d5da2a1ed7d7d6b9",
+        "type": "link out",
+        "z": "d27ff7acba5e037e",
+        "name": "link out 4",
+        "mode": "link",
+        "links": [
+            "abbd9d99b626c236"
+        ],
+        "x": 1065,
+        "y": 480,
         "wires": []
     }
 ]
