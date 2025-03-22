@@ -166,6 +166,9 @@ def index():
                 session["sensors_soil"][sensor_no]["env"] = new_env
                 session["sensors_soil"][sensor_no]["mode"] = new_mode
 
+                if new_mode == "Automatic":
+                    new_mode = "AUTO"
+
                 send_command(f"CHMOD {session['sensors_soil'][sensor_no]['pump']} {new_mode.upper()}")
                 send_command(f"SET_ENV {session['sensors_soil'][sensor_no]['pump']} {new_env.upper()}")
 
@@ -428,6 +431,18 @@ def stats_data():
     
     return jsonify(data)
 
+@app.route("/set_fert_schedule", methods=["POST"])
+def set_fert_schedule():
+    pump_id = request.form.get("pump_id")
+    interval = int(request.form.get("interval"))
+
+    if interval > 0:
+        # send command to Node-RED
+        command = f"SET_SCHEDULE {pump_id} {interval}"
+        send_command(command)
+    
+    return redirect(url_for("index"))
+
 
 @app.errorhandler(404)
 def page_not_found(error):
@@ -577,10 +592,18 @@ def get_data():
                 }
             elif pump["type"] == "FERTILIZATION":
                 last_fert = data.get("fert", {}).get(str(pump_id), {})
+                next_fert = data.get("fertSchedule", {})
+                if next_fert != {}:
+                    next_fert = next_fert.get(str(pump_id)).get("next", None)
+                
+                if next_fert:
+                    next_fert = datetime.strptime(next_fert, "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%d/%m/%Y 7:30")
+                
                 pumps_fert[pump_id] = {
                     "amount": pump["amount"],
                     "last": last_fert.get("timestamp", "No data"),
-                    "env": pump["env"]
+                    "env": pump["env"],
+                    "next": next_fert
                 }
 
         session["sensors_soil"] = sensors_soil

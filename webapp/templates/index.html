@@ -84,6 +84,23 @@
                             <button class=submit_button type ="submit">Fertilize</button>
                         </form>
 
+                        <h5>Schedule Fertilization</h5>
+                        
+                        {% if pump.next %}
+                            <p>Next Fertilization: {{ pump.next }}</p>
+                            <form class="func_buttons" action="/send_command" method="post">
+                                <input type="hidden" name="command" value="REMOVE_SCHEDULE {{ pump_no }}">
+                                <button class="submit_button" type="submit">Remove Schedule</button>
+                            </form>
+                        {% else %}
+                            <form class="func_buttons" action="/set_fert_schedule" method="post">
+                                <input type="hidden" name="pump_id" value="{{ pump_no }}">
+                                <label for="interval">Interval (days):</label>
+                                <input type="number" name="interval" required>
+                                <button class="submit_button" type="submit"> Schedule</button>
+                            </form>
+                        {% endif %}
+
                         <h5>Settings</h5>
                         <form action="" method="POST" novalidate>
                             {{ pump_forms[pump_no].hidden_tag() }}

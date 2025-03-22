@@ -271,7 +271,7 @@
         "type": "function",
         "z": "d27ff7acba5e037e",
         "name": "parse_data",
-        "func": "let sensorData = flow.get(\"sensorData\") || {};\nlet pumpData = flow.get(\"pumpData\") || {};\nlet lastFert = flow.get(\"lastFert\") || {};\n\nlet updatedSensorData = JSON.parse(JSON.stringify(sensorData));\n\nupdatedSensorData.forEach(sensor => {\n    if (sensor.type === \"SOIL\") {\n        if (sensor.moisture > 2500) {\n            sensor.moisture = \"DRY\";\n        } else if (sensor.moisture > 2000) {\n            sensor.moisture = \"SEMI-DRY\";\n        } else if (sensor.moisture > 1500) {\n            sensor.moisture = \"DAMP\";\n        } else {\n            sensor.moisture = \"WET\"\n        }\n    }\n});\n    \n\nmsg.payload = {\n    sensors: updatedSensorData,\n    pumps: pumpData,\n    fert: lastFert\n};\n\nreturn msg;",
+        "func": "let sensorData = flow.get(\"sensorData\") || {};\nlet pumpData = flow.get(\"pumpData\") || {};\nlet lastFert = flow.get(\"lastFert\") || {};\nlet fertSchedule = flow.get(\"fertSchedule\") || {};\n\nlet updatedSensorData = JSON.parse(JSON.stringify(sensorData));\n\nupdatedSensorData.forEach(sensor => {\n    if (sensor.type === \"SOIL\") {\n        if (sensor.moisture > 2500) {\n            sensor.moisture = \"DRY\";\n        } else if (sensor.moisture > 2000) {\n            sensor.moisture = \"SEMI-DRY\";\n        } else if (sensor.moisture > 1500) {\n            sensor.moisture = \"DAMP\";\n        } else {\n            sensor.moisture = \"WET\"\n        }\n    }\n});\n    \n\nmsg.payload = {\n    sensors: updatedSensorData,\n    pumps: pumpData,\n    fert: lastFert,\n    fertSchedule: fertSchedule\n};\n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -327,7 +327,7 @@
         "type": "function",
         "z": "d27ff7acba5e037e",
         "name": "water",
-        "func": "let data = flow.get(\"sensorData\"); // array of sensors\nlet pumps = flow.get(\"pumpData\");  // array of pumps\n// weather forecast\nlet totalPrecip = parseFloat(flow.get(\"totalPrecipHourly\")) || 0; // total precipitation in mm today\nlet probPrecip = flow.get(\"probPrecip\") || []; // true if precipitation probability above 30\nlet hourlyPrecip = flow.get(\"hourlyRain\") || []; // array with hourly percipitation \n\nlet recheckActive = flow.get(\"isRecheckActive\") || false;\nlet outputMsgs = [];    // output commands\n\nlet moistureThreshold = 1500;    // wet soil\n\n\ndata.forEach(sensor => {\n    // skip DHT and inactive sensors\n    if (sensor.type !== \"SOIL\" || sensor.active === 0) {\n        return;\n    }\n\n    let soilMoisture = sensor.moisture;\n    let pumpId = sensor.pump;\n    let command = \"\";\n\n    // set default values\n    let env = \"INDOOR\"; \n    let defaultWaterMode = \"AUTO\";\n    let customWaterAmount = 0;\n\n    // get associated pump\n    let pump = pumps.find(item => item.id === pumpId);\n    if (pump) {\n        env = pump.env;\n        defaultWaterMode = pump.currentWaterMode;\n        customWaterAmount = pump.amount;\n    }\n\n    // User overriden watering mode\n    if (defaultWaterMode !== \"AUTO\") {\n        if (defaultWaterMode === \"CUSTOM\" && customWaterAmount > 0) {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" CUSTOM \" + customWaterAmount;\n            // flow.set(\"lastWateringMode\", msg.payload.substring(6,13));\n        } else {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" \" + defaultWaterMode;\n            // flow.set(\"lastWateringMode\", msg.payload.substring(6,));\n        }\n\n        // don't send the same command twice\n        if (!outputMsgs.some(output => output.payload === command)) {\n            outputMsgs.push({ payload: command });\n        }   \n        \n        return;\n    }\n\n    // INDOOR MODE\n    if (env === \"INDOOR\") {\n        if (soilMoisture <= moistureThreshold) {\n            command = \"IDLE \" + pumpId.toString() + \" \" + sensor.id.toString();\n        } else if (soilMoisture <= 2000) {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" LIGHT\";\n        } else if (soilMoisture <= 2500) {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" MEDIUM\";\n        } else {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" HEAVY\";\n        }\n    }\n    // OUTDOOR MODE\n    else {\n        // check forecast (if rain is expected in next 4/6 hours)\n        let d = new Date().getUTCHours() // get current hour in UTC\n        // how many hours to check forecast for\n        let checkHrs = (d === 17) ? 6 : 4;  // if last check of the day, check next 6 hours\n        let checkMax = Math.min(d+checkHrs, hourlyPrecip.length) // get the upper boundary index for weather check\n\n        // get total precipitation mm and max precipitation probabilty in next x hours \n        let totalRainNextHours = 0;\n        let maxPrecipProb = 0;\n        for (var i = d; i < checkMax; i++) {\n            totalRainNextHours += hourlyPrecip[i];\n            \n            if (probPrecip[i] > maxPrecipProb) {\n                maxPrecipProb = probPrecip[i];\n            }\n        }\n\n        // determine if watering needed\n        if (soilMoisture<= moistureThreshold) {\n            command = \"IDLE \" + pumpId.toString();   // no need to water\n        }\n        else if (soilMoisture <= 2000) {\n            if (maxPrecipProb < 30) {\n                command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" LIGHT\";\n            } else {\n                command = \"IDLE \" + pumpId.toString() + \" \" + sensor.id.toString();\n            }\n        } else if (soilMoisture <= 2500) {\n            if (maxPrecipProb < 30) {\n                command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" MEDIUM\";\n            } else if (totalRainNextHours < 2) {\n                command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" LIGHT\";\n            } else {\n                command = \"IDLE \" + pumpId.toString() + \" \" + sensor.id.toString();\n            }\n        } else {    // soil is dry\n            if (maxPrecipProb < 30) {\n                command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" HEAVY\";\n            } else if (totalRainNextHours < 2) {\n                command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" MEDIUM\";\n            } else if (totalRainNextHours < 4) {\n                command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" LIGHT\";\n            } else {\n                command = \"IDLE \" + pumpId.toString();\n            }\n        }\n    }\n\n    // don't send the same command twice\n    if (!outputMsgs.some(output => output.payload === command)) {\n        outputMsgs.push({ payload: command });\n    }\n\n\n})\n\n\n// store chosen watering mode into flow for log\n// flow.set(\"lastWateringMode\", msg.payload.substring(6,));\n\n// recheck soil moisture after 10 minutes if watering\nif (!recheckActive) {\n    if (outputMsgs.some(msg => msg.payload.includes(\"WATER\"))) {\n        flow.set(\"isRecheckActive\", true);\n        setTimeout(() => {\n            // send READ message to trigger new reading and function execution\n            node.send({ payload: \"READ\"});  \n            }, 600000);   // recheck in 10 minutes\n    }\n} else {\n    flow.set(\"isRecheckActive\", false);    \n} \n\nreturn [outputMsgs];",
+        "func": "let data = flow.get(\"sensorData\"); // array of sensors\nlet pumps = flow.get(\"pumpData\");  // array of pumps\n// weather forecast\nlet totalPrecip = parseFloat(flow.get(\"totalPrecipHourly\")) || 0; // total precipitation in mm today\nlet probPrecip = flow.get(\"probPrecip\") || []; // true if precipitation probability above 30\nlet hourlyPrecip = flow.get(\"hourlyRain\") || []; // array with hourly percipitation \n\nlet recheckActive = flow.get(\"isRecheckActive\") || false;\nlet outputMsgs = [];    // output commands\n\nlet moistureThreshold = 1500;    // wet soil\n\n\ndata.forEach(sensor => {\n    // skip DHT and inactive sensors\n    if (sensor.type !== \"SOIL\" || sensor.active === 0) {\n        return;\n    }\n\n    let soilMoisture = sensor.moisture;\n    let pumpId = sensor.pump;\n    let command = \"\";\n\n    // set default values\n    let env = \"INDOOR\"; \n    let defaultWaterMode = \"AUTO\";\n    let customWaterAmount = 0;\n\n    // get associated pump\n    let pump = pumps.find(item => item.id === pumpId);\n    if (pump) {\n        env = pump.env;\n        defaultWaterMode = pump.currentWaterMode;\n        customWaterAmount = pump.amount;\n    }\n\n    // User overriden watering mode\n    if (defaultWaterMode !== \"AUTO\") {\n        if (defaultWaterMode === \"CUSTOM\" && customWaterAmount > 0) {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" CUSTOM \" + customWaterAmount;\n        } else {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" \" + defaultWaterMode;\n        }\n\n        // don't send the same command twice\n        if (!outputMsgs.some(output => output.payload === command)) {\n            outputMsgs.push({ payload: command });\n        }   \n        \n        return;\n    }\n\n    // INDOOR MODE\n    if (env === \"INDOOR\") {\n        if (soilMoisture <= moistureThreshold) {\n            command = \"IDLE \" + pumpId.toString() + \" \" + sensor.id.toString();\n        } else if (soilMoisture <= 2000) {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" LIGHT\";\n        } else if (soilMoisture <= 2500) {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" MEDIUM\";\n        } else {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" HEAVY\";\n        }\n    }\n    // OUTDOOR MODE\n    else {\n        // check forecast (if rain is expected in next 4/6 hours)\n        let d = new Date().getUTCHours() // get current hour in UTC\n        // how many hours to check forecast for\n        let checkHrs = (d === 17) ? 6 : 4;  // if last check of the day, check next 6 hours\n        let checkMax = Math.min(d+checkHrs, hourlyPrecip.length) // get the upper boundary index for weather check\n\n        // get total precipitation mm and max precipitation probabilty in next x hours \n        let totalRainNextHours = 0;\n        let maxPrecipProb = 0;\n        for (var i = d; i < checkMax; i++) {\n            totalRainNextHours += hourlyPrecip[i];\n            \n            if (probPrecip[i] > maxPrecipProb) {\n                maxPrecipProb = probPrecip[i];\n            }\n        }\n\n        // determine if watering needed\n        if (soilMoisture<= moistureThreshold) {\n            command = \"IDLE \" + pumpId.toString();   // no need to water\n        }\n        else if (soilMoisture <= 2000) {\n            if (maxPrecipProb < 40) {\n                command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" LIGHT\";\n            } else {\n                command = \"IDLE \" + pumpId.toString() + \" \" + sensor.id.toString();\n            }\n        } else if (soilMoisture <= 2500) {\n            if (maxPrecipProb < 40) {\n                command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" MEDIUM\";\n            } else if (totalRainNextHours < 2) {\n                command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" LIGHT\";\n            } else {\n                command = \"IDLE \" + pumpId.toString() + \" \" + sensor.id.toString();\n            }\n        } else {    // soil is dry\n            if (maxPrecipProb < 40) {\n                command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" HEAVY\";\n            } else if (totalRainNextHours < 2) {\n                command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" MEDIUM\";\n            } else if (totalRainNextHours < 4) {\n                command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" LIGHT\";\n            } else {\n                command = \"IDLE \" + pumpId.toString();\n            }\n        }\n    }\n\n    // don't send the same command twice\n    if (!outputMsgs.some(output => output.payload === command)) {\n        outputMsgs.push({ payload: command });\n    }\n})\n\n// recheck soil moisture after 10 minutes if watering\nif (!recheckActive) {\n    if (outputMsgs.some(msg => msg.payload.includes(\"WATER\"))) {\n        flow.set(\"isRecheckActive\", true);\n        setTimeout(() => {\n            // send READ message to trigger new reading and function execution\n            node.send({ payload: \"READ\"});  \n            }, 600000);   // recheck in 10 minutes\n    }\n} else {\n    flow.set(\"isRecheckActive\", false);    \n} \n\nreturn [outputMsgs];",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -484,7 +484,7 @@
         "type": "function",
         "z": "d27ff7acba5e037e",
         "name": "parse_forecast_api",
-        "func": "let data = JSON.parse(msg.payload);\nlet rain = data.hourly.rain;\nlet showers = data.hourly.showers;\nlet probability = data.hourly.precipitation_probability;\n\n// get total rain + showers in mm\nlet totalPrecipitationHourly = [];\nlet totalPrecip = 0;\nfor (var i = 0; i < 24; i++) {\n    totalPrecipitationHourly[i] = rain[i] + showers[i];\n    totalPrecip += rain[i] + showers[i];\n}\n\ntotalPrecip = Math.floor(totalPrecip*100)/100;\n\n// find maximum precipitation probability\nlet maxPrecipProb = Math.max(...probability);\n\n// save data in the flow\nflow.set(\"totalPrecipHourly\", totalPrecipitationHourly);\nflow.set(\"probabPrecip\", probability);\nflow.set(\"hourlyRain\", rain);\n\nmsg.payload = {\n    totalPrecipHourly: totalPrecipitationHourly,\n    totalPrecip: totalPrecip,\n    probabPrecip: probability,\n    hourlyRain: rain,\n    maxPrecipProb: maxPrecipProb\n}\n\nreturn msg;",
+        "func": "let data = JSON.parse(msg.payload);\nlet rain = data.hourly.rain;\nlet showers = data.hourly.showers;\nlet probability = data.hourly.precipitation_probability;\n\n// get total rain + showers in mm\nlet totalPrecipitationHourly = [];\nlet totalPrecip = 0;\nfor (var i = 0; i < 24; i++) {\n    totalPrecipitationHourly[i] = rain[i] + showers[i];\n    totalPrecip += rain[i] + showers[i];\n}\n\ntotalPrecip = Math.floor(totalPrecip*100)/100;\n\n// find maximum precipitation probability\nlet maxPrecipProb = Math.max(...probability);\n\n// save data in the flow\nflow.set(\"totalPrecipHourly\", totalPrecipitationHourly);\nflow.set(\"probPrecip\", probability);\nflow.set(\"hourlyRain\", rain);\n\n// check forecast (if rain is expected in next 4/6 hours)\nlet d = new Date().getUTCHours() // get current hour in UTC\n// how many hours to check forecast for\nlet checkHrs = 4;\nlet checkMax = Math.min(d+checkHrs, rain.length) // get the upper boundary index for weather check\n\n// get total precipitation mm and max precipitation probabilty in next x hours \nlet totalRainNextHours = 0;\nlet maxPrecipProb4 = 0;\nfor (var i = d; i < checkMax; i++) {\n    totalRainNextHours += rain[i];\n    \n    if (probability[i] > maxPrecipProb4) {\n        maxPrecipProb4 = probability[i];\n    }\n}\n\nmsg.payload = {\n    totalPrecipHourly: totalPrecipitationHourly,\n    totalPrecip: totalPrecip,\n    totalPrecip4: totalRainNextHours,\n    probabPrecip: probability,\n    hourlyRain: rain,\n    maxPrecipProb: maxPrecipProb,\n    maxPrecipProb4: maxPrecipProb4\n}\n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -497,7 +497,9 @@
             [
                 "5f96e176689cce61",
                 "cc3e4bd4a741bcd4",
-                "da5a3b8216fe6eb0"
+                "da5a3b8216fe6eb0",
+                "cc0163f67d5b6408",
+                "287b5cff0497fdd0"
             ]
         ]
     },
@@ -513,7 +515,7 @@
         "complete": "false",
         "statusVal": "",
         "statusType": "auto",
-        "x": 1420,
+        "x": 1440,
         "y": 1200,
         "wires": []
     },
@@ -535,7 +537,7 @@
         "fontSize": 16,
         "color": "#000000",
         "x": 1730,
-        "y": 1100,
+        "y": 1060,
         "wires": []
     },
     {
@@ -547,7 +549,7 @@
         "width": 0,
         "height": 0,
         "name": "",
-        "label": "Highest Probabilty of Rainfall",
+        "label": "Highest Probabilty of Rainfall Today",
         "format": "{{msg.payload.maxPrecipProb}}%",
         "layout": "row-spread",
         "className": "",
@@ -555,7 +557,7 @@
         "font": "",
         "fontSize": 16,
         "color": "#000000",
-        "x": 1720,
+        "x": 1740,
         "y": 1140,
         "wires": []
     },
@@ -587,7 +589,7 @@
         "spec": "rfc",
         "sep": ",",
         "hdrin": true,
-        "hdrout": "once",
+        "hdrout": "none",
         "multi": "one",
         "ret": "\\n",
         "temp": "timestamp,pump,sensor,env,moisture,waterAmount",
@@ -924,8 +926,7 @@
                 "35a8bc56db8a3151"
             ],
             [
-                "435e784f2b1ef4be",
-                "47a1fcc3474e115c"
+                "435e784f2b1ef4be"
             ],
             [
                 "0b7ce3cd5e5c992c"
@@ -1072,7 +1073,7 @@
         "expiry": "",
         "broker": "5d42f12891b474f7",
         "x": 940,
-        "y": 800,
+        "y": 740,
         "wires": []
     },
     {
@@ -1085,9 +1086,19 @@
         "rules": [
             {
                 "t": "regex",
-                "v": "(WATER|GET_ALL|FERTILIZE)",
+                "v": "(GET_ALL|FERTILIZE)",
                 "vt": "str",
                 "case": false
+            },
+            {
+                "t": "cont",
+                "v": "SCHEDULE",
+                "vt": "str"
+            },
+            {
+                "t": "cont",
+                "v": "WATER",
+                "vt": "str"
             },
             {
                 "t": "cont",
@@ -1100,12 +1111,18 @@
         ],
         "checkall": "true",
         "repair": false,
-        "outputs": 3,
+        "outputs": 5,
         "x": 530,
         "y": 800,
         "wires": [
             [
                 "8cc0b7f1f99c0f2b"
+            ],
+            [
+                "d4601369666ff4e4"
+            ],
+            [
+                "84e6584d1dd12617"
             ],
             [
                 "5ee49e6e39806bf4"
@@ -1128,7 +1145,7 @@
         "finalize": "",
         "libs": [],
         "x": 730,
-        "y": 820,
+        "y": 880,
         "wires": [
             [
                 "8cc0b7f1f99c0f2b"
@@ -1363,7 +1380,7 @@
         "finalize": "",
         "libs": [],
         "x": 710,
-        "y": 880,
+        "y": 920,
         "wires": [
             [
                 "d274d8733e658526"
@@ -1495,8 +1512,8 @@
             "80c0ac79022b9ef6",
             "108723215eb4d72c"
         ],
-        "x": 875,
-        "y": 880,
+        "x": 845,
+        "y": 920,
         "wires": []
     },
     {
@@ -1626,7 +1643,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 260,
+        "x": 320,
         "y": 980,
         "wires": [
             [
@@ -1651,7 +1668,7 @@
         "font": "",
         "fontSize": 16,
         "color": "#000000",
-        "x": 500,
+        "x": 560,
         "y": 980,
         "wires": []
     },
@@ -1782,6 +1799,131 @@
         ],
         "x": 1065,
         "y": 480,
+        "wires": []
+    },
+    {
+        "id": "84e6584d1dd12617",
+        "type": "function",
+        "z": "d27ff7acba5e037e",
+        "name": "water",
+        "func": "let cmd = msg.payload;\n\nlet sensors = flow.get(\"sensorData\"); // array of sensors\nlet pumps = flow.get(\"pumpData\");  // array of pumps\n\n// weather forecast\nlet totalPrecip = parseFloat(flow.get(\"totalPrecipHourly\")) || 0; // total precipitation in mm today\nlet probPrecip = flow.get(\"probPrecip\") || []; // true if precipitation probability above 30\nlet hourlyPrecip = flow.get(\"hourlyRain\") || []; // array with hourly percipitation \n\nlet moistureThreshold = 1500;    // wet soil\n\nlet cmdSplit = cmd.split(\" \");\nlet pumpId = parseInt(cmdSplit[1]);\nlet sensorId = parseInt(cmdSplit[2]);\n\nlet sensor = sensors.find(s => s.id === sensorId);\nlet pump = pumps.find(p => p.id === pumpId);\nlet defaultWaterMode = pump.currentWaterMode;\nlet envMode = pump.env;\nlet customWaterAmount = pump.amount;\nlet soilMoisture = sensor.moisture;\nlet command = \"\";\n\n// User overriden watering mode\nif (defaultWaterMode !== \"AUTO\") {\n    if (defaultWaterMode === \"CUSTOM\" && customWaterAmount > 0) {\n        command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" CUSTOM \" + customWaterAmount;\n    } else {\n        command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" \" + defaultWaterMode;\n    }\n\n    msg.payload = command;\n    return msg;\n}\n\n// INDOOR MODE\nif (envMode === \"INDOOR\") {\n    node.warn(\"I1\");\n    if (soilMoisture <= moistureThreshold) {\n        command = \"IDLE \" + pumpId.toString() + \" \" + sensor.id.toString();\n    } else if (soilMoisture <= 2000) {\n        command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" LIGHT\";\n    } else if (soilMoisture <= 2500) {\n        command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" MEDIUM\";\n    } else {\n        command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" HEAVY\";\n    }\n}\n\n// OUTDOOR MODE\nelse {\n    node.warn(\"O1\")\n    // check forecast (if rain is expected in next 4/6 hours)\n    let d = new Date().getUTCHours() // get current hour in UTC\n    // how many hours to check forecast for\n    let checkHrs = (d === 17) ? 6 : 4;  // if last check of the day, check next 6 hours\n    let checkMax = Math.min(d+checkHrs, hourlyPrecip.length) // get the upper boundary index for weather check\n\n    // get total precipitation mm and max precipitation probabilty in next x hours \n    let totalRainNextHours = 0;\n    let maxPrecipProb = 0;\n    for (var i = d; i < checkMax; i++) {\n        totalRainNextHours += hourlyPrecip[i];\n        \n        if (probPrecip[i] > maxPrecipProb) {\n            maxPrecipProb = probPrecip[i];\n        }\n    }\n\n    // determine if watering needed\n    if (soilMoisture<= moistureThreshold) {\n        command = \"IDLE \" + pumpId.toString();   // no need to water\n    }\n    else if (soilMoisture <= 2000) {\n        if (maxPrecipProb < 40) {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" LIGHT\";\n        } else {\n            command = \"IDLE \" + pumpId.toString() + \" \" + sensor.id.toString();\n        }\n    } else if (soilMoisture <= 2500) {\n        if (maxPrecipProb < 40) {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" MEDIUM\";\n        } else if (totalRainNextHours < 2) {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" LIGHT\";\n        } else {\n            command = \"IDLE \" + pumpId.toString() + \" \" + sensor.id.toString();\n        }\n    } else {    // soil is dry\n        if (maxPrecipProb < 40) {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" HEAVY\";\n        } else if (totalRainNextHours < 2) {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" MEDIUM\";\n        } else if (totalRainNextHours < 4) {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" LIGHT\";\n        } else {\n            command = \"IDLE \" + pumpId.toString();\n        }\n    }\n}\n\nmsg.payload = command; \n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 690,
+        "y": 840,
+        "wires": [
+            [
+                "aefabd0936f9a060",
+                "8cc0b7f1f99c0f2b"
+            ]
+        ]
+    },
+    {
+        "id": "3125a1e4e18d2df9",
+        "type": "inject",
+        "z": "d27ff7acba5e037e",
+        "name": "Default location",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "Cork",
+        "payloadType": "str",
+        "x": 100,
+        "y": 1260,
+        "wires": [
+            [
+                "19a66b9f64c1c03b",
+                "39d62ff274109513"
+            ]
+        ]
+    },
+    {
+        "id": "cc0163f67d5b6408",
+        "type": "ui_text",
+        "z": "d27ff7acba5e037e",
+        "group": "56688f1969147e9e",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Highest Probabilty of Rainfall Next 4h",
+        "format": "{{msg.payload.maxPrecipProb4}}%",
+        "layout": "row-spread",
+        "className": "",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#000000",
+        "x": 1750,
+        "y": 1180,
+        "wires": []
+    },
+    {
+        "id": "287b5cff0497fdd0",
+        "type": "ui_text",
+        "z": "d27ff7acba5e037e",
+        "group": "56688f1969147e9e",
+        "order": 4,
+        "width": "0",
+        "height": "0",
+        "name": "",
+        "label": "Total Predicted Rainfall Next 4h",
+        "format": "{{msg.payload.totalPrecip4}} mm",
+        "layout": "row-spread",
+        "className": "",
+        "style": false,
+        "font": "",
+        "fontSize": 16,
+        "color": "#000000",
+        "x": 1730,
+        "y": 1100,
+        "wires": []
+    },
+    {
+        "id": "d4601369666ff4e4",
+        "type": "function",
+        "z": "d27ff7acba5e037e",
+        "name": "fert",
+        "func": "let data = msg.payload;\nlet splitData = data.split(\" \");\nlet pumpId = parseInt(splitData[1]);\n\nif (splitData[0] === \"SET_SCHEDULE\") {\n    let interval = splitData[2];\n    let pumps = flow.get(\"pumpData\") || {};\n    let pump = pumps.find(p => p.id === pumpId);\n    let amount = pump.amount;\n\n    msg.payload = {\n        cmd: \"SET_SCHEDULE\",\n        pumpId: pumpId,\n        interval: interval,\n        amount: amount\n    };\n} \nelse if (splitData[0] === \"REMOVE_SCHEDULE\") {\n    msg.payload = {\n        cmd: \"REMOVE_SCHEDULE\",\n        pumpId: pumpId\n    };\n}\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 690,
+        "y": 800,
+        "wires": [
+            [
+                "435e784f2b1ef4be"
+            ]
+        ]
+    },
+    {
+        "id": "aefabd0936f9a060",
+        "type": "debug",
+        "z": "d27ff7acba5e037e",
+        "name": "debug 5",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 940,
+        "y": 860,
         "wires": []
     }
 ]
