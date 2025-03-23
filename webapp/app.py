@@ -420,16 +420,29 @@ def stats_data():
     data = data.dropna()
     data["timestamp"] = pd.to_datetime(data["timestamp"], format="%d/%m/%Y %H:%M")
     
-    # get only latest 10 days
+    # filter latest 10 days
     latest = data["timestamp"].max()
     start = latest - pd.Timedelta(days = 10)
     data = data[data["timestamp"] >= start]
     
     # prepare data for AnyChart
     data["timestamp"] = data["timestamp"].dt.strftime("%Y-%m-%dT%H:%M:%S")
-    data = data.to_dict(orient="records")
+    data_dict = data.to_dict(orient="records")
     
-    return jsonify(data)
+    # average soil moisture per sensor
+    avg_moisture = data.groupby([data["timestamp"].str[:10], "sensor"])
+    avg_moisture = avg_moisture["soil_moisture"].mean().reset_index()
+    avg_moisture = avg_moisture.to_dict(orient="records")
+    
+
+    # total watering
+    watering = data["watering_amount_ml"].sum()
+
+    return jsonify({
+        "data": data_dict,
+        "avg_moisture": avg_moisture,
+        "watering": f"{watering}"
+    })
 
 @app.route("/set_fert_schedule", methods=["POST"])
 def set_fert_schedule():

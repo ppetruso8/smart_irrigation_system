@@ -8,6 +8,12 @@
 {% block main_content %}
 <h1>Statistics</h1>
 
+<h2>General</h2>
+<p id="watering_total"></p>
+
+<h3>Average Soil Moisture (Latest 10 Days)</h3>
+<div id="container_avg_moisture" style="width: 100%; height: 600px;"></div>
+
 <h2>Pump 1</h2>
 <div id="container_pump1" style="width: 100%; height: 600px;"></div>
 
@@ -23,12 +29,44 @@
         .then(response => response.json())
         // iterate over data
         .then(data => {
-            // convert timestamp to Date
-            data.forEach(d => d.timestamp = new Date(d.timestamp));
+            // GENERAL
+            let wateringTotal = "Total Watering Amount (Latest 10 Days): " + data.watering.toString() + " ml";
+            document.getElementById("watering_total").innerText = wateringTotal;
+
+            // AVERAGE SOIL MOISTURE
+            data.avg_moisture.forEach(d => d.timestamp = new Date(d.timestamp));
+            let chart_avg_moisture = anychart.line();
+
+            let sensors = [...new Set(data.avg_moisture.map(d => d.sensor))];
+            sensors.forEach(sensor => {
+                let sensorData = data.avg_moisture.filter(d => d.sensor === sensor).map(d => [d.timestamp.getTime(), d.soil_moisture]);
+                let series = chart_avg_moisture.line(sensorData);
+                let sensorName = "Sensor " + sensor.toString();
+                series.name(sensorName);
+            });
+
+            chart_avg_moisture.title("Average Soil Moisture (Last 10 Days)");
+            chart_avg_moisture.xScale().mode("continuous");
+            chart_avg_moisture.xAxis().labels().format("{%value}{type:date}");
+            
+            chart_avg_moisture.tooltip().titleFormat("").separator(false).useHtml(true).format(function() {
+                let sensor = this.seriesName;
+                let date = new Date(this.x);
+                let value = Math.round(this.getData("value"));
+                return `<b>${sensor}</b><br/>Date: ${date.toLocaleDateString()}</br>Value: ${value}</br>`;
+            });
+            
+            chart_avg_moisture.container("container_avg_moisture");
+            chart_avg_moisture.legend().enabled(true);
+            chart_avg_moisture.draw();
+
+
+            // SOIL MOISTURE X WATERING
+            data.data.forEach(d => d.timestamp = new Date(d.timestamp));
 
             // extract each pump
-            let pump1 = data.filter(d => d.pump === 1);
-            let pump2 = data.filter(d => d.pump === 2);
+            let pump1 = data.data.filter(d => d.pump === 1);
+            let pump2 = data.data.filter(d => d.pump === 2);
 
             // line chart for pump 1
             let chart1 = anychart.line();
@@ -43,7 +81,7 @@
             scale1.maximum(1000);
 
             let pump1Watering = chart1.column(pump1.map(d => [d.timestamp, d.watering_amount_ml]));
-            pump1Watering.name("Watering");
+            pump1Watering.name("Watering (ml)");
             pump1Watering.yScale(scale1);
 
             // chart settings
@@ -52,6 +90,7 @@
             chart1.xAxis().labels().format("{%value}{type:date}");
             chart1.yAxis().title("Soil Moisture");
             chart1.yAxis(1).title("Watering Amount (ml)").orientation("right");          
+            chart1.tooltip().titleFormat("").separator(false);
             chart1.container("container_pump1");
             chart1.legend().enabled(true);
             chart1.draw();
@@ -70,7 +109,7 @@
             scale2.maximum(1000);
 
             let pump2Watering = chart2.column(pump2.map(d => [d.timestamp, d.watering_amount_ml]));
-            pump2Watering.name("Watering");
+            pump2Watering.name("Watering (ml)");
             pump2Watering.yScale(scale2);
 
             // chart settings
@@ -79,6 +118,7 @@
             chart2.xAxis().labels().format("{%value}{type:date}");
             chart2.yAxis().title("Soil Moisture");
             chart2.yAxis(1).title("Watering Amount (ml)").orientation("right");
+            chart2.tooltip().titleFormat("").separator(false);
             chart2.container("container_pump2");
             chart2.legend().enabled(true);
             chart2.draw();
