@@ -20,6 +20,8 @@
                 <div class="sensor">
                     <h4>Sensor {{ sensor_no }}</h4>
                     <p>Soil Moisture: {{ sensor.moisture }}</p>
+                    <p>Pump: {{ sensor.pump }}</p>
+                    <p>DHT Sensor: {{ sensor.dht }}</p>
 
                     <form class="func_buttons"  action="/send_command" method="post">
                         <input type="hidden" name="command" value="WATER, {{ sensor_no }}">
@@ -27,8 +29,6 @@
                     </form>
             
                     <h5>Settings</h5>
-                    <p>Pump: {{ sensor.pump }}</p>
-                    <p>DHT Sensor: {{ sensor.dht }}</p>
                     <form action="" method="POST" novalidate>
                         {{ forms[sensor_no].hidden_tag() }}
                         <input type="hidden" name="sensor" value="{{ sensor_no }}">

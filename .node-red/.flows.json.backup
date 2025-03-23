@@ -240,7 +240,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 340,
+        "x": 320,
         "y": 120,
         "wires": [
             [
@@ -258,7 +258,7 @@
         "method": "get",
         "upload": false,
         "swaggerDoc": "",
-        "x": 80,
+        "x": 60,
         "y": 740,
         "wires": [
             [
@@ -271,7 +271,7 @@
         "type": "function",
         "z": "d27ff7acba5e037e",
         "name": "parse_data",
-        "func": "let sensorData = flow.get(\"sensorData\") || {};\nlet pumpData = flow.get(\"pumpData\") || {};\nlet lastFert = flow.get(\"lastFert\") || {};\nlet fertSchedule = flow.get(\"fertSchedule\") || {};\n\nlet updatedSensorData = JSON.parse(JSON.stringify(sensorData));\n\nupdatedSensorData.forEach(sensor => {\n    if (sensor.type === \"SOIL\") {\n        if (sensor.moisture > 2500) {\n            sensor.moisture = \"DRY\";\n        } else if (sensor.moisture > 2000) {\n            sensor.moisture = \"SEMI-DRY\";\n        } else if (sensor.moisture > 1500) {\n            sensor.moisture = \"DAMP\";\n        } else {\n            sensor.moisture = \"WET\"\n        }\n    }\n});\n    \n\nmsg.payload = {\n    sensors: updatedSensorData,\n    pumps: pumpData,\n    fert: lastFert,\n    fertSchedule: fertSchedule\n};\n\nreturn msg;",
+        "func": "let sensorData = flow.get(\"sensorData\") || {};\nlet pumpData = flow.get(\"pumpData\") || {};\nlet lastFert = flow.get(\"lastFert\") || {};\nlet fertSchedule = flow.get(\"fertSchedule\") || {};\nlet sensorMapping = flow.get(\"sensorMapping\") || {};\n\nlet updatedSensorData = JSON.parse(JSON.stringify(sensorData));\n\nupdatedSensorData.forEach(sensor => {\n    if (sensor.type === \"SOIL\") {\n        if (sensor.moisture > 2500) {\n            sensor.moisture = \"DRY\";\n        } else if (sensor.moisture > 2000) {\n            sensor.moisture = \"SEMI-DRY\";\n        } else if (sensor.moisture > 1500) {\n            sensor.moisture = \"DAMP\";\n        } else {\n            sensor.moisture = \"WET\"\n        }\n    }\n});\n    \n\nmsg.payload = {\n    sensors: updatedSensorData,\n    pumps: pumpData,\n    fert: lastFert,\n    fertSchedule: fertSchedule,\n    mappings: sensorMapping\n};\n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -314,7 +314,7 @@
         "topic": "",
         "payload": "READ",
         "payloadType": "str",
-        "x": 980,
+        "x": 1000,
         "y": 140,
         "wires": [
             [
@@ -334,7 +334,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 590,
+        "x": 530,
         "y": 120,
         "wires": [
             [
@@ -360,8 +360,8 @@
         "authType": "",
         "senderr": false,
         "headers": [],
-        "x": 1190,
-        "y": 1300,
+        "x": 1250,
+        "y": 1280,
         "wires": [
             [
                 "40da37c3a039ece7"
@@ -380,8 +380,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1410,
-        "y": 1300,
+        "x": 1470,
+        "y": 1280,
         "wires": [
             [
                 "1cd47af34da9410b",
@@ -409,8 +409,8 @@
         "font": "",
         "fontSize": 16,
         "color": "#000000",
-        "x": 1670,
-        "y": 1240,
+        "x": 1730,
+        "y": 1220,
         "wires": []
     },
     {
@@ -430,8 +430,8 @@
         "font": "",
         "fontSize": 16,
         "color": "#000000",
-        "x": 1670,
-        "y": 1280,
+        "x": 1730,
+        "y": 1260,
         "wires": []
     },
     {
@@ -451,8 +451,8 @@
         "font": "",
         "fontSize": 16,
         "color": "#000000",
-        "x": 1680,
-        "y": 1320,
+        "x": 1740,
+        "y": 1300,
         "wires": []
     },
     {
@@ -471,8 +471,8 @@
         "authType": "",
         "senderr": false,
         "headers": [],
-        "x": 1180,
-        "y": 1120,
+        "x": 1240,
+        "y": 1100,
         "wires": [
             [
                 "a7a08a6b4dad935f"
@@ -491,8 +491,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 1410,
-        "y": 1120,
+        "x": 1470,
+        "y": 1100,
         "wires": [
             [
                 "5f96e176689cce61",
@@ -515,8 +515,8 @@
         "complete": "false",
         "statusVal": "",
         "statusType": "auto",
-        "x": 1440,
-        "y": 1200,
+        "x": 1480,
+        "y": 1180,
         "wires": []
     },
     {
@@ -536,8 +536,8 @@
         "font": "",
         "fontSize": 16,
         "color": "#000000",
-        "x": 1730,
-        "y": 1060,
+        "x": 1790,
+        "y": 1040,
         "wires": []
     },
     {
@@ -557,8 +557,8 @@
         "font": "",
         "fontSize": 16,
         "color": "#000000",
-        "x": 1740,
-        "y": 1140,
+        "x": 1800,
+        "y": 1120,
         "wires": []
     },
     {
@@ -573,8 +573,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 940,
-        "y": 520,
+        "x": 1000,
+        "y": 540,
         "wires": [
             [
                 "35a8bc56db8a3151"
@@ -642,19 +642,19 @@
         "type": "function",
         "z": "d27ff7acba5e037e",
         "name": "log_idle",
-        "func": "let data = msg.payload;\nlet splitMsg = data.split(\" \"); // IDLE pumpID sensorID\n\nif (splitMsg[0] === \"IDLE\") {\n    let sensors = flow.get(\"sensorData\");\n    let pumps = flow.get(\"pumpData\");\n\n    let pumpId = parseInt(splitMsg[1]);\n    let sensorId = parseInt(splitMsg[2]);\n\n    let pump = pumps.find(p => p.id === pumpId);\n    let sensor = sensors.find(s => s.id === sensorId && s.type === \"SOIL\");\n\n    let date = new Date();\n    let formatted_date = date.toLocaleString(\"en-GB\", {\n    day: \"2-digit\",\n    month: \"short\",\n    year: \"numeric\",\n    hour: \"2-digit\",\n    minute: \"2-digit\",\n    hour12: false\n    }).replace(\",\", \"\");\n    \n    data = {}\n    data.sensor = sensorId;\n    data.pump = pumpId;\n    data.timestamp = formatted_date;\n    data.waterAmount = 0;\n    data.env = pump.env;\n    data.moisture = sensor.moisture;\n\n    msg.payload = data;\n    return msg;\n}",
+        "func": "let data = msg.payload;\nlet splitMsg = data.split(\" \"); // IDLE pumpID sensorID\n\nif (splitMsg[0] === \"IDLE\") {\n    let sensors = flow.get(\"sensorData\");\n    let pumps = flow.get(\"pumpData\");\n\n    let pumpId = parseInt(splitMsg[1]);\n    let sensorId = parseInt(splitMsg[2]);\n\n    let pump = pumps.find(p => p.id === pumpId);\n    let sensor = sensors.find(s => s.id === sensorId && s.type === \"SOIL\");\n\n    let date = new Date();\n    let formatted_date = date.toLocaleString(\"en-GB\", {\n        day: \"2-digit\",\n        month: \"2-digit\",\n        year: \"numeric\",\n        hour: \"2-digit\",\n        minute: \"2-digit\",\n        hour12: false\n    }).replace(\",\", \"\"); \n    \n    data = {}\n    data.sensor = sensorId;\n    data.pump = pumpId;\n    data.timestamp = formatted_date;\n    data.waterAmount = 0;\n    data.env = pump.env;\n    data.moisture = sensor.moisture;\n\n    msg.payload = data;\n    return msg;\n}",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 780,
+        "x": 720,
         "y": 120,
         "wires": [
             [
-                "49f58424f2ecc968",
-                "d4bc37cb6b14bcdd"
+                "d4bc37cb6b14bcdd",
+                "cae1939feee2483e"
             ]
         ]
     },
@@ -693,8 +693,8 @@
         "correl": "",
         "expiry": "",
         "broker": "5d42f12891b474f7",
-        "x": 1180,
-        "y": 300,
+        "x": 1240,
+        "y": 340,
         "wires": []
     },
     {
@@ -735,8 +735,8 @@
         "font": "",
         "fontSize": 16,
         "color": "#000000",
-        "x": 1690,
-        "y": 1360,
+        "x": 1750,
+        "y": 1340,
         "wires": []
     },
     {
@@ -767,14 +767,14 @@
         "type": "function",
         "z": "d27ff7acba5e037e",
         "name": "process_notice",
-        "func": "let data = msg.payload;\n\n// log error or notice messages from ESP\nnode.warn(\"Message: \" + JSON.stringify(data));\n\nif (data.hasOwnProperty(\"notice\")) {\n    let sensors = flow.get(\"sensorData\");\n    let pumps = flow.get(\"pumpData\");\n\n    // update UI upon notice receival by default\n    msg.payload = \"UPDATE\";\n\n    // watering\n    if (data.notice.includes(\"watering_started\")) {\n        // msg: watering_started(pumpID, sensorID, amount)\n        let splitMsg = data.notice.split(\"(\");\n        let values = splitMsg[1].split(\",\");\n        \n        let pumpId = parseInt(values[0]);\n        let sensorId = parseInt(values[1]);\n        let amount = parseInt(values[2].substring(0,values[2].length-1));\n\n        let sensor = sensors.find(s => s.id === sensorId && s.type === \"SOIL\");\n        let pump = pumps.find(p => p.id === pumpId);\n\n        let date = new Date();\n        let formatted_date = date.toLocaleString(\"en-GB\", {\n        day: \"2-digit\",\n        month: \"2-digit\",\n        year: \"numeric\",\n        hour: \"2-digit\",\n        minute: \"2-digit\",\n        hour12: false\n        }).replace(\",\", \"\");    \n\n        // manage data for log\n        data.pump = pumpId;\n        data.sensor = sensorId;\n        data.moisture = sensor.moisture;\n        data.timestamp = formatted_date;\n        data.waterAmount = amount;\n        data.env = pump.env;\n\n        msg.payload = data;\n    }\n\n    // pump set active or pump asssignment to sensor\n    else if (data.notice.includes(\"pump_set\")) {\n        let splitMsg = data.notice.split(\"(\");\n        let pumpId = parseInt(splitMsg[1].substring(0,1));\n\n        let pump = pumps.find(p => p.id === pumpId);\n        pump.active = 1;\n        flow.set(\"pumpData\", pumps);\n\n        // contains sensor update info\n        if (splitMsg.length === 3) {\n            let sensorId = parseInt(splitMsg[2].substring(0,1));\n            let index = sensors.findIndex(s => s.id === sensorId);\n            \n            sensors[index].pump = pumpId;\n            flow.set(\"sensorData\", sensors);\n        }\n    \n    }\n\n    // pump set inactive\n    else if (data.notice.includes(\"pump_unset\")) {\n        let splitMsg = data.notice.split(\"(\");\n        let pumpId = parseInt(splitMsg[1].substring(0,1));\n\n        let pump = pumps.find(p => p.id === pumpId);\n        pump.active = 0;\n        flow.set(\"pumpData\", pumps);\n    }\n\n    else if (data.notice.includes(\"fertilization_started\")) {\n        let splitMsg = data.notice.split(\"(\");\n        let values = splitMsg[1].split(\",\");\n        let pumpId = parseInt(values[0]);\n        let amount = parseInt(values[1].substring(0,values[1].length-1));\n\n        let date = new Date();\n        let formatted_date = date.toLocaleString(\"en-GB\", {\n            day: \"2-digit\",\n            month: \"2-digit\",\n            year: \"numeric\",\n            hour: \"2-digit\",\n            minute: \"2-digit\",\n            hour12: false\n        }).replace(\",\", \"\");\n\n        data.fert = 1;\n        data.pumpId = pumpId;\n        data.amount = amount;\n        data.timestamp = formatted_date;\n        msg.payload = data;\n\n        // save most recent fertilization data into the flow\n        let fertData = flow.get(\"lastFert\") || {};\n        fertData[pumpId] = {\n            timestamp: formatted_date,\n            amount: amount\n        }\n\n        flow.set(\"lastFert\", fertData);\n    }\n\n    return msg;\n}\n\nreturn null;",
+        "func": "let data = msg.payload;\n\n// log error or notice messages from ESP\nnode.warn(\"Message: \" + JSON.stringify(data));\n\nif (data.hasOwnProperty(\"notice\")) {\n    let sensors = flow.get(\"sensorData\");\n    let pumps = flow.get(\"pumpData\");\n\n    // update UI upon notice receival by default\n    msg.payload = \"UPDATE\";\n\n    // watering\n    if (data.notice.includes(\"watering_started\")) {\n        // msg: watering_started(pumpID, sensorID, amount)\n        let splitMsg = data.notice.split(\"(\");\n        let values = splitMsg[1].split(\",\");\n        \n        let pumpId = parseInt(values[0]);\n        let sensorId = parseInt(values[1]);\n        let amount = parseInt(values[2].substring(0,values[2].length-1));\n\n        let sensor;       \n        let pump = pumps.find(p => p.id === pumpId);\n\n        let date = new Date();\n        let formatted_date = date.toLocaleString(\"en-GB\", {\n        day: \"2-digit\",\n        month: \"2-digit\",\n        year: \"numeric\",\n        hour: \"2-digit\",\n        minute: \"2-digit\",\n        hour12: false\n        }).replace(\",\", \"\");    \n\n        // manage data for log\n        if (sensorId !== 0) {\n            sensor = sensors.find(s => s.id === sensorId && s.type === \"SOIL\");\n            data.sensor = sensorId;\n            data.moisture = sensor.moisture\n        } else {\n            data.sensor = null;\n            data.moisture = null;\n        }\n\n        data.pump = pumpId;\n        data.timestamp = formatted_date;\n        data.waterAmount = amount;\n        data.env = pump.env;\n\n        msg.payload = data;\n    }\n\n    // pump set active or pump asssignment to sensor\n    else if (data.notice.includes(\"pump_set\")) {\n        let splitMsg = data.notice.split(\"(\");\n        let pumpId = parseInt(splitMsg[1].substring(0,1));\n\n        let pump = pumps.find(p => p.id === pumpId);\n        pump.active = 1;\n        flow.set(\"pumpData\", pumps);\n\n        // contains sensor update info\n        if (splitMsg.length === 3) {\n            let sensorId = parseInt(splitMsg[2].substring(0,1));\n            let index = sensors.findIndex(s => s.id === sensorId);\n            \n            sensors[index].pump = pumpId;\n            flow.set(\"sensorData\", sensors);\n        }\n    \n    }\n\n    // pump set inactive\n    else if (data.notice.includes(\"pump_unset\")) {\n        let splitMsg = data.notice.split(\"(\");\n        let pumpId = parseInt(splitMsg[1].substring(0,1));\n\n        let pump = pumps.find(p => p.id === pumpId);\n        pump.active = 0;\n        flow.set(\"pumpData\", pumps);\n    }\n\n    else if (data.notice.includes(\"fertilization_started\")) {\n        let splitMsg = data.notice.split(\"(\");\n        let values = splitMsg[1].split(\",\");\n        let pumpId = parseInt(values[0]);\n        let amount = parseInt(values[1].substring(0,values[1].length-1));\n\n        let date = new Date();\n        let formatted_date = date.toLocaleString(\"en-GB\", {\n            day: \"2-digit\",\n            month: \"2-digit\",\n            year: \"numeric\",\n            hour: \"2-digit\",\n            minute: \"2-digit\",\n            hour12: false\n        }).replace(\",\", \"\");\n\n        data.fert = 1;\n        data.pumpId = pumpId;\n        data.amount = amount;\n        data.timestamp = formatted_date;\n        msg.payload = data;\n\n        // save most recent fertilization data into the flow\n        let fertData = flow.get(\"lastFert\") || {};\n        fertData[pumpId] = {\n            timestamp: formatted_date,\n            amount: amount\n        }\n\n        flow.set(\"lastFert\", fertData);\n    }\n\n    return msg;\n}\n\nreturn null;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 320,
+        "x": 300,
         "y": 40,
         "wires": [
             [
@@ -816,7 +816,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 340,
+        "x": 320,
         "y": 200,
         "wires": [
             [
@@ -842,7 +842,7 @@
         "topic": "",
         "payload": "GET_ALL",
         "payloadType": "str",
-        "x": 980,
+        "x": 1000,
         "y": 180,
         "wires": [
             [
@@ -864,7 +864,7 @@
         "targetType": "full",
         "statusVal": "",
         "statusType": "auto",
-        "x": 700,
+        "x": 720,
         "y": 260,
         "wires": []
     },
@@ -902,9 +902,14 @@
         "rules": [
             {
                 "t": "regex",
-                "v": "(WATER|FERTILIZE|SET_STATUS)",
+                "v": "(FERTILIZE|SET_STATUS)",
                 "vt": "str",
                 "case": false
+            },
+            {
+                "t": "cont",
+                "v": "WATER",
+                "vt": "str"
             },
             {
                 "t": "hask",
@@ -917,12 +922,15 @@
         ],
         "checkall": "true",
         "repair": false,
-        "outputs": 3,
+        "outputs": 4,
         "x": 730,
         "y": 480,
         "wires": [
             [
                 "35a8bc56db8a3151"
+            ],
+            [
+                "794711107141c48f"
             ],
             [
                 "435e784f2b1ef4be"
@@ -944,7 +952,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 250,
+        "x": 290,
         "y": 480,
         "wires": [
             [
@@ -972,14 +980,14 @@
         "type": "function",
         "z": "d27ff7acba5e037e",
         "name": "get_sensors",
-        "func": "let sensorData = flow.get(\"sensorData\") || {};\nlet activeDht = sensorData.filter(s => s.type === \"DHT_SENSOR\" && s.active === 1);\nlet pumpData = flow.get(\"pumpData\") || {};\nlet wateringPumps = pumpData.filter(p => p.type === \"WATERING\");\nlet sensorMapping = flow.get(\"sensorMapping\") || {};\n\nmsg.payload = { \n    sensors: sensorData, \n    pumps: wateringPumps.map(p => p.id),\n    activeDht: activeDht.map(s => s.id),\n    sensorMapping: sensorMapping\n};\n\nreturn msg;",
+        "func": "let sensorData = flow.get(\"sensorData\") || [];\nlet activeDht = sensorData.filter(s => s.type === \"DHT_SENSOR\" && s.active === 1);\nlet pumpData = flow.get(\"pumpData\") || [];\nlet wateringPumps = pumpData.filter(p => p.type === \"WATERING\");\nlet sensorMapping = flow.get(\"sensorMapping\") || {};\n\nmsg.payload = { \n    sensors: sensorData, \n    pumps: wateringPumps.map(p => p.id),\n    activeDht: activeDht.map(s => s.id),\n    sensorMapping: sensorMapping\n};\n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 250,
+        "x": 290,
         "y": 340,
         "wires": [
             [
@@ -1007,7 +1015,7 @@
         "checkall": "false",
         "repair": false,
         "outputs": 2,
-        "x": 500,
+        "x": 540,
         "y": 40,
         "wires": [
             [
@@ -1049,7 +1057,7 @@
         "method": "post",
         "upload": false,
         "swaggerDoc": "",
-        "x": 90,
+        "x": 70,
         "y": 800,
         "wires": [
             [
@@ -1071,15 +1079,15 @@
         "correl": "",
         "expiry": "",
         "broker": "5d42f12891b474f7",
-        "x": 940,
-        "y": 740,
+        "x": 1000,
+        "y": 760,
         "wires": []
     },
     {
         "id": "675b189997db0a03",
         "type": "switch",
         "z": "d27ff7acba5e037e",
-        "name": "",
+        "name": "cmd",
         "property": "payload",
         "propertyType": "msg",
         "rules": [
@@ -1135,7 +1143,7 @@
         "id": "53a7c22a0b44879b",
         "type": "function",
         "z": "d27ff7acba5e037e",
-        "name": "handle_web_app",
+        "name": "update_pump",
         "func": "let pumps = flow.get(\"pumpData\");\nlet command = msg.payload;\nlet splitCmd = command.split(\" \");\n\nif (splitCmd[0] === \"CHMOD\") {\n    let pumpId = parseInt(splitCmd[1]);\n    let newMode = splitCmd[2];\n\n    let pumpIndex = pumps.findIndex(pump => pump.id === pumpId);\n    let wateringModes = [\"LIGHT\", \"MEDIUM\", \"HEAVY\", \"AUTO\"];\n\n    if (wateringModes.includes(newMode)) {\n        msg.payload = command;\n        pumps[pumpIndex].currentWaterMode = newMode;\n        flow.set(\"pumpData\", pumps);\n    } else {\n        node.warn(\"Invalid input for CHMOD.\");\n        return null;\n    }\n}\n\nelse if (splitCmd[0] === \"SET_ENV\") {\n    let pumpId = parseInt(splitCmd[1]);\n    let newEnv = splitCmd[2];\n\n    let pumpIndex = pumps.findIndex(pump => pump.id === pumpId);\n    let envModes = [\"INDOOR\", \"OUTDOOR\"];\n    \n    if (envModes.includes(newEnv)) {\n        msg.payload = command;\n        pumps[pumpIndex].env = newEnv;\n        flow.set(\"pumpData\", pumps);\n    } else {\n        node.warn(\"Invalid input for SET_ENV.\");\n        return null;\n    }\n}\n\n// fertilization\nelse if (splitCmd[0] === \"SET_FERT_AMOUNT\") {\n    let pumpId = parseInt(splitCmd[1]);\n    let amount = parseInt(splitCmd[2]);\n\n    let pumpIndex = pumps.findIndex(pump => pump.id === pumpId);\n\n    pumps[pumpIndex].amount = amount;\n    flow.set(\"pumpData\", pumps);\n    msg.payload = command;\n}\n\nelse {\n    node.warn(\"Invalid command from web app.\");\n    return null;\n}\n\nreturn msg;\n",
         "outputs": 1,
         "timeout": 0,
@@ -1143,7 +1151,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 730,
+        "x": 740,
         "y": 880,
         "wires": [
             [
@@ -1189,7 +1197,7 @@
         "method": "get",
         "upload": false,
         "swaggerDoc": "",
-        "x": 90,
+        "x": 70,
         "y": 860,
         "wires": [
             [
@@ -1255,7 +1263,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 730,
+        "x": 750,
         "y": 1180,
         "wires": [
             [
@@ -1318,7 +1326,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 970,
+        "x": 990,
         "y": 1160,
         "wires": [
             [
@@ -1338,7 +1346,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 980,
+        "x": 1000,
         "y": 1220,
         "wires": [
             [
@@ -1378,7 +1386,7 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 710,
+        "x": 730,
         "y": 920,
         "wires": [
             [
@@ -1445,7 +1453,7 @@
         "checkall": "true",
         "repair": false,
         "outputs": 2,
-        "x": 720,
+        "x": 760,
         "y": 60,
         "wires": [
             [
@@ -1465,7 +1473,7 @@
         "links": [
             "abbd9d99b626c236"
         ],
-        "x": 625,
+        "x": 675,
         "y": 20,
         "wires": []
     },
@@ -1511,7 +1519,7 @@
             "80c0ac79022b9ef6",
             "108723215eb4d72c"
         ],
-        "x": 845,
+        "x": 945,
         "y": 920,
         "wires": []
     },
@@ -1583,7 +1591,7 @@
         "method": "get",
         "upload": false,
         "swaggerDoc": "",
-        "x": 80,
+        "x": 60,
         "y": 920,
         "wires": [
             [
@@ -1705,8 +1713,8 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 940,
-        "y": 480,
+        "x": 1000,
+        "y": 500,
         "wires": [
             [
                 "d5da2a1ed7d7d6b9"
@@ -1796,8 +1804,8 @@
         "links": [
             "abbd9d99b626c236"
         ],
-        "x": 1065,
-        "y": 480,
+        "x": 1175,
+        "y": 500,
         "wires": []
     },
     {
@@ -1805,19 +1813,19 @@
         "type": "function",
         "z": "d27ff7acba5e037e",
         "name": "water",
-        "func": "let cmd = msg.payload;\n\nlet sensors = flow.get(\"sensorData\"); // array of sensors\nlet pumps = flow.get(\"pumpData\");  // array of pumps\n\n// weather forecast\nlet totalPrecip = parseFloat(flow.get(\"totalPrecipHourly\")) || 0; // total precipitation in mm today\nlet probPrecip = flow.get(\"probPrecip\") || []; // true if precipitation probability above 30\nlet hourlyPrecip = flow.get(\"hourlyRain\") || []; // array with hourly percipitation \n\nlet moistureThreshold = 1500;    // wet soil\n\nlet cmdSplit = cmd.split(\" \");\nlet pumpId = parseInt(cmdSplit[1]);\nlet sensorId = parseInt(cmdSplit[2]);\n\nlet sensor = sensors.find(s => s.id === sensorId);\nlet pump = pumps.find(p => p.id === pumpId);\nlet defaultWaterMode = pump.currentWaterMode;\nlet envMode = pump.env;\nlet customWaterAmount = pump.amount;\nlet soilMoisture = sensor.moisture;\nlet command = \"\";\n\n// User overriden watering mode\nif (defaultWaterMode !== \"AUTO\") {\n    if (defaultWaterMode === \"CUSTOM\" && customWaterAmount > 0) {\n        command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" CUSTOM \" + customWaterAmount;\n    } else {\n        command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" \" + defaultWaterMode;\n    }\n\n    msg.payload = command;\n    return msg;\n}\n\n// INDOOR MODE\nif (envMode === \"INDOOR\") {\n    node.warn(\"I1\");\n    if (soilMoisture <= moistureThreshold) {\n        command = \"IDLE \" + pumpId.toString() + \" \" + sensor.id.toString();\n    } else if (soilMoisture <= 2000) {\n        command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" LIGHT\";\n    } else if (soilMoisture <= 2500) {\n        command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" MEDIUM\";\n    } else {\n        command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" HEAVY\";\n    }\n}\n\n// OUTDOOR MODE\nelse {\n    node.warn(\"O1\")\n    // check forecast (if rain is expected in next 4/6 hours)\n    let d = new Date().getUTCHours() // get current hour in UTC\n    // how many hours to check forecast for\n    let checkHrs = (d === 17) ? 6 : 4;  // if last check of the day, check next 6 hours\n    let checkMax = Math.min(d+checkHrs, hourlyPrecip.length) // get the upper boundary index for weather check\n\n    // get total precipitation mm and max precipitation probabilty in next x hours \n    let totalRainNextHours = 0;\n    let maxPrecipProb = 0;\n    for (var i = d; i < checkMax; i++) {\n        totalRainNextHours += hourlyPrecip[i];\n        \n        if (probPrecip[i] > maxPrecipProb) {\n            maxPrecipProb = probPrecip[i];\n        }\n    }\n\n    // determine if watering needed\n    if (soilMoisture<= moistureThreshold) {\n        command = \"IDLE \" + pumpId.toString();   // no need to water\n    }\n    else if (soilMoisture <= 2000) {\n        if (maxPrecipProb < 40) {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" LIGHT\";\n        } else {\n            command = \"IDLE \" + pumpId.toString() + \" \" + sensor.id.toString();\n        }\n    } else if (soilMoisture <= 2500) {\n        if (maxPrecipProb < 40) {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" MEDIUM\";\n        } else if (totalRainNextHours < 2) {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" LIGHT\";\n        } else {\n            command = \"IDLE \" + pumpId.toString() + \" \" + sensor.id.toString();\n        }\n    } else {    // soil is dry\n        if (maxPrecipProb < 40) {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" HEAVY\";\n        } else if (totalRainNextHours < 2) {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" MEDIUM\";\n        } else if (totalRainNextHours < 4) {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" LIGHT\";\n        } else {\n            command = \"IDLE \" + pumpId.toString();\n        }\n    }\n}\n\nmsg.payload = command; \n\nreturn msg;",
+        "func": "let cmd = msg.payload;\n\nlet sensors = flow.get(\"sensorData\"); // array of sensors\nlet pumps = flow.get(\"pumpData\");  // array of pumps\n\n// weather forecast\nlet totalPrecip = parseFloat(flow.get(\"totalPrecipHourly\")) || 0; // total precipitation in mm today\nlet probPrecip = flow.get(\"probPrecip\") || []; // true if precipitation probability above 30\nlet hourlyPrecip = flow.get(\"hourlyRain\") || []; // array with hourly percipitation \n\nlet moistureThreshold = 1500;    // wet soil\n\nlet cmdSplit = cmd.split(\" \");\nlet pumpId = parseInt(cmdSplit[1]);\nlet sensorId = parseInt(cmdSplit[2]);\n\nlet sensor = sensors.find(s => s.id === sensorId);\nlet pump = pumps.find(p => p.id === pumpId);\nlet defaultWaterMode = pump.currentWaterMode;\nlet envMode = pump.env;\nlet customWaterAmount = pump.amount;\nlet soilMoisture = sensor.moisture;\nlet command = \"\";\n\n// User overriden watering mode\nif (defaultWaterMode !== \"AUTO\") {\n    if (defaultWaterMode === \"CUSTOM\" && customWaterAmount > 0) {\n        command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" CUSTOM \" + customWaterAmount;\n    } else {\n        command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" \" + defaultWaterMode;\n    }\n\n    msg.payload = command;\n    return msg;\n}\n\n// INDOOR MODE\nif (envMode === \"INDOOR\") {\n    if (soilMoisture <= moistureThreshold) {\n        command = \"IDLE \" + pumpId.toString() + \" \" + sensor.id.toString();\n    } else if (soilMoisture <= 2000) {\n        command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" LIGHT\";\n    } else if (soilMoisture <= 2500) {\n        command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" MEDIUM\";\n    } else {\n        command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" HEAVY\";\n    }\n}\n\n// OUTDOOR MODE\nelse {\n    // check forecast (if rain is expected in next 4/6 hours)\n    let d = new Date().getUTCHours() // get current hour in UTC\n    // how many hours to check forecast for\n    let checkHrs = (d === 17) ? 6 : 4;  // if last check of the day, check next 6 hours\n    let checkMax = Math.min(d+checkHrs, hourlyPrecip.length) // get the upper boundary index for weather check\n\n    // get total precipitation mm and max precipitation probabilty in next x hours \n    let totalRainNextHours = 0;\n    let maxPrecipProb = 0;\n    for (var i = d; i < checkMax; i++) {\n        totalRainNextHours += hourlyPrecip[i];\n        \n        if (probPrecip[i] > maxPrecipProb) {\n            maxPrecipProb = probPrecip[i];\n        }\n    }\n\n    // determine if watering needed\n    if (soilMoisture<= moistureThreshold) {\n        command = \"IDLE \" + pumpId.toString();   // no need to water\n    }\n    else if (soilMoisture <= 2000) {\n        if (maxPrecipProb < 40) {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" LIGHT\";\n        } else {\n            command = \"IDLE \" + pumpId.toString() + \" \" + sensor.id.toString();\n        }\n    } else if (soilMoisture <= 2500) {\n        if (maxPrecipProb < 40) {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" MEDIUM\";\n        } else if (totalRainNextHours < 2) {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" LIGHT\";\n        } else {\n            command = \"IDLE \" + pumpId.toString() + \" \" + sensor.id.toString();\n        }\n    } else {    // soil is dry\n        if (maxPrecipProb < 40) {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" HEAVY\";\n        } else if (totalRainNextHours < 2) {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" MEDIUM\";\n        } else if (totalRainNextHours < 4) {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" LIGHT\";\n        } else {\n            command = \"IDLE \" + pumpId.toString();\n        }\n    }\n}\n\nmsg.payload = command; \n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 690,
+        "x": 710,
         "y": 840,
         "wires": [
             [
-                "aefabd0936f9a060",
-                "8cc0b7f1f99c0f2b"
+                "8cc0b7f1f99c0f2b",
+                "c3b10a21c45397bf"
             ]
         ]
     },
@@ -1864,8 +1872,8 @@
         "font": "",
         "fontSize": 16,
         "color": "#000000",
-        "x": 1750,
-        "y": 1180,
+        "x": 1810,
+        "y": 1160,
         "wires": []
     },
     {
@@ -1885,8 +1893,8 @@
         "font": "",
         "fontSize": 16,
         "color": "#000000",
-        "x": 1730,
-        "y": 1100,
+        "x": 1790,
+        "y": 1080,
         "wires": []
     },
     {
@@ -1901,29 +1909,13 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 690,
+        "x": 710,
         "y": 800,
         "wires": [
             [
                 "435e784f2b1ef4be"
             ]
         ]
-    },
-    {
-        "id": "aefabd0936f9a060",
-        "type": "debug",
-        "z": "d27ff7acba5e037e",
-        "name": "debug 5",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "false",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 940,
-        "y": 860,
-        "wires": []
     },
     {
         "id": "e69f0536b5689826",
@@ -1953,7 +1945,7 @@
         "rules": [
             {
                 "t": "regex",
-                "v": "(CH_PUMP|SEND_ALL)",
+                "v": "(CH_PUMP|GET_ALL)",
                 "vt": "str",
                 "case": false
             },
@@ -1987,10 +1979,90 @@
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 900,
+        "x": 980,
         "y": 360,
         "wires": [
             []
         ]
+    },
+    {
+        "id": "794711107141c48f",
+        "type": "function",
+        "z": "d27ff7acba5e037e",
+        "name": "water",
+        "func": "let cmd = msg.payload;\n\nlet sensors = flow.get(\"sensorData\"); // array of sensors\nlet pumps = flow.get(\"pumpData\");  // array of pumps\n\n// weather forecast\nlet totalPrecip = parseFloat(flow.get(\"totalPrecipHourly\")) || 0; // total precipitation in mm today\nlet probPrecip = flow.get(\"probPrecip\") || []; // true if precipitation probability above 30\nlet hourlyPrecip = flow.get(\"hourlyRain\") || []; // array with hourly percipitation \n\nlet moistureThreshold = 1500;    // wet soil\n\nlet cmdSplit = cmd.split(\" \");\nlet pumpId = parseInt(cmdSplit[1]);\n\n// find sensor with lowest moisture that has assigned this pump\nlet pumpSensors = sensors.filter(sensor => sensor.pump === pumpId && sensor.active === 1);\nlet sensor = {};\n\npumpSensors.forEach(filteredSensor => {\n    if (!sensor.moisture || filteredSensor.moisture < sensor.moisture) {\n        sensor = filteredSensor;\n    }\n});\n\nif (!sensor.moisture) {\n    return msg;\n}\n\nlet pump = pumps.find(p => p.id === pumpId);\nlet defaultWaterMode = pump.currentWaterMode;\nlet envMode = pump.env;\nlet customWaterAmount = pump.amount;\nlet soilMoisture = sensor.moisture;\nlet command = \"\";\n\n// User overriden watering mode\nif (defaultWaterMode !== \"AUTO\") {\n    if (defaultWaterMode === \"CUSTOM\" && customWaterAmount > 0) {\n        command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" CUSTOM \" + customWaterAmount;\n    } else {\n        command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" \" + defaultWaterMode;\n    }\n\n    msg.payload = command;\n    return msg;\n}\n\n// INDOOR MODE\nif (envMode === \"INDOOR\") {\n    if (soilMoisture <= moistureThreshold) {\n        command = \"IDLE \" + pumpId.toString() + \" \" + sensor.id.toString();\n    } else if (soilMoisture <= 2000) {\n        command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" LIGHT\";\n    } else if (soilMoisture <= 2500) {\n        command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" MEDIUM\";\n    } else {\n        command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" HEAVY\";\n    }\n}\n\n// OUTDOOR MODE\nelse {\n    // check forecast (if rain is expected in next 4/6 hours)\n    let d = new Date().getUTCHours() // get current hour in UTC\n    // how many hours to check forecast for\n    let checkHrs = (d === 17) ? 6 : 4;  // if last check of the day, check next 6 hours\n    let checkMax = Math.min(d+checkHrs, hourlyPrecip.length) // get the upper boundary index for weather check\n\n    // get total precipitation mm and max precipitation probabilty in next x hours \n    let totalRainNextHours = 0;\n    let maxPrecipProb = 0;\n    for (var i = d; i < checkMax; i++) {\n        totalRainNextHours += hourlyPrecip[i];\n        \n        if (probPrecip[i] > maxPrecipProb) {\n            maxPrecipProb = probPrecip[i];\n        }\n    }\n\n    // determine if watering needed\n    if (soilMoisture <= moistureThreshold) {\n        command = \"IDLE \" + pumpId.toString();   // no need to water\n    }\n    else if (soilMoisture <= 2000) {\n        if (maxPrecipProb < 40) {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" LIGHT\";\n        } else {\n            command = \"IDLE \" + pumpId.toString() + \" \" + sensor.id.toString();\n        }\n    } else if (soilMoisture <= 2500) {\n        if (maxPrecipProb < 40) {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" MEDIUM\";\n        } else if (totalRainNextHours < 2) {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" LIGHT\";\n        } else {\n            command = \"IDLE \" + pumpId.toString() + \" \" + sensor.id.toString();\n        }\n    } else {    // soil is dry\n        if (maxPrecipProb < 40) {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" HEAVY\";\n        } else if (totalRainNextHours < 2) {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" MEDIUM\";\n        } else if (totalRainNextHours < 4) {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" LIGHT\";\n        } else {\n            command = \"IDLE \" + pumpId.toString();\n        }\n    }\n}\n\nmsg.payload = command; \n\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 970,
+        "y": 460,
+        "wires": [
+            [
+                "35a8bc56db8a3151",
+                "7e3e5f657e50692c"
+            ]
+        ]
+    },
+    {
+        "id": "7e3e5f657e50692c",
+        "type": "link out",
+        "z": "d27ff7acba5e037e",
+        "name": "link out 5",
+        "mode": "link",
+        "links": [
+            "b6c168bf068399bf"
+        ],
+        "x": 1065,
+        "y": 460,
+        "wires": []
+    },
+    {
+        "id": "b6c168bf068399bf",
+        "type": "link in",
+        "z": "d27ff7acba5e037e",
+        "name": "link in 4",
+        "links": [
+            "7e3e5f657e50692c",
+            "c3b10a21c45397bf"
+        ],
+        "x": 565,
+        "y": 80,
+        "wires": [
+            [
+                "ec61008359c39560"
+            ]
+        ]
+    },
+    {
+        "id": "c3b10a21c45397bf",
+        "type": "link out",
+        "z": "d27ff7acba5e037e",
+        "name": "link out 6",
+        "mode": "link",
+        "links": [
+            "b6c168bf068399bf"
+        ],
+        "x": 945,
+        "y": 840,
+        "wires": []
+    },
+    {
+        "id": "cae1939feee2483e",
+        "type": "debug",
+        "z": "d27ff7acba5e037e",
+        "name": "debug 5",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 980,
+        "y": 100,
+        "wires": []
     }
 ]
