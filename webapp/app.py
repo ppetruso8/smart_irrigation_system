@@ -561,6 +561,10 @@ def get_data():
         pumps_water = {}
         pumps_fert = {}
 
+        next_fert = data.get("fertSchedule", {})
+        last_fert = data.get("fert", {})
+        sensor_mapping = data.get("mappings", {})
+
         # extract all pumps
         pump_data = {pump["id"]: pump for pump in data.get("pumps") if pump.get("active") == 1}
 
@@ -568,12 +572,15 @@ def get_data():
         for sensor in data.get("sensors"):
             if sensor.get("active") == 1:
                 if sensor["type"] == "SOIL":
-                    pump = pump_data.get(sensor["pump"])    # pump "object"
+                    pump = pump_data.get(sensor["pump"])    # pump object
+                    dht_mapping = sensor_mapping.get(str(sensor["id"]), "No Data")
+                    
                     sensors_soil[sensor["id"]] = {
                         "moisture": sensor["moisture"],
                         "pump": sensor["pump"],
                         "env": pump["env"],
-                        "mode": pump["currentWaterMode"]
+                        "mode": pump["currentWaterMode"],
+                        "dht": dht_mapping
                     }
                 elif sensor["type"] == "DHT_SENSOR":
                     sensors_dht[sensor["id"]] = {
@@ -590,20 +597,26 @@ def get_data():
                     "amount": pump["amount"],
                     "env": pump["env"] 
                 }
-            elif pump["type"] == "FERTILIZATION":
-                last_fert = data.get("fert", {}).get(str(pump_id), {})
-                next_fert = data.get("fertSchedule", {})
+            elif pump["type"] == "FERTILIZATION":             
+                last = None
+                next = None
+
+                if last_fert != {}:
+                    last = last_fert.get(str(pump_id), {}).get("timestamp", "No data")
+                
+
+
                 if next_fert != {}:
-                    next_fert = next_fert.get(str(pump_id)).get("next", None)
-                
-                if next_fert:
-                    next_fert = datetime.strptime(next_fert, "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%d/%m/%Y 7:30")
-                
+                    next = next_fert.get(str(pump_id)).get("next", None)
+
+                    if next:
+                        next = datetime.strptime(next, "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%d/%m/%Y")
+
                 pumps_fert[pump_id] = {
                     "amount": pump["amount"],
-                    "last": last_fert.get("timestamp", "No data"),
+                    "last": last,
                     "env": pump["env"],
-                    "next": next_fert
+                    "next": next
                 }
 
         session["sensors_soil"] = sensors_soil

@@ -271,7 +271,7 @@
         "type": "function",
         "z": "d27ff7acba5e037e",
         "name": "parse_data",
-        "func": "let sensorData = flow.get(\"sensorData\") || {};\nlet pumpData = flow.get(\"pumpData\") || {};\nlet lastFert = flow.get(\"lastFert\") || {};\nlet fertSchedule = flow.get(\"fertSchedule\") || {};\n\nlet updatedSensorData = JSON.parse(JSON.stringify(sensorData));\n\nupdatedSensorData.forEach(sensor => {\n    if (sensor.type === \"SOIL\") {\n        if (sensor.moisture > 2500) {\n            sensor.moisture = \"DRY\";\n        } else if (sensor.moisture > 2000) {\n            sensor.moisture = \"SEMI-DRY\";\n        } else if (sensor.moisture > 1500) {\n            sensor.moisture = \"DAMP\";\n        } else {\n            sensor.moisture = \"WET\"\n        }\n    }\n});\n    \n\nmsg.payload = {\n    sensors: updatedSensorData,\n    pumps: pumpData,\n    fert: lastFert,\n    fertSchedule: fertSchedule\n};\n\nreturn msg;",
+        "func": "let sensorData = flow.get(\"sensorData\") || {};\nlet pumpData = flow.get(\"pumpData\") || {};\nlet lastFert = flow.get(\"lastFert\") || {};\nlet fertSchedule = flow.get(\"fertSchedule\") || {};\nlet sensorMapping = flow.get(\"sensorMapping\") || {};\n\nlet updatedSensorData = JSON.parse(JSON.stringify(sensorData));\n\nupdatedSensorData.forEach(sensor => {\n    if (sensor.type === \"SOIL\") {\n        if (sensor.moisture > 2500) {\n            sensor.moisture = \"DRY\";\n        } else if (sensor.moisture > 2000) {\n            sensor.moisture = \"SEMI-DRY\";\n        } else if (sensor.moisture > 1500) {\n            sensor.moisture = \"DAMP\";\n        } else {\n            sensor.moisture = \"WET\"\n        }\n    }\n});\n    \n\nmsg.payload = {\n    sensors: updatedSensorData,\n    pumps: pumpData,\n    fert: lastFert,\n    fertSchedule: fertSchedule,\n    mappings: sensorMapping\n};\n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -327,7 +327,7 @@
         "type": "function",
         "z": "d27ff7acba5e037e",
         "name": "water",
-        "func": "let data = flow.get(\"sensorData\"); // array of sensors\nlet pumps = flow.get(\"pumpData\");  // array of pumps\n// weather forecast\nlet totalPrecip = parseFloat(flow.get(\"totalPrecipHourly\")) || 0; // total precipitation in mm today\nlet probPrecip = flow.get(\"probPrecip\") || []; // true if precipitation probability above 30\nlet hourlyPrecip = flow.get(\"hourlyRain\") || []; // array with hourly percipitation \n\nlet recheckActive = flow.get(\"isRecheckActive\") || false;\nlet outputMsgs = [];    // output commands\n\nlet moistureThreshold = 1500;    // wet soil\n\n\ndata.forEach(sensor => {\n    // skip DHT and inactive sensors\n    if (sensor.type !== \"SOIL\" || sensor.active === 0) {\n        return;\n    }\n\n    let soilMoisture = sensor.moisture;\n    let pumpId = sensor.pump;\n    let command = \"\";\n\n    // set default values\n    let env = \"INDOOR\"; \n    let defaultWaterMode = \"AUTO\";\n    let customWaterAmount = 0;\n\n    // get associated pump\n    let pump = pumps.find(item => item.id === pumpId);\n    if (pump) {\n        env = pump.env;\n        defaultWaterMode = pump.currentWaterMode;\n        customWaterAmount = pump.amount;\n    }\n\n    // User overriden watering mode\n    if (defaultWaterMode !== \"AUTO\") {\n        if (defaultWaterMode === \"CUSTOM\" && customWaterAmount > 0) {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" CUSTOM \" + customWaterAmount;\n        } else {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" \" + defaultWaterMode;\n        }\n\n        // don't send the same command twice\n        if (!outputMsgs.some(output => output.payload === command)) {\n            outputMsgs.push({ payload: command });\n        }   \n        \n        return;\n    }\n\n    // INDOOR MODE\n    if (env === \"INDOOR\") {\n        if (soilMoisture <= moistureThreshold) {\n            command = \"IDLE \" + pumpId.toString() + \" \" + sensor.id.toString();\n        } else if (soilMoisture <= 2000) {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" LIGHT\";\n        } else if (soilMoisture <= 2500) {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" MEDIUM\";\n        } else {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" HEAVY\";\n        }\n    }\n    // OUTDOOR MODE\n    else {\n        // check forecast (if rain is expected in next 4/6 hours)\n        let d = new Date().getUTCHours() // get current hour in UTC\n        // how many hours to check forecast for\n        let checkHrs = (d === 17) ? 6 : 4;  // if last check of the day, check next 6 hours\n        let checkMax = Math.min(d+checkHrs, hourlyPrecip.length) // get the upper boundary index for weather check\n\n        // get total precipitation mm and max precipitation probabilty in next x hours \n        let totalRainNextHours = 0;\n        let maxPrecipProb = 0;\n        for (var i = d; i < checkMax; i++) {\n            totalRainNextHours += hourlyPrecip[i];\n            \n            if (probPrecip[i] > maxPrecipProb) {\n                maxPrecipProb = probPrecip[i];\n            }\n        }\n\n        // determine if watering needed\n        if (soilMoisture<= moistureThreshold) {\n            command = \"IDLE \" + pumpId.toString();   // no need to water\n        }\n        else if (soilMoisture <= 2000) {\n            if (maxPrecipProb < 40) {\n                command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" LIGHT\";\n            } else {\n                command = \"IDLE \" + pumpId.toString() + \" \" + sensor.id.toString();\n            }\n        } else if (soilMoisture <= 2500) {\n            if (maxPrecipProb < 40) {\n                command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" MEDIUM\";\n            } else if (totalRainNextHours < 2) {\n                command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" LIGHT\";\n            } else {\n                command = \"IDLE \" + pumpId.toString() + \" \" + sensor.id.toString();\n            }\n        } else {    // soil is dry\n            if (maxPrecipProb < 40) {\n                command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" HEAVY\";\n            } else if (totalRainNextHours < 2) {\n                command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" MEDIUM\";\n            } else if (totalRainNextHours < 4) {\n                command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" LIGHT\";\n            } else {\n                command = \"IDLE \" + pumpId.toString();\n            }\n        }\n    }\n\n    // don't send the same command twice\n    if (!outputMsgs.some(output => output.payload === command)) {\n        outputMsgs.push({ payload: command });\n    }\n})\n\n// recheck soil moisture after 10 minutes if watering\nif (!recheckActive) {\n    if (outputMsgs.some(msg => msg.payload.includes(\"WATER\"))) {\n        flow.set(\"isRecheckActive\", true);\n        setTimeout(() => {\n            // send READ message to trigger new reading and function execution\n            node.send({ payload: \"READ\"});  \n            }, 600000);   // recheck in 10 minutes\n    }\n} else {\n    flow.set(\"isRecheckActive\", false);    \n} \n\nreturn [outputMsgs];",
+        "func": "let data = flow.get(\"sensorData\") || []; // array of sensors\nlet pumps = flow.get(\"pumpData\") || [];  // array of pumps\nlet sensorMapping = flow.get(\"sensorMapping\") || {}; // soil moisture sensor - dht sensor mapping\n\n// weather forecast\nlet totalPrecip = parseFloat(flow.get(\"totalPrecipHourly\")) || 0; // total precipitation in mm today\nlet probPrecip = flow.get(\"probPrecip\") || []; // true if precipitation probability above 30\nlet hourlyPrecip = flow.get(\"hourlyRain\") || []; // array with hourly percipitation \n\nlet recheckActive = flow.get(\"isRecheckActive\") || false;\nlet outputMsgs = [];    // output commands\n\nlet moistureThreshold = 1500;    // wet soil\n\n\ndata.forEach(sensor => {\n    // skip DHT and inactive sensors\n    if (sensor.type !== \"SOIL\" || sensor.active === 0) {\n        return;\n    }\n\n    let soilMoisture = sensor.moisture;\n    let pumpId = sensor.pump;\n    let command = \"\";\n\n    // set default values\n    let env = \"INDOOR\"; \n    let defaultWaterMode = \"AUTO\";\n    let customWaterAmount = 0;\n\n    // get associated pump\n    let pump = pumps.find(item => item.id === pumpId);\n    if (pump) {\n        env = pump.env;\n        defaultWaterMode = pump.currentWaterMode;\n        customWaterAmount = pump.amount;\n    }\n\n    // User overriden watering mode\n    if (defaultWaterMode !== \"AUTO\") {\n        if (defaultWaterMode === \"CUSTOM\" && customWaterAmount > 0) {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" CUSTOM \" + customWaterAmount;\n        } else {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" \" + defaultWaterMode;\n        }\n\n        // don't send the same command twice\n        if (!outputMsgs.some(output => output.payload === command)) {\n            outputMsgs.push({ payload: command });\n        }   \n        \n        return;\n    }\n\n    // INDOOR MODE\n    if (env === \"INDOOR\") {\n        if (soilMoisture <= moistureThreshold) {\n            command = \"IDLE \" + pumpId.toString() + \" \" + sensor.id.toString();\n        } else if (soilMoisture <= 2000) {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" LIGHT\";\n        } else if (soilMoisture <= 2500) {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" MEDIUM\";\n        } else {\n            command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" HEAVY\";\n        }\n    }\n    // OUTDOOR MODE\n    else {\n        // check forecast (if rain is expected in next 4/6 hours)\n        let d = new Date().getUTCHours() // get current hour in UTC\n        // how many hours to check forecast for\n        let checkHrs = (d === 17) ? 6 : 4;  // if last check of the day, check next 6 hours\n        let checkMax = Math.min(d+checkHrs, hourlyPrecip.length-1) // get the upper boundary index for weather check\n\n        // get total precipitation mm and max precipitation probabilty in next x hours \n        let totalRainNextHours = 0;\n        let maxPrecipProb = 0;\n        for (var i = d; i < checkMax; i++) {\n            totalRainNextHours += hourlyPrecip[i];\n            \n            if (probPrecip[i] > maxPrecipProb) {\n                maxPrecipProb = probPrecip[i];\n            }\n        }\n\n        // determine if watering needed\n        if (soilMoisture <= moistureThreshold) {\n            command = \"IDLE \" + pumpId.toString();   // no need to water\n        } else if (soilMoisture <= 2000) {\n            if (maxPrecipProb < 40) {\n                command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" LIGHT\";\n            } else {\n                command = \"IDLE \" + pumpId.toString() + \" \" + sensor.id.toString();\n            }\n        } else if (soilMoisture <= 2500) {\n            if (maxPrecipProb < 40) {\n                command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" MEDIUM\";\n            } else if (totalRainNextHours < 2) {\n                command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" LIGHT\";\n            } else {\n                command = \"IDLE \" + pumpId.toString() + \" \" + sensor.id.toString();\n            }\n        } else {    // soil is dry\n            if (maxPrecipProb < 40) {\n                command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" HEAVY\";\n            } else if (totalRainNextHours < 2) {\n                command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" MEDIUM\";\n            } else if (totalRainNextHours < 4) {\n                command = \"WATER \" + pumpId.toString() + \" \" + sensor.id.toString() + \" LIGHT\";\n            } else {\n                command = \"IDLE \" + pumpId.toString();\n            }\n        }\n\n        // consider humidity if DHT sensor assigned\n        let associatedDht = sensorMapping[sensor.id];\n        if (associatedDht) {\n            let dhtSensor = data.find(s => s.id === associatedDht);\n            // decrease watering by one level if humidity is above 80%\n            if (dhtSensor && dhtSensor.humidity > 80) {\n                if (command.includes(\"HEAVY\")) {\n                    command = command.replace(\"HEAVY\", \"MEDIUM\");\n                } else if (command.includes(\"MEDIUM\")) {\n                    command = command.replace(\"MEDIUM\", \"LIGHT\");\n                } else if (command.includes(\"LIGHT\") && soilMoisture > 2000) {\n                    command = \"IDLE \" + pumpId.toString();\n                }\n            }\n        }\n    }\n\n    // don't send the same command twice\n    if (!outputMsgs.some(output => output.payload === command)) {\n        outputMsgs.push({ payload: command });\n    }\n})\n\n// recheck soil moisture after 10 minutes if watering\nif (!recheckActive) {\n    if (outputMsgs.some(msg => msg.payload.includes(\"WATER\"))) {\n        flow.set(\"isRecheckActive\", true);\n        setTimeout(() => {\n            // send READ message to trigger new reading and function execution\n            node.send({ payload: \"READ\"});  \n            }, 600000);   // recheck in 10 minutes\n    }\n} else {\n    flow.set(\"isRecheckActive\", false);    \n} \n\nreturn [outputMsgs];",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -484,7 +484,7 @@
         "type": "function",
         "z": "d27ff7acba5e037e",
         "name": "parse_forecast_api",
-        "func": "let data = JSON.parse(msg.payload);\nlet rain = data.hourly.rain;\nlet showers = data.hourly.showers;\nlet probability = data.hourly.precipitation_probability;\n\n// get total rain + showers in mm\nlet totalPrecipitationHourly = [];\nlet totalPrecip = 0;\nfor (var i = 0; i < 24; i++) {\n    totalPrecipitationHourly[i] = rain[i] + showers[i];\n    totalPrecip += rain[i] + showers[i];\n}\n\ntotalPrecip = Math.floor(totalPrecip*100)/100;\n\n// find maximum precipitation probability\nlet maxPrecipProb = Math.max(...probability);\n\n// save data in the flow\nflow.set(\"totalPrecipHourly\", totalPrecipitationHourly);\nflow.set(\"probPrecip\", probability);\nflow.set(\"hourlyRain\", rain);\n\n// check forecast (if rain is expected in next 4/6 hours)\nlet d = new Date().getUTCHours() // get current hour in UTC\n// how many hours to check forecast for\nlet checkHrs = 4;\nlet checkMax = Math.min(d+checkHrs, rain.length) // get the upper boundary index for weather check\n\n// get total precipitation mm and max precipitation probabilty in next x hours \nlet totalRainNextHours = 0;\nlet maxPrecipProb4 = 0;\nfor (var i = d; i < checkMax; i++) {\n    totalRainNextHours += rain[i];\n    \n    if (probability[i] > maxPrecipProb4) {\n        maxPrecipProb4 = probability[i];\n    }\n}\n\nmsg.payload = {\n    totalPrecipHourly: totalPrecipitationHourly,\n    totalPrecip: totalPrecip,\n    totalPrecip4: totalRainNextHours,\n    probabPrecip: probability,\n    hourlyRain: rain,\n    maxPrecipProb: maxPrecipProb,\n    maxPrecipProb4: maxPrecipProb4\n}\n\nreturn msg;",
+        "func": "let data = JSON.parse(msg.payload);\nlet rain = data.hourly.rain;\nlet showers = data.hourly.showers;\nlet probability = data.hourly.precipitation_probability;\n\n// get total rain + showers in mm\nlet totalPrecipitationHourly = [];\nlet totalPrecip = 0;\nfor (var i = 0; i < 24; i++) {\n    totalPrecipitationHourly[i] = rain[i] + showers[i];\n    totalPrecip += rain[i] + showers[i];\n}\n\ntotalPrecip = Math.floor(totalPrecip*100)/100;\n\n// find maximum precipitation probability\nlet maxPrecipProb = Math.max(...probability);\n\n// save data in the flow\nflow.set(\"totalPrecipHourly\", totalPrecipitationHourly);\nflow.set(\"probPrecip\", probability);\nflow.set(\"hourlyRain\", rain);\n\n// check forecast (if rain is expected in next 4/6 hours)\nlet d = new Date().getUTCHours() // get current hour in UTC\n// how many hours to check forecast for\nlet checkHrs = 4;\nlet checkMax = Math.min(d+checkHrs, rain.length) // get the upper boundary index for weather check\n\n// get total precipitation mm and max precipitation probabilty in next x hours \nlet totalRainNextHours = 0;\nlet maxPrecipProb4 = 0;\nfor (var i = d; i < checkMax; i++) {\n    totalRainNextHours += rain[i];\n    \n    if (probability[i] > maxPrecipProb4) {\n        maxPrecipProb4 = probability[i];\n    }\n}\ntotalRainNextHours = parseFloat(totalRainNextHours.toFixed(2));\n\nmsg.payload = {\n    totalPrecipHourly: totalPrecipitationHourly,\n    totalPrecip: totalPrecip,\n    totalPrecip4: totalRainNextHours,\n    probabPrecip: probability,\n    hourlyRain: rain,\n    maxPrecipProb: maxPrecipProb,\n    maxPrecipProb4: maxPrecipProb4\n}\n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -693,8 +693,8 @@
         "correl": "",
         "expiry": "",
         "broker": "5d42f12891b474f7",
-        "x": 1120,
-        "y": 280,
+        "x": 1180,
+        "y": 300,
         "wires": []
     },
     {
@@ -748,7 +748,7 @@
         "order": 3,
         "width": 0,
         "height": 0,
-        "format": "<div ng-init=\"sensors = []; pumps = []\">\n    <h2>Soil Moisture Sensors</h2>\n    <div ng-repeat=\"sensor in sensors\">\n        <div ng-if=\"sensor.type == 'SOIL'\">\n            <h3>Sensor {{sensor.id}}</h3>\n\n            <div ng-if=\"sensor.active == 1\">\n                <p>Moisture: {{sensor.moisture}}</p>\n                <label>Pump:</label>\n                <select ng-model=\"sensor.pump\" ng-options=\"pumpId for pumpId in pumps\" ng-change=\"updateSensor(sensor)\">\n                                <option value=\"\"></option>\n                </select>\n            </div>\n\n            <div ng-if=\"sensor.active == 0\">\n                <p>Status: Inactive</p>\n            </div>\n        <hr/>    \n        </div>\n    </div>\n\n    <h2>DHT Sensors</h2>\n    <div ng-repeat=\"sensor in sensors\">\n        <div ng-if=\"sensor.type == 'DHT_SENSOR'\">\n            <h3>Sensor {{sensor.id}}</h3>\n\n            <div ng-if=\"sensor.active == 1\">\n                <p>Temperature: {{sensor.temperature}}°C</p>\n                <p>Humidity: {{sensor.humidity}}%</p>\n            </div>\n            \n            <div ng-if=\"sensor.active == 0\">\n                <p>Status: Inactive</p>\n            </div>\n        <hr />\n        </div>\n    </div>\n\n    </br>\n    <button ng-click=\"refresh()\">Refresh</button>\n</div>\n\n<script>\n    (function(scope) {\n        scope.$watch('msg', function(msg) {\n            if (msg.payload.sensors) {\n                scope.sensors = msg.payload.sensors;\n            }\n\n            if (msg.payload.pumps) {\n                scope.pumps = msg.payload.pumps;\n            }\n        });\n\n        scope.updateSensor = function(sensor) {\n            // scope.send({ payload: sensor});\n            scope.send({ payload: \"CH_PUMP \" + sensor.id + \" \" + sensor.pump });\n        };\n\n        scope.refresh = function() {\n            scope.send({ payload: \"GET_ALL\"});\n        };\n    })(scope);\n</script>",
+        "format": "<div ng-init=\"sensors = []; pumps = []\">\n    <h2>Soil Moisture Sensors</h2>\n    <div ng-repeat=\"sensor in sensors\">\n        <div ng-if=\"sensor.type == 'SOIL'\">\n            <h3>Sensor {{sensor.id}}</h3>\n\n            <div ng-if=\"sensor.active == 1\">\n                <p>Moisture: {{sensor.moisture}}</p>\n\n                <label>Pump:</label>\n                <select ng-model=\"sensor.pump\" ng-options=\"pumpId for pumpId in pumps\" ng-change=\"updateSensor(sensor)\">\n                    <option value=\"\"></option>\n                </select>\n                <br/>\n                <label>DHT Sensor:</label>\n                <select ng-model=\"mapping[sensor.id]\" ng-options=\"dhtId for dhtId in activeDht\" ng-change=\"updateMapping(sensor)\">\n                    <option value=\"\">None</option>\n                </select>\n            </div>\n\n            <div ng-if=\"sensor.active == 0\">\n                <p>Status: Inactive</p>\n            </div>\n        <hr/>    \n        </div>\n    </div>\n\n    <h2>DHT Sensors</h2>\n    <div ng-repeat=\"sensor in sensors\">\n        <div ng-if=\"sensor.type == 'DHT_SENSOR'\">\n            <h3>Sensor {{sensor.id}}</h3>\n\n            <div ng-if=\"sensor.active == 1\">\n                <p>Temperature: {{sensor.temperature}}°C</p>\n                <p>Humidity: {{sensor.humidity}}%</p>\n            </div>\n            \n            <div ng-if=\"sensor.active == 0\">\n                <p>Status: Inactive</p>\n            </div>\n        <hr />\n        </div>\n    </div>\n\n    </br>\n    <button ng-click=\"refresh()\">Refresh</button>\n</div>\n\n<script>\n    (function(scope) {\n        scope.$watch('msg', function(msg) {\n            if (msg.payload.sensors) {\n                scope.sensors = msg.payload.sensors;\n            }\n\n            if (msg.payload.pumps) {\n                scope.pumps = msg.payload.pumps;\n            }\n\n            if (msg.payload.activeDht) {\n                scope.activeDht = msg.payload.activeDht;\n            }\n\n            if (msg.payload.sensorMapping) {\n                scope.mapping = msg.payload.sensorMapping;\n            }\n        });\n\n        scope.updateSensor = function(sensor) {\n            scope.send({ payload: \"CH_PUMP \" + sensor.id + \" \" + sensor.pump });\n        };\n\n        scope.refresh = function() {\n            scope.send({ payload: \"GET_ALL\"});\n        };\n\n        scope.updateMapping = function(sensor) {\n            scope.send({ payload: { soilSensorId: sensor.id, dhtSensorId: scope.mapping[sensor.id] || null }});\n        };\n\n    })(scope);\n</script>",
         "storeOutMessages": true,
         "fwdInMessages": false,
         "resendOnRefresh": true,
@@ -758,7 +758,7 @@
         "y": 340,
         "wires": [
             [
-                "35a8bc56db8a3151"
+                "caf8e3a564afc57e"
             ]
         ]
     },
@@ -846,7 +846,8 @@
         "y": 180,
         "wires": [
             [
-                "35a8bc56db8a3151"
+                "35a8bc56db8a3151",
+                "e69f0536b5689826"
             ]
         ]
     },
@@ -971,7 +972,7 @@
         "type": "function",
         "z": "d27ff7acba5e037e",
         "name": "get_sensors",
-        "func": "let sensorData = flow.get(\"sensorData\");\nlet pumpData = flow.get(\"pumpData\");\nlet wateringPumps = pumpData.filter(p => p.type === \"WATERING\");\nmsg.payload = { sensors: sensorData, pumps: wateringPumps.map(p => p.id)};\nreturn msg;",
+        "func": "let sensorData = flow.get(\"sensorData\") || {};\nlet activeDht = sensorData.filter(s => s.type === \"DHT_SENSOR\" && s.active === 1);\nlet pumpData = flow.get(\"pumpData\") || {};\nlet wateringPumps = pumpData.filter(p => p.type === \"WATERING\");\nlet sensorMapping = flow.get(\"sensorMapping\") || {};\n\nmsg.payload = { \n    sensors: sensorData, \n    pumps: wateringPumps.map(p => p.id),\n    activeDht: activeDht.map(s => s.id),\n    sensorMapping: sensorMapping\n};\n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -1782,7 +1783,7 @@
         "targetType": "full",
         "statusVal": "",
         "statusType": "auto",
-        "x": 780,
+        "x": 720,
         "y": 580,
         "wires": []
     },
@@ -1832,7 +1833,7 @@
         ],
         "repeat": "",
         "crontab": "",
-        "once": true,
+        "once": false,
         "onceDelay": 0.1,
         "topic": "",
         "payload": "Cork",
@@ -1923,5 +1924,73 @@
         "x": 940,
         "y": 860,
         "wires": []
+    },
+    {
+        "id": "e69f0536b5689826",
+        "type": "function",
+        "z": "d27ff7acba5e037e",
+        "name": "create_sensor_mapping",
+        "func": "let sensorMapping = flow.get(\"sensorMapping\") || {};\nflow.set(\"sensorMapping\", sensorMapping);\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1270,
+        "y": 180,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "caf8e3a564afc57e",
+        "type": "switch",
+        "z": "d27ff7acba5e037e",
+        "name": "esp || mapping",
+        "property": "payload",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "regex",
+                "v": "(CH_PUMP|SEND_ALL)",
+                "vt": "str",
+                "case": false
+            },
+            {
+                "t": "else"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 740,
+        "y": 340,
+        "wires": [
+            [
+                "35a8bc56db8a3151"
+            ],
+            [
+                "86b5a631a5113389"
+            ]
+        ]
+    },
+    {
+        "id": "86b5a631a5113389",
+        "type": "function",
+        "z": "d27ff7acba5e037e",
+        "name": "mapping",
+        "func": "let sensorMapping = flow.get(\"sensorMapping\") || {};\n\nif (msg.payload.soilSensorId) {\n    // store soil moisture sensor - dht sensor mapping\n    if (msg.payload.dhtSensorId) {\n        sensorMapping[msg.payload.soilSensorId] = msg.payload.dhtSensorId;\n    } else {\n        delete sensorMapping[msg.payload.soilSensorId];\n    }\n\n    flow.set(\"sensorMapping\", sensorMapping);\n}\n\nmsg.payload = {sensorMapping};\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 900,
+        "y": 360,
+        "wires": [
+            []
+        ]
     }
 ]

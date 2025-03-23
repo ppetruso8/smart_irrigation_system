@@ -28,6 +28,7 @@
             
                     <h5>Settings</h5>
                     <p>Pump: {{ sensor.pump }}</p>
+                    <p>DHT Sensor: {{ sensor.dht }}</p>
                     <form action="" method="POST" novalidate>
                         {{ forms[sensor_no].hidden_tag() }}
                         <input type="hidden" name="sensor" value="{{ sensor_no }}">
