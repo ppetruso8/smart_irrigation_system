@@ -469,11 +469,13 @@ def get_current_weather(lat, long):
         if datetime.now() - last_update < timedelta(minutes=30):
             return session["cur_weather"]
 
+    print(lat, long)
     # Weather information is provided by https://open-meteo.com, (CC BY 4.0) https://creativecommons.org/licenses/by/4.0/, with changes to output format
     url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={long}&current=temperature_2m,relative_humidity_2m,precipitation,rain,weather_code,wind_speed_10m,wind_direction_10m,precipitation_probability"
     
     try:
-        response = requests.get(url)
+        response = requests.get(url, timeout=5)
+        response.raise_for_status()
         
         if response.status_code == 200:
             data = response.json()
@@ -481,8 +483,11 @@ def get_current_weather(lat, long):
             session["last_cur_weather_update"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
             return data["current"]
            
+    except Exception as e:
+        flash(f"Weather API error: {e}")
+
     except requests.exceptions.RequestException as e:
-        if response.status_code != 200:
+        if response and response.status_code != 200:
             flash(f"Error retrieving the weather data: {response.status_code}")
     
     return None
@@ -498,7 +503,8 @@ def get_forecast(lat, long):
     url=f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={long}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum&hourly=temperature_2m,relative_humidity_2m,precipitation_probability,precipitation,weather_code"
 
     try:
-        response = requests.get(url)
+        response = requests.get(url, timeout=5)
+        response.raise_for_status()
         
         if response.status_code == 200:
             data = response.json()
@@ -526,7 +532,7 @@ def get_forecast(lat, long):
             return data["hourly"], data["daily"]
         
     except requests.exceptions.RequestException as e:
-        if response.status_code != 200:
+        if response and response.status_code != 200:
             flash(f"Error retrieving the weather API data: {response.status_code}")
 
     return None, None
@@ -537,14 +543,21 @@ def get_coordinates(city):
 
     # Location data is provided by https://open-meteo.com, (CC BY 4.0) https://creativecommons.org/licenses/by/4.0/, with changes to output format
     url = f"https://geocoding-api.open-meteo.com/v1/search?name={city}&count=10&language=en&format=json"
-    response = requests.get(url)
+    
+    try:
+        response = requests.get(url, timeout=5)
+        response.raise_for_status()
 
-    if response.status_code == 200:
-        data = response.json()
-        data = data["results"][0]
-        return data["latitude"], data["longitude"], data["name"], data["country"]
-    else:
-        print(f"Error retrieving the weather API data: {response.status_code}")
+        if response.status_code == 200:
+            data = response.json()
+            data = data["results"][0]
+            return data["latitude"], data["longitude"], data["name"], data["country"]
+        else:
+            flash(f"Error retrieving the location data from API data: {response.status_code}")
+    
+    except requests.exceptions.RequestException as e:
+        if response and response.status_code != 200:
+            flash(f"Error retrieving the location data from API: {response.status_code}")
     
     return None,None,None,None
 
