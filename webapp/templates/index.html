@@ -36,7 +36,12 @@
                         {{ forms[sensor_no].env() }}
                         </br>
                         {{ forms[sensor_no].mode.label }}
-                        {{ forms[sensor_no].mode() }}
+                        {{ forms[sensor_no].mode(onchange="toggleCustomAmount(this, {{ sensor_no }})") }}
+                        </br>
+                        <div id="custom_amount_{{ sensor_no }}" style="display: none;">
+                            {{ forms[sensor_no].custom_amount.label }}
+                            {{ forms[sensor_no].custom_amount() }}
+                        </div>
                         </br>
                         <div class="submit_button">
                             {{ forms[sensor_no].submit() }}
@@ -225,7 +230,5 @@
     
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>
-
-
-
+    
 {% endblock %}

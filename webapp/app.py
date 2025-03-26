@@ -139,10 +139,15 @@ def index():
     fertilization_forms = {pump_id: FertilizationForm(data=data) for pump_id, data in fertilization_pumps.items()}
 
     # prefill sensor forms with data
-    for sensor_no, sensor in sensors.items():
-        form = forms[sensor_no]
+    for sensor_id, sensor in sensors.items():
+        form = forms[sensor_id]
         form.env.default = sensor["env"].lower().capitalize()
         form.mode.default = sensor["mode"].lower().capitalize()
+
+        if sensor["mode"].upper() == "CUSTOM":
+            pump_id = sensor["pump"]
+            form.custom_amount.data = session["pumps_water"][pump_id]["amount"]
+            
         form.process()
       
     # prefill fertilization forms with data
@@ -154,7 +159,7 @@ def index():
     if request.method == "POST":
         # updating sensor settings
         if request.form.get("sensor"):
-            sensor_no = int(request.form.get("sensor"))
+            sensor_id = int(request.form.get("sensor"))
 
             form = SensorForm(request.form)
 
@@ -162,17 +167,25 @@ def index():
                 new_env = form.env.data
                 new_mode = form.mode.data
 
-                # update Node-Red
-                session["sensors_soil"][sensor_no]["env"] = new_env
-                session["sensors_soil"][sensor_no]["mode"] = new_mode
+                pump_id = session['sensors_soil'][sensor_id]['pump']
+
+                # update session and Node-Red
+                session["sensors_soil"][sensor_id]["env"] = new_env
+                session["sensors_soil"][sensor_id]["mode"] = new_mode
 
                 if new_mode == "Automatic":
                     new_mode = "AUTO"
 
-                send_command(f"CHMOD {session['sensors_soil'][sensor_no]['pump']} {new_mode.upper()}")
-                send_command(f"SET_ENV {session['sensors_soil'][sensor_no]['pump']} {new_env.upper()}")
+                send_command(f"CHMOD {pump_id} {new_mode.upper()}")
+                send_command(f"SET_ENV {pump_id} {new_env.upper()}")
 
-                forms[sensor_no] = SensorForm(data=session["sensors_soil"][sensor_no])
+                if new_mode == "Custom":
+                    custom_amount = form.custom_amount.data
+                    if custom_amount:
+                        session["pumps_water"][pump_id]["amount"]
+                        send_command(f"SET_CUSTOM_AMOUNT {pump_id} {custom_amount}")
+
+                forms[sensor_id] = SensorForm(data=session["sensors_soil"][sensor_id])
 
                 return redirect(url_for("index"))
             else:
@@ -630,8 +643,6 @@ def get_data():
                 if last_fert != {}:
                     last = last_fert.get(str(pump_id), {}).get("timestamp", "No data")
                 
-
-
                 if next_fert != {}:
                     next = next_fert.get(str(pump_id)).get("next", None)
 
