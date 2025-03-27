@@ -779,7 +779,7 @@
         "order": 3,
         "width": 0,
         "height": 0,
-        "format": "<div ng-init=\"sensors = []; pumps = []\">\n    <h2>Soil Moisture Sensors</h2>\n    <div ng-repeat=\"sensor in sensors\">\n        <div ng-if=\"sensor.type == 'SOIL'\">\n            <h3>Sensor {{sensor.id}}</h3>\n\n            <div ng-if=\"sensor.active == 1\">\n                <p>Moisture: {{sensor.moisture}}</p>\n\n                <label>Pump:</label>\n                <select ng-model=\"sensor.pump\" ng-options=\"pumpId for pumpId in pumps\" ng-change=\"updateSensor(sensor)\">\n                    <option value=\"\"></option>\n                </select>\n                <br/>\n                <label>DHT Sensor:</label>\n                <select ng-model=\"mapping[sensor.id]\" ng-options=\"dhtId for dhtId in activeDht\" ng-change=\"updateMapping(sensor)\">\n                    <option value=\"\">None</option>\n                </select>\n            </div>\n\n            <div ng-if=\"sensor.active == 0\">\n                <p>Status: Inactive</p>\n            </div>\n        <hr/>    \n        </div>\n    </div>\n\n    <h2>DHT Sensors</h2>\n    <div ng-repeat=\"sensor in sensors\">\n        <div ng-if=\"sensor.type == 'DHT_SENSOR'\">\n            <h3>Sensor {{sensor.id}}</h3>\n\n            <div ng-if=\"sensor.active == 1\">\n                <p>Temperature: {{sensor.temperature}}°C</p>\n                <p>Humidity: {{sensor.humidity}}%</p>\n            </div>\n            \n            <div ng-if=\"sensor.active == 0\">\n                <p>Status: Inactive</p>\n            </div>\n        <hr />\n        </div>\n    </div>\n\n    </br>\n    <button ng-click=\"refresh()\">Refresh</button>\n</div>\n\n<script>\n    (function(scope) {\n        scope.$watch('msg', function(msg) {\n            if (msg.payload.sensors) {\n                scope.sensors = msg.payload.sensors;\n            }\n\n            if (msg.payload.pumps) {\n                scope.pumps = msg.payload.pumps;\n            }\n\n            if (msg.payload.activeDht) {\n                scope.activeDht = msg.payload.activeDht;\n            }\n\n            if (msg.payload.sensorMapping) {\n                scope.mapping = msg.payload.sensorMapping;\n            }\n        });\n\n        scope.updateSensor = function(sensor) {\n            scope.send({ payload: \"CH_PUMP \" + sensor.id + \" \" + sensor.pump });\n        };\n\n        scope.refresh = function() {\n            scope.send({ payload: \"GET_ALL\"});\n        };\n\n        scope.updateMapping = function(sensor) {\n            scope.send({ payload: { soilSensorId: sensor.id, dhtSensorId: scope.mapping[sensor.id] || null }});\n        };\n\n    })(scope);\n</script>",
+        "format": "<div ng-init=\"sensors = []; pumps = []\">\n    <h2>Soil Moisture Sensors</h2>\n    <div ng-repeat=\"sensor in sensors\">\n        <div ng-if=\"sensor.type == 'SOIL'\">\n            <h3>Sensor {{sensor.id}}</h3>\n\n            <div ng-if=\"sensor.active == 1\">\n                <p>Moisture: {{sensor.moisture}}</p>\n\n                <label>Pump:</label>\n                <select ng-model=\"sensor.pump\" ng-options=\"pumpId for pumpId in pumps\" ng-change=\"updateSensor(sensor)\">\n                    <option value=\"\"></option>\n                </select>\n                <br/>\n                <label>DHT Sensor:</label>\n                <select ng-model=\"mapping[sensor.id]\" ng-options=\"dhtId for dhtId in activeDht\" ng-change=\"updateMapping(sensor)\">\n                    <option value=\"\">None</option>\n                </select>\n            </div>\n\n            <div ng-if=\"sensor.active == 0\">\n                <p>Status: Inactive</p>\n            </div>\n        <hr/>    \n        </div>\n    </div>\n    <br/>\n    <h2>DHT Sensors</h2>\n    <div ng-repeat=\"sensor in sensors\">\n        <div ng-if=\"sensor.type == 'DHT_SENSOR'\">\n            <h3>Sensor {{sensor.id}}</h3>\n\n            <div ng-if=\"sensor.active == 1\">\n                <p>Temperature: {{sensor.temperature}}°C</p>\n                <p>Humidity: {{sensor.humidity}}%</p>\n            </div>\n            \n            <div ng-if=\"sensor.active == 0\">\n                <p>Status: Inactive</p>\n            </div>\n        <hr />\n        </div>\n    </div>\n\n    </br>\n    <button ng-click=\"refresh()\">Refresh</button>\n</div>\n\n<script>\n    (function(scope) {\n        scope.$watch('msg', function(msg) {\n            if (msg.payload.sensors) {\n                scope.sensors = msg.payload.sensors;\n            }\n\n            if (msg.payload.pumps) {\n                scope.pumps = msg.payload.pumps;\n            }\n\n            if (msg.payload.activeDht) {\n                scope.activeDht = msg.payload.activeDht;\n            }\n\n            if (msg.payload.sensorMapping) {\n                scope.mapping = msg.payload.sensorMapping;\n            }\n        });\n\n        scope.updateSensor = function(sensor) {\n            scope.send({ payload: \"CH_PUMP \" + sensor.id + \" \" + sensor.pump });\n        };\n\n        scope.refresh = function() {\n            scope.send({ payload: \"GET_ALL\"});\n        };\n\n        scope.updateMapping = function(sensor) {\n            scope.send({ payload: { soilSensorId: sensor.id, dhtSensorId: scope.mapping[sensor.id] || null }});\n        };\n\n    })(scope);\n</script>",
         "storeOutMessages": true,
         "fwdInMessages": false,
         "resendOnRefresh": true,
@@ -1177,7 +1177,7 @@
         "type": "function",
         "z": "d27ff7acba5e037e",
         "name": "update_pump",
-        "func": "let pumps = flow.get(\"pumpData\");\nlet command = msg.payload;\nlet splitCmd = command.split(\" \");\n\nif (splitCmd[0] === \"CHMOD\") {\n    let pumpId = parseInt(splitCmd[1]);\n    let newMode = splitCmd[2];\n\n    let pumpIndex = pumps.findIndex(pump => pump.id === pumpId);\n    let wateringModes = [\"LIGHT\", \"MEDIUM\", \"HEAVY\", \"AUTO\"];\n\n    if (wateringModes.includes(newMode)) {\n        msg.payload = command;\n        pumps[pumpIndex].currentWaterMode = newMode;\n        flow.set(\"pumpData\", pumps);\n    } else {\n        node.warn(\"Invalid input for CHMOD.\");\n        return null;\n    }\n}\n\nelse if (splitCmd[0] === \"SET_ENV\") {\n    let pumpId = parseInt(splitCmd[1]);\n    let newEnv = splitCmd[2];\n\n    let pumpIndex = pumps.findIndex(pump => pump.id === pumpId);\n    let envModes = [\"INDOOR\", \"OUTDOOR\"];\n    \n    if (envModes.includes(newEnv)) {\n        msg.payload = command;\n        pumps[pumpIndex].env = newEnv;\n        flow.set(\"pumpData\", pumps);\n    } else {\n        node.warn(\"Invalid input for SET_ENV.\");\n        return null;\n    }\n}\n\n// fertilization\nelse if (splitCmd[0] === \"SET_FERT_AMOUNT\") {\n    let pumpId = parseInt(splitCmd[1]);\n    let amount = parseInt(splitCmd[2]);\n\n    let pumpIndex = pumps.findIndex(pump => pump.id === pumpId);\n\n    pumps[pumpIndex].amount = amount;\n    flow.set(\"pumpData\", pumps);\n    msg.payload = command;\n}\n\nelse {\n    node.warn(\"Invalid command from web app.\");\n    return null;\n}\n\nreturn msg;\n",
+        "func": "let pumps = flow.get(\"pumpData\");\nlet command = msg.payload;\nlet splitCmd = command.split(\" \");\n\nif (splitCmd[0] === \"CHMOD\") {\n    let pumpId = parseInt(splitCmd[1]);\n    let newMode = splitCmd[2];\n\n    let pumpIndex = pumps.findIndex(pump => pump.id === pumpId);\n    let wateringModes = [\"LIGHT\", \"MEDIUM\", \"HEAVY\", \"AUTO\", \"CUSTOM\"];\n\n    if (wateringModes.includes(newMode)) {\n        msg.payload = command;\n        pumps[pumpIndex].currentWaterMode = newMode;\n        flow.set(\"pumpData\", pumps);\n    } else {\n        node.warn(\"Invalid input for CHMOD.\");\n        return null;\n    }\n}\n\nelse if (splitCmd[0] === \"SET_ENV\") {\n    let pumpId = parseInt(splitCmd[1]);\n    let newEnv = splitCmd[2];\n\n    let pumpIndex = pumps.findIndex(pump => pump.id === pumpId);\n    let envModes = [\"INDOOR\", \"OUTDOOR\"];\n    \n    if (envModes.includes(newEnv)) {\n        msg.payload = command;\n        pumps[pumpIndex].env = newEnv;\n        flow.set(\"pumpData\", pumps);\n    } else {\n        node.warn(\"Invalid input for SET_ENV.\");\n        return null;\n    }\n}\n\n// fertilization\nelse if (splitCmd[0] === \"SET_FERT_AMOUNT\") {\n    let pumpId = parseInt(splitCmd[1]);\n    let amount = parseInt(splitCmd[2]);\n\n    let pumpIndex = pumps.findIndex(pump => pump.id === pumpId);\n\n    pumps[pumpIndex].amount = amount;\n    flow.set(\"pumpData\", pumps);\n    msg.payload = command;\n}\n\nelse {\n    node.warn(\"Invalid command from web app.\");\n    return null;\n}\n\nreturn msg;\n",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -1188,7 +1188,8 @@
         "y": 1000,
         "wires": [
             [
-                "8cc0b7f1f99c0f2b"
+                "8cc0b7f1f99c0f2b",
+                "f2f64cbb767a582d"
             ]
         ]
     },
@@ -2253,5 +2254,21 @@
                 "caf8e3a564afc57e"
             ]
         ]
+    },
+    {
+        "id": "f2f64cbb767a582d",
+        "type": "debug",
+        "z": "d27ff7acba5e037e",
+        "name": "debug 6",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 680,
+        "y": 840,
+        "wires": []
     }
 ]

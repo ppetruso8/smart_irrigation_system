@@ -146,7 +146,7 @@ def index():
 
         if sensor["mode"].upper() == "CUSTOM":
             pump_id = sensor["pump"]
-            form.custom_amount.data = session["pumps_water"][pump_id]["amount"]
+            form.custom_amount.default = session["pumps_water"][pump_id]["amount"]
             
         form.process()
       
@@ -167,7 +167,7 @@ def index():
                 new_env = form.env.data
                 new_mode = form.mode.data
 
-                pump_id = session['sensors_soil'][sensor_id]['pump']
+                pump_id = session["sensors_soil"][sensor_id]["pump"]
 
                 # update session and Node-Red
                 session["sensors_soil"][sensor_id]["env"] = new_env
@@ -176,14 +176,35 @@ def index():
                 if new_mode == "Automatic":
                     new_mode = "AUTO"
 
-                send_command(f"CHMOD {pump_id} {new_mode.upper()}")
                 send_command(f"SET_ENV {pump_id} {new_env.upper()}")
 
                 if new_mode == "Custom":
                     custom_amount = form.custom_amount.data
+                    
                     if custom_amount:
-                        session["pumps_water"][pump_id]["amount"]
-                        send_command(f"SET_CUSTOM_AMOUNT {pump_id} {custom_amount}")
+                        # validate input type
+                        try:
+                            custom_amount = int(custom_amount)
+                        except Exception as e:
+                            form.custom_amount.errors.append("Custom amount must be a number.")
+                            return render_template("index.html", weather=weather_current, sensors=sensors, hourly=forecast_hourly, 
+                                daily=forecast_daily, forms=forms, city=city, country=country,
+                                location_form=location_form, dht_sensors=dht_sensors, pumps=fertilization_pumps,
+                                pump_forms=fertilization_forms, zip=zip)
+                        
+                        # validate amount
+                        if custom_amount < 10 and custom_amount > 1000:
+                            form.custom_amount.errors.append("Custom amount must be between 10ml and 1000ml.")
+                            return render_template("index.html", weather=weather_current, sensors=sensors, hourly=forecast_hourly, 
+                                daily=forecast_daily, forms=forms, city=city, country=country,
+                                location_form=location_form, dht_sensors=dht_sensors, pumps=fertilization_pumps,
+                                pump_forms=fertilization_forms, zip=zip)
+
+                        session["pumps_water"][pump_id]["amount"] = custom_amount
+                        send_command(f"CHMOD {pump_id} CUSTOM {custom_amount}")
+                else:
+                    send_command(f"CHMOD {pump_id} {new_mode.upper()}")
+
 
                 forms[sensor_id] = SensorForm(data=session["sensors_soil"][sensor_id])
 
