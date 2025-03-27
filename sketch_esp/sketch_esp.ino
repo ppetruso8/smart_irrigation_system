@@ -1,6 +1,7 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include <DHT.h>
+#include <esp_wifi.h>
 
 // Status modes
 enum StatusMode : byte { IDLE,
@@ -174,6 +175,13 @@ void callback(char* topic, byte* payload, unsigned int length) {
     int id = command.substring(15,16).toInt();
     changeStatus(activate, type, id);
 
+  } else if (String(topic) == "irrigation/sleep") {
+    if (command == "SLEEP") {
+      // Put ESP into sleep mode between midnight and 4am
+      Serial.println("Starting deep sleep until 4am");
+      esp_sleep_enable_timer_wakeup(4*3600*1000000);
+      esp_deep_sleep_start();
+    }
   } else {
     client.publish("irrigation/notice", "{\"error\":\"invalid_command\"}");
   }
@@ -186,7 +194,8 @@ void setup() {
   // Set station mode (ESP connecting to access point)
   WiFi.mode(WIFI_STA);
   // Enable power saving mode for WiFi
-  // WiFi.setSleep(true);
+  WiFi.setSleep(true);
+  esp_wifi_set_ps(WIFI_PS_MIN_MODEM);
 
   // Initialize default pump pins and set to be off (HIGH)
   for (int i = 0; i < max_num_pumps; i++) {
@@ -279,10 +288,7 @@ void loop() {
 
     case IDLE:
     default:
-      // switch into light sleep mode - wakes up upon receival of MQTT message 
-      // Serial.println("Switching into light sleep");
-      // esp_light_sleep_start(); 
-      // Serial.println("Woke up from light sleep");
+      delay(1000);
       break;
   }
 }
@@ -740,6 +746,7 @@ void reconnect() {
       client.setBufferSize(1024);
       Serial.println("MQTT connection established");
       client.subscribe("irrigation/control");
+      client.subscribe("irrigation/sleep");
     } else {
       Serial.print("MQTT connection failed, rc=");
       Serial.println(client.state());
