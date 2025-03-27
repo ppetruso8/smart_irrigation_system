@@ -180,7 +180,7 @@ def index():
 
                 if new_mode == "Custom":
                     custom_amount = form.custom_amount.data
-                    
+
                     if custom_amount:
                         # validate input type
                         try:
@@ -413,7 +413,7 @@ def send_command(command = None):
     if not command:
         command = request.form.get("command")
 
-    print(f"Received command: {command}")
+    print(f"Command to be sent: {command}")
 
     if not command:
         flash("Error obtaining command.")
@@ -503,7 +503,6 @@ def get_current_weather(lat, long):
         if datetime.now() - last_update < timedelta(minutes=30):
             return session["cur_weather"]
 
-    print(lat, long)
     # Weather information is provided by https://open-meteo.com, (CC BY 4.0) https://creativecommons.org/licenses/by/4.0/, with changes to output format
     url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={long}&current=temperature_2m,relative_humidity_2m,precipitation,rain,weather_code,wind_speed_10m,wind_direction_10m,precipitation_probability"
     
@@ -704,7 +703,7 @@ def get_location():
         return city, country, latitude, longitude
     
     elif response.status_code == 404:
-        print("No location set in Node-Red.")
+        print("No location set in Node-Red. Location set to default - Cork")
         return None, None, None, None
     else:
         flash(f"Failed to retrieve location from Node-RED: {response.status_code}")

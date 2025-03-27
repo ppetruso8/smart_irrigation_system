@@ -264,7 +264,7 @@
         "type": "function",
         "z": "d27ff7acba5e037e",
         "name": "process_sensor_data",
-        "func": "let data = msg.payload;\nlet sensors = flow.get(\"sensorData\");\nlet updatedSensors = data.sensors;\n\n// update appropriate sensors\nupdatedSensors.forEach(sensor => {\n    let existingSensor = sensors.find(s => s.id === sensor.id && s.type === sensor.type);\n\n    if (existingSensor) {\n        if (sensor.type === \"SOIL\") {\n            existingSensor.moisture = sensor.moisture;\n\n        } else if (sensor.type === \"DHT_SENSOR\") {\n            existingSensor.humidity = sensor.humidity;\n            existingSensor.temperature = sensor.temperature;\n        }\n    }\n});\n\n// update sensor data in the flow\nflow.set(\"sensorData\", sensors);\n\nreturn msg;",
+        "func": "let data = msg.payload;\nlet sensors = flow.get(\"sensorData\") || [];\nlet updatedSensors = data.sensors;\n\n// update appropriate sensors\nupdatedSensors.forEach(sensor => {\n    let existingSensor = sensors.find(s => s.id === sensor.id && s.type === sensor.type);\n\n    if (existingSensor) {\n        if (sensor.type === \"SOIL\") {\n            existingSensor.moisture = sensor.moisture;\n\n        } else if (sensor.type === \"DHT_SENSOR\") {\n            existingSensor.humidity = sensor.humidity;\n            existingSensor.temperature = sensor.temperature;\n        }\n    }\n});\n\n// update sensor data in the flow\nflow.set(\"sensorData\", sensors);\n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -346,7 +346,7 @@
         "payload": "READ",
         "payloadType": "str",
         "x": 1000,
-        "y": 140,
+        "y": 160,
         "wires": [
             [
                 "35a8bc56db8a3151"
@@ -515,7 +515,7 @@
         "type": "function",
         "z": "d27ff7acba5e037e",
         "name": "parse_forecast_api",
-        "func": "let data = JSON.parse(msg.payload);\nlet rain = data.hourly.rain;\nlet showers = data.hourly.showers;\nlet probability = data.hourly.precipitation_probability;\n\n// get total rain + showers in mm\nlet totalPrecipitationHourly = [];\nlet totalPrecip = 0;\nfor (var i = 0; i < 24; i++) {\n    totalPrecipitationHourly[i] = rain[i] + showers[i];\n    totalPrecip += rain[i] + showers[i];\n}\n\ntotalPrecip = Math.floor(totalPrecip*100)/100;\n\n// find maximum precipitation probability\nlet maxPrecipProb = Math.max(...probability);\n\n// save data in the flow\nflow.set(\"totalPrecipHourly\", totalPrecipitationHourly);\nflow.set(\"probPrecip\", probability);\nflow.set(\"hourlyRain\", rain);\n\n// check forecast (if rain is expected in next 4/6 hours)\nlet d = new Date().getUTCHours() // get current hour in UTC\n// how many hours to check forecast for\nlet checkHrs = 4;\nlet checkMax = Math.min(d+checkHrs, rain.length) // get the upper boundary index for weather check\n\n// get total precipitation mm and max precipitation probabilty in next x hours \nlet totalRainNextHours = 0;\nlet maxPrecipProb4 = 0;\nfor (var i = d; i < checkMax; i++) {\n    totalRainNextHours += rain[i];\n    \n    if (probability[i] > maxPrecipProb4) {\n        maxPrecipProb4 = probability[i];\n    }\n}\ntotalRainNextHours = parseFloat(totalRainNextHours.toFixed(2));\n\nmsg.payload = {\n    totalPrecipHourly: totalPrecipitationHourly,\n    totalPrecip: totalPrecip,\n    totalPrecip4: totalRainNextHours,\n    probabPrecip: probability,\n    hourlyRain: rain,\n    maxPrecipProb: maxPrecipProb,\n    maxPrecipProb4: maxPrecipProb4\n}\n\nreturn msg;",
+        "func": "let data = JSON.parse(msg.payload);\nlet rain = data.hourly.rain;\nlet showers = data.hourly.showers;\nlet probability = data.hourly.precipitation_probability;\n\n// get total rain + showers in mm\nlet totalPrecipitationHourly = [];\nlet totalPrecip = 0;\nfor (var i = 0; i < 24; i++) {\n    totalPrecipitationHourly[i] = rain[i] + showers[i];\n    totalPrecip += rain[i] + showers[i];\n}\n\ntotalPrecip = parseFloat(totalPrecip.toFixed(2));\n\n\n// find maximum precipitation probability\nlet maxPrecipProb = Math.max(...probability);\n\n// save data in the flow\nflow.set(\"totalPrecipHourly\", totalPrecipitationHourly);\nflow.set(\"probPrecip\", probability);\nflow.set(\"hourlyRain\", rain);\n\n// check forecast (if rain is expected in next 4/6 hours)\nlet d = new Date().getUTCHours() // get current hour in UTC\n// how many hours to check forecast for\nlet checkHrs = 4;\nlet checkMax = Math.min(d+checkHrs, rain.length) // get the upper boundary index for weather check\n\n// get total precipitation mm and max precipitation probabilty in next x hours \nlet totalRainNextHours = 0;\nlet maxPrecipProb4 = 0;\nfor (var i = d; i < checkMax; i++) {\n    totalRainNextHours += rain[i];\n    \n    if (probability[i] > maxPrecipProb4) {\n        maxPrecipProb4 = probability[i];\n    }\n}\ntotalRainNextHours = parseFloat(totalRainNextHours.toFixed(2));\n\nmsg.payload = {\n    totalPrecipHourly: totalPrecipitationHourly,\n    totalPrecip: totalPrecip,\n    totalPrecip4: totalRainNextHours,\n    probabPrecip: probability,\n    hourlyRain: rain,\n    maxPrecipProb: maxPrecipProb,\n    maxPrecipProb4: maxPrecipProb4\n}\n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -684,8 +684,7 @@
         "y": 120,
         "wires": [
             [
-                "d4bc37cb6b14bcdd",
-                "cae1939feee2483e"
+                "d4bc37cb6b14bcdd"
             ]
         ]
     },
@@ -874,7 +873,7 @@
         "payload": "GET_ALL",
         "payloadType": "str",
         "x": 1000,
-        "y": 180,
+        "y": 200,
         "wires": [
             [
                 "35a8bc56db8a3151",
@@ -908,7 +907,7 @@
         "order": 1,
         "width": 0,
         "height": 0,
-        "format": "<div ng-init=\"pumps = []\">\n    <h2>Watering</h2>\n    <div ng-repeat=\"pump in pumps\">\n        <div ng-if=\"pump.type=='WATERING'\">\n            <h3>Pump {{pump.id}}</h3>\n            <div ng-if=\"pump.active == 1\">\n                <label>Watering Mode:</label>\n                <select ng-model=\"pump.currentWaterMode\" ng-change=\"updatePump(pump)\">\n                    <option value = \"LIGHT\">Light</option>\n                    <option value = \"MEDIUM\">Medium</option>\n                    <option value = \"HEAVY\">Heavy</option>\n                    <option value = \"CUSTOM\">Custom</option>\n                    <option value = \"AUTO\">Automatic</option>\n                </select>\n                <div ng-if=\"pump.currentWaterMode=='CUSTOM'\">\n                    <label>Custom Amount (ml):</label>\n                    <input type=\"number\" ng-model=\"pump.amount\" ng-change=\"updatePump(pump)\"/>\n                </div>\n\n                <label>Environment:</label>\n                <select ng-model=\"pump.env\" ng-change=\"updatePump(pump)\">\n                    <option value = \"INDOOR\">Indoor</option>\n                    <option value = \"OUTDOOR\">Outdoor</option>\n                </select>\n\n                <button ng-click=\"water(pump)\">Manual Watering</button>\n                <button ng-click=\"deactivatePump(pump)\">Deactivate</button>\n            </div>\n\n            <div ng-if=\"pump.active == 0\">\n                <p>Status: Inactive</p>\n                <button ng-click=\"activatePump(pump)\">Activate</button>\n            </div>\n        <hr/>\n        </div>\n    </div>\n\n    <h2>Fertilization</h2>\n    <div ng-repeat=\"pump in pumps\">\n        <div ng-if=\"pump.type=='FERTILIZATION'\">\n            <h3>Pump {{pump.id}}</h3>\n            <div ng-if=\"pump.active == 1\">\n                <label>Amount (ml):</label>\n                <input type=\"number\" ng-model=\"pump.amount\" ng-change=\"updatePump(pump)\"/>\n                <button ng-click=\"fertilize(pump)\">Fertilize</button>\n                <button ng-click=\"deactivatePump(pump)\">Deactivate</button>\n                <br>\n                <br>\n                <h4>Schedule Fertilization</h4>\n                <div ng-if=\"schedules[pump.id].next\">\n                    <p>Next Fertilization: {{schedules[pump.id].next | date:'dd MMM yyyy'}}</p>\n                    <button ng-click=\"removeSchedule(pump)\">Remove Schedule</button>\n                </div>\n                <div ng-if=\"!schedules[pump.id].next\">\n                    <label>Interval (days):</label>\n                    <input type=\"number\" ng-model=\"scheduleData[pump.id].interval\" ng-disabled=\"schedules[pump.id].next\"/>\n                    <button ng-click=\"schedule(pump)\" ng-disabled=\"schedules[pump.id].next\">Set Schedule</button>\n                </div>                \n            </div>\n\n            <div ng-if=\"pump.active == 0\">\n                <p>Status: Inactive</p>\n                <button ng-click=\"activatePump(pump)\">Activate</button>\n            </div>\n            <hr />\n        </div>\n    </div>\n\n</div>\n\n<script>\n    (function(scope) {\n        scope.scheduleData = {};\n\n        scope.$watch(\"msg\", function(msg) {\n            if (msg.payload.pumps) {\n                scope.pumps = msg.payload.pumps;\n            }\n\n            if (msg.payload.schedules) {\n                scope.schedules = msg.payload.schedules;\n            }\n        });\n\n        scope.updatePump = function(pump) {\n            scope.send({ payload: pump });\n        };\n\n        scope.water = function(pump) {\n            scope.send({ payload: \"WATER \" + pump.id  })\n        };\n\n        scope.fertilize = function(pump) {\n            scope.send({ payload: \"FERTILIZE \" + pump.id })\n        };\n\n        scope.activatePump = function(pump) {\n            scope.send({ payload: \"SET_STATUS 1 P \" + pump.id })\n        };\n\n        scope.deactivatePump = function(pump) {\n            scope.send({ payload: \"SET_STATUS 0 P \" + pump.id })\n        };\n\n        scope.schedule = function(pump) {\n            let schedule = scope.scheduleData[pump.id];\n            console.log(\"Schedule data:\", schedule);\n\n            if (schedule && schedule.interval) {\n                scope.send({\n                    payload: {\n                        cmd: \"SET_SCHEDULE\",\n                        pumpId: pump.id,\n                        interval: schedule.interval,\n                        amount: pump.amount\n                    }\n                });\n            }\n        };\n\n        scope.removeSchedule = function(pump) {\n            scope.send({ payload: { cmd: \"REMOVE_SCHEDULE\", pumpId: pump.id } }); \n        };\n    })(scope);\n</script>    ",
+        "format": "<div ng-init=\"pumps = []\">\n    <h2>Watering</h2>\n    <div ng-repeat=\"pump in pumps\">\n        <div ng-if=\"pump.type=='WATERING'\">\n            <h3>Pump {{pump.id}}</h3>\n            <div ng-if=\"pump.active == 1\">\n                <label>Environment:</label>\n                <select ng-model=\"pump.env\" ng-change=\"updatePump(pump)\">\n                    <option value = \"INDOOR\">Indoor</option>\n                    <option value = \"OUTDOOR\">Outdoor</option>\n                </select>\n                <br/>\n\n                <label>Watering Mode:</label>\n                <select ng-model=\"pump.currentWaterMode\" ng-change=\"updatePump(pump)\">\n                    <option value = \"LIGHT\">Light</option>\n                    <option value = \"MEDIUM\">Medium</option>\n                    <option value = \"HEAVY\">Heavy</option>\n                    <option value = \"CUSTOM\">Custom</option>\n                    <option value = \"AUTO\">Automatic</option>\n                </select>\n                <div ng-if=\"pump.currentWaterMode=='CUSTOM'\">\n                    <label>Custom Amount (ml):</label>\n                    <input type=\"number\" ng-model=\"pump.amount\" ng-change=\"updatePump(pump)\"/>\n                </div>\n\n                <button ng-click=\"water(pump)\">Manual Watering</button>\n                <button ng-click=\"deactivatePump(pump)\">Deactivate</button>\n            </div>\n\n            <div ng-if=\"pump.active == 0\">\n                <p>Status: Inactive</p>\n                <button ng-click=\"activatePump(pump)\">Activate</button>\n            </div>\n        <hr/>\n        </div>\n    </div>\n\n    <h2>Fertilization</h2>\n    <div ng-repeat=\"pump in pumps\">\n        <div ng-if=\"pump.type=='FERTILIZATION'\">\n            <h3>Pump {{pump.id}}</h3>\n            <div ng-if=\"pump.active == 1\">\n                <label>Amount (ml):</label>\n                <input type=\"number\" ng-model=\"pump.amount\" ng-change=\"updatePump(pump)\"/>\n                <button ng-click=\"fertilize(pump)\">Fertilize</button>\n                <button ng-click=\"deactivatePump(pump)\">Deactivate</button>\n                <br>\n                <br>\n                <h4>Schedule Fertilization</h4>\n                <div ng-if=\"schedules[pump.id].next\">\n                    <p>Next Fertilization: {{schedules[pump.id].next | date:'dd MMM yyyy'}}</p>\n                    <button ng-click=\"removeSchedule(pump)\">Remove Schedule</button>\n                </div>\n                <div ng-if=\"!schedules[pump.id].next\">\n                    <label>Interval (days):</label>\n                    <input type=\"number\" ng-model=\"scheduleData[pump.id].interval\" ng-disabled=\"schedules[pump.id].next\"/>\n                    <button ng-click=\"schedule(pump)\" ng-disabled=\"schedules[pump.id].next\">Set Schedule</button>\n                </div>                \n            </div>\n\n            <div ng-if=\"pump.active == 0\">\n                <p>Status: Inactive</p>\n                <button ng-click=\"activatePump(pump)\">Activate</button>\n            </div>\n            <hr />\n        </div>\n    </div>\n\n</div>\n\n<script>\n    (function(scope) {\n        scope.scheduleData = {};\n\n        scope.$watch(\"msg\", function(msg) {\n            if (msg.payload.pumps) {\n                scope.pumps = msg.payload.pumps;\n            }\n\n            if (msg.payload.schedules) {\n                scope.schedules = msg.payload.schedules;\n            }\n        });\n\n        scope.updatePump = function(pump) {\n            scope.send({ payload: pump });\n        };\n\n        scope.water = function(pump) {\n            scope.send({ payload: \"WATER \" + pump.id  })\n        };\n\n        scope.fertilize = function(pump) {\n            scope.send({ payload: \"FERTILIZE \" + pump.id })\n        };\n\n        scope.activatePump = function(pump) {\n            scope.send({ payload: \"SET_STATUS 1 P \" + pump.id })\n        };\n\n        scope.deactivatePump = function(pump) {\n            scope.send({ payload: \"SET_STATUS 0 P \" + pump.id })\n        };\n\n        scope.schedule = function(pump) {\n            let schedule = scope.scheduleData[pump.id];\n            console.log(\"Schedule data:\", schedule);\n\n            if (schedule && schedule.interval) {\n                scope.send({\n                    payload: {\n                        cmd: \"SET_SCHEDULE\",\n                        pumpId: pump.id,\n                        interval: schedule.interval,\n                        amount: pump.amount\n                    }\n                });\n            }\n        };\n\n        scope.removeSchedule = function(pump) {\n            scope.send({ payload: { cmd: \"REMOVE_SCHEDULE\", pumpId: pump.id } }); \n        };\n    })(scope);\n</script>    ",
         "storeOutMessages": true,
         "fwdInMessages": false,
         "resendOnRefresh": true,
@@ -918,8 +917,7 @@
         "y": 480,
         "wires": [
             [
-                "83e5945683e998c8",
-                "47a1fcc3474e115c"
+                "83e5945683e998c8"
             ]
         ]
     },
@@ -1188,8 +1186,7 @@
         "y": 1000,
         "wires": [
             [
-                "8cc0b7f1f99c0f2b",
-                "f2f64cbb767a582d"
+                "8cc0b7f1f99c0f2b"
             ]
         ]
     },
@@ -1312,7 +1309,7 @@
         "type": "debug",
         "z": "d27ff7acba5e037e",
         "name": "debug 9",
-        "active": true,
+        "active": false,
         "tosidebar": true,
         "console": false,
         "tostatus": false,
@@ -1813,23 +1810,6 @@
         "wires": []
     },
     {
-        "id": "47a1fcc3474e115c",
-        "type": "debug",
-        "z": "d27ff7acba5e037e",
-        "name": "debug 4",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "true",
-        "targetType": "full",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 720,
-        "y": 420,
-        "wires": []
-    },
-    {
         "id": "d5da2a1ed7d7d6b9",
         "type": "link out",
         "z": "d27ff7acba5e037e",
@@ -1875,7 +1855,7 @@
         ],
         "repeat": "",
         "crontab": "",
-        "once": false,
+        "once": true,
         "onceDelay": 0.1,
         "topic": "",
         "payload": "Cork",
@@ -1964,7 +1944,7 @@
         "finalize": "",
         "libs": [],
         "x": 1270,
-        "y": 180,
+        "y": 200,
         "wires": [
             []
         ]
@@ -2084,22 +2064,6 @@
         "wires": []
     },
     {
-        "id": "cae1939feee2483e",
-        "type": "debug",
-        "z": "d27ff7acba5e037e",
-        "name": "debug 5",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "false",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 980,
-        "y": 100,
-        "wires": []
-    },
-    {
         "id": "46c114587d7f8fe7",
         "type": "ui_form",
         "z": "d27ff7acba5e037e",
@@ -2157,7 +2121,7 @@
         "type": "function",
         "z": "d27ff7acba5e037e",
         "name": "moisture_thresholds",
-        "func": "let thresholds = flow.get(\"moistureThresholds\") || {\"wet\": 1500, \"damp\": 2000, \"semiDry\": 2500};\nmsg.payload = thresholds\nreturn msg;",
+        "func": "let thresholds = flow.get(\"moistureThresholds\") || {\"wet\": 1500, \"damp\": 2000, \"semiDry\": 2500};\nmsg.payload = thresholds;\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -2177,7 +2141,7 @@
         "type": "function",
         "z": "d27ff7acba5e037e",
         "name": "store_thresholds",
-        "func": "let thresholds = {\n    \"wet\": parseInt(msg.payload.wet),\n    \"damp\": parseInt(msg.payload.damp),\n    \"semiDry\": parseInt(msg.payload.semiDry)\n};\n\nflow.set(\"moistureThresholds\");\n\nreturn;",
+        "func": "let thresholds = {\n    \"wet\": parseInt(msg.payload.wet),\n    \"damp\": parseInt(msg.payload.damp),\n    \"semiDry\": parseInt(msg.payload.semiDry)\n};\n\nflow.set(\"moistureThresholds\", thresholds);\n\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
@@ -2187,7 +2151,9 @@
         "x": 750,
         "y": 600,
         "wires": [
-            []
+            [
+                "fda83b6d6db501b1"
+            ]
         ]
     },
     {
@@ -2256,19 +2222,32 @@
         ]
     },
     {
-        "id": "f2f64cbb767a582d",
-        "type": "debug",
+        "id": "fda83b6d6db501b1",
+        "type": "link out",
         "z": "d27ff7acba5e037e",
-        "name": "debug 6",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "false",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 680,
-        "y": 840,
+        "name": "link out 7",
+        "mode": "link",
+        "links": [
+            "2da6b853190be01c"
+        ],
+        "x": 935,
+        "y": 600,
         "wires": []
+    },
+    {
+        "id": "2da6b853190be01c",
+        "type": "link in",
+        "z": "d27ff7acba5e037e",
+        "name": "link in 5",
+        "links": [
+            "fda83b6d6db501b1"
+        ],
+        "x": 105,
+        "y": 600,
+        "wires": [
+            [
+                "7067d3b0576216ce"
+            ]
+        ]
     }
 ]
