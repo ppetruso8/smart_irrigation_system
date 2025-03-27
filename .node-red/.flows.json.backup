@@ -684,8 +684,7 @@
         "y": 120,
         "wires": [
             [
-                "d4bc37cb6b14bcdd",
-                "cae1939feee2483e"
+                "d4bc37cb6b14bcdd"
             ]
         ]
     },
@@ -918,8 +917,7 @@
         "y": 480,
         "wires": [
             [
-                "83e5945683e998c8",
-                "47a1fcc3474e115c"
+                "83e5945683e998c8"
             ]
         ]
     },
@@ -1188,8 +1186,7 @@
         "y": 1000,
         "wires": [
             [
-                "8cc0b7f1f99c0f2b",
-                "f2f64cbb767a582d"
+                "8cc0b7f1f99c0f2b"
             ]
         ]
     },
@@ -1312,7 +1309,7 @@
         "type": "debug",
         "z": "d27ff7acba5e037e",
         "name": "debug 9",
-        "active": true,
+        "active": false,
         "tosidebar": true,
         "console": false,
         "tostatus": false,
@@ -1813,23 +1810,6 @@
         "wires": []
     },
     {
-        "id": "47a1fcc3474e115c",
-        "type": "debug",
-        "z": "d27ff7acba5e037e",
-        "name": "debug 4",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "true",
-        "targetType": "full",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 720,
-        "y": 420,
-        "wires": []
-    },
-    {
         "id": "d5da2a1ed7d7d6b9",
         "type": "link out",
         "z": "d27ff7acba5e037e",
@@ -2084,22 +2064,6 @@
         "wires": []
     },
     {
-        "id": "cae1939feee2483e",
-        "type": "debug",
-        "z": "d27ff7acba5e037e",
-        "name": "debug 5",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "false",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 980,
-        "y": 100,
-        "wires": []
-    },
-    {
         "id": "46c114587d7f8fe7",
         "type": "ui_form",
         "z": "d27ff7acba5e037e",
@@ -2258,22 +2222,6 @@
         ]
     },
     {
-        "id": "f2f64cbb767a582d",
-        "type": "debug",
-        "z": "d27ff7acba5e037e",
-        "name": "debug 6",
-        "active": true,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "false",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 680,
-        "y": 840,
-        "wires": []
-    },
-    {
         "id": "fda83b6d6db501b1",
         "type": "link out",
         "z": "d27ff7acba5e037e",
@@ -2301,5 +2249,48 @@
                 "7067d3b0576216ce"
             ]
         ]
+    },
+    {
+        "id": "efdabd40d2545f0e",
+        "type": "inject",
+        "z": "d27ff7acba5e037e",
+        "name": "Put ESP into sleep mode at midnight",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "59 23 * * *",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "SLEEP",
+        "payloadType": "str",
+        "x": 150,
+        "y": 1600,
+        "wires": [
+            [
+                "3ffe57ad21e4ea58"
+            ]
+        ]
+    },
+    {
+        "id": "3ffe57ad21e4ea58",
+        "type": "mqtt out",
+        "z": "d27ff7acba5e037e",
+        "name": "",
+        "topic": "irrigation/sleep",
+        "qos": "0",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "5d42f12891b474f7",
+        "x": 460,
+        "y": 1600,
+        "wires": []
     }
 ]

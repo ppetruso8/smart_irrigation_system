@@ -2249,5 +2249,48 @@
                 "7067d3b0576216ce"
             ]
         ]
+    },
+    {
+        "id": "efdabd40d2545f0e",
+        "type": "inject",
+        "z": "d27ff7acba5e037e",
+        "name": "Put ESP into sleep mode at midnight",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "59 23 * * *",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "SLEEP",
+        "payloadType": "str",
+        "x": 170,
+        "y": 1600,
+        "wires": [
+            [
+                "3ffe57ad21e4ea58"
+            ]
+        ]
+    },
+    {
+        "id": "3ffe57ad21e4ea58",
+        "type": "mqtt out",
+        "z": "d27ff7acba5e037e",
+        "name": "",
+        "topic": "irrigation/sleep",
+        "qos": "0",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "5d42f12891b474f7",
+        "x": 460,
+        "y": 1600,
+        "wires": []
     }
 ]
