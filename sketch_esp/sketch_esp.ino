@@ -45,7 +45,7 @@ Pump pumps[max_num_pumps] = {
   { 4, WATERING, 21, false, AUTO, MEDIUM, false, INDOOR, 1, 0 },
   { 5, FERTILIZATION, 18, true, MEDIUM, MEDIUM, false, INDOOR, 50, 5 },
   { 6, FERTILIZATION, 19, false, MEDIUM, MEDIUM, false, INDOOR, 50, 5 },
-  { 7, FERTILIZATION, 22, true, MEDIUM, MEDIUM, false, INDOOR, 50, 5 },
+  { 7, FERTILIZATION, 22, false, MEDIUM, MEDIUM, false, INDOOR, 50, 5 },
   { 8, FERTILIZATION, 23, false, MEDIUM, MEDIUM, false, INDOOR, 50, 5 }
 };
 
@@ -312,8 +312,8 @@ void takeReading() {
       //   humidity = 40.0;
       //   temperature = 20.1;
       // } else {
-      humidity = sensors[i].dht->readHumidity();
-      temperature = sensors[i].dht->readTemperature();
+      float humidity = sensors[i].dht->readHumidity();
+      float temperature = sensors[i].dht->readTemperature();
       // }
 
       if (!isnan(humidity) && !isnan(temperature)) {
@@ -383,7 +383,7 @@ void water(int pulses, int pump_i, int sensor_id) {
   String msg = "{\"notice\":\"watering_started(";
   msg += pumps[pump_i].id;
   msg += ",";
-  msg += sensor_i;
+  msg += sensor_id;
   msg += ",";
   msg += pulses * 10;
   msg += ")\"}";
@@ -391,7 +391,7 @@ void water(int pulses, int pump_i, int sensor_id) {
   client.publish("irrigation/notice", msg.c_str());
 
   // Watering in pulses
-  for (int j = 0; j < pumps[pump_i].pulses; j++) {
+  for (int i = 0; i < pumps[pump_i].pulses; i++) {
     digitalWrite(pumps[pump_i].pin, LOW);   // Turn ON pump
     delay(250);                             // Wait for ON duration (approx. 10ml per pulse)
     digitalWrite(pumps[pump_i].pin, HIGH);  // Turn OFF pump
@@ -424,7 +424,7 @@ void fertilize(int pump_i) {
   client.publish("irrigation/notice", msg.c_str());
 
   // Fertilization in pulses
-  for (int i = 0; i < pumps[pump_i].pulses; j++) {
+  for (int i = 0; i < pumps[pump_i].pulses; i++) {
     digitalWrite(pumps[pump_i].pin, LOW);   // Turn ON pump
     delay(250);                             // Wait for ON duration (approx. 10ml per pulse)
     digitalWrite(pumps[pump_i].pin, HIGH);  // Turn OFF pump
@@ -473,7 +473,7 @@ void setWaterMode(String mode, bool temp, int pump_i) {
       String wateringAmount = mode.substring(7);  //extract the amount of ml for watering
       int amount = wateringAmount.toInt();
 
-      if (amount <= 0) {
+      if (amount < 10) {
         client.publish("irrigation/notice", "{\"error\":\"invalid_watering_amount\"}");
         return;
 
@@ -734,7 +734,7 @@ void changeStatus(bool activate, String type, int id) {
 
 // Reconnect to MQTT broker
 void reconnect() {
-  Serial.println("Establishing MQTT connection")
+  Serial.println("Establishing MQTT connection");
   while (!client.connected()) {
     if (client.connect("ESP32Client")) {
       client.setBufferSize(1024);
