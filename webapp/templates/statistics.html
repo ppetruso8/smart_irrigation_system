@@ -12,22 +12,19 @@
 <p id="watering_total"></p>
 
 <h3>Average Soil Moisture (Last 10 Days)</h3>
+<p><strong>Note:</strong> Lower soil moisture value means there is more water in the soil, while higher values represent drier soil.</p>
 <div id="container_avg_moisture" style="width: 100%; height: 600px;"></div>
 
-<h2>Pump 1</h2>
-<div id="container_pump1" style="width: 100%; height: 600px;"></div>
+<h2>Pump Data</h2>
+<div id="container_pumps"></div>
 
-<h2>Pump 2</h2>
-<div id="container_pump2" style="width: 100%; height: 600px;"></div>
 
 {% raw %}
 <script>
     anychart.onDocumentLoad(function () {
         // get readings
         fetch("/stats_data")
-        // convert to json
         .then(response => response.json())
-        // iterate over data
         .then(data => {
             // GENERAL
             let wateringTotal = "Total Watering Amount (Last 10 Days): " + data.watering.toString() + " ml";
@@ -35,93 +32,75 @@
 
             // AVERAGE SOIL MOISTURE
             data.avg_moisture.forEach(d => d.timestamp = new Date(d.timestamp));
-            let chart_avg_moisture = anychart.line();
+            let chartAvgMoisture = anychart.line();
 
+            // handle each sensor separately
             let sensors = [...new Set(data.avg_moisture.map(d => d.sensor))];
             sensors.forEach(sensor => {
                 let sensorData = data.avg_moisture.filter(d => d.sensor === sensor).map(d => [d.timestamp.getTime(), d.soil_moisture]);
-                let series = chart_avg_moisture.line(sensorData);
+                let series = chartAvgMoisture.line(sensorData);
                 let sensorName = "Sensor " + sensor.toString();
                 series.name(sensorName);
             });
 
-            chart_avg_moisture.title("Average Soil Moisture (Last 10 Days)");
-            chart_avg_moisture.xScale().mode("continuous");
-            chart_avg_moisture.xAxis().labels().format("{%value}{type:date}");
+            chartAvgMoisture.title("Average Soil Moisture (Last 10 Days)");
+            chartAvgMoisture.xScale().mode("continuous");
+            chartAvgMoisture.xAxis().labels().format("{%value}{type:date}");
             
-            chart_avg_moisture.tooltip().titleFormat("").separator(false).useHtml(true).format(function() {
+            chartAvgMoisture.tooltip().titleFormat("").separator(false).useHtml(true).format(function() {
                 let sensor = this.seriesName;
                 let date = new Date(this.x);
                 let value = Math.round(this.getData("value"));
                 return `<b>${sensor}</b><br/>Date: ${date.toLocaleDateString()}</br>Value: ${value}</br>`;
             });
             
-            chart_avg_moisture.container("container_avg_moisture");
-            chart_avg_moisture.legend().enabled(true);
-            chart_avg_moisture.draw();
+            chartAvgMoisture.container("container_avg_moisture");
+            chartAvgMoisture.legend().enabled(true);
+            chartAvgMoisture.draw();
 
 
             // SOIL MOISTURE X WATERING
             data.data.forEach(d => d.timestamp = new Date(d.timestamp));
 
-            // extract each pump
-            let pump1 = data.data.filter(d => d.pump === 1);
-            let pump2 = data.data.filter(d => d.pump === 2);
+            // handle each pump separately
+            let pumpIds = [...new Set(data.data.map(d => d.pump))];
+            pumpIds.forEach(pumpId => {
+                // add HTML container
+                let pumpDiv= document.createElement("div");
+                pumpDiv.innerHTML = `
+                    <div id="container_pump${pumpId}" style="width: 100%; height: 600px;"></div>
+                    `;
 
-            // line chart for pump 1
-            let chart1 = anychart.line();
+                document.getElementById("container_pumps").appendChild(pumpDiv);
+                
+                // extract pump 
+                let pumpData = data.data.filter(d => d.pump === pumpId);
+                
+                // create chart
+                let chartPump = anychart.line();
+                
+                let moisture = chartPump.line(pumpData.map(d => [d.timestamp, d.soil_moisture]));
+                moisture.name("Soil Moisture");
 
-            // moisture
-            let pump1Moisture = chart1.line(pump1.map(d => [d.timestamp, d.soil_moisture]));
-            pump1Moisture.name("Soil Moisture");
+                let scale = anychart.scales.linear();
+                scale.minimum(0);
+                scale.maximum(1000);
+                
+                let watering = chartPump.column(pumpData.map(d => [d.timestamp, d.watering_amount_ml]));
+                watering.name("Watering (ml)");
+                watering.yScale(scale);
 
-            // watering
-            let scale1 = anychart.scales.linear();
-            scale1.minimum(0);
-            scale1.maximum(1000);
-
-            let pump1Watering = chart1.column(pump1.map(d => [d.timestamp, d.watering_amount_ml]));
-            pump1Watering.name("Watering (ml)");
-            pump1Watering.yScale(scale1);
-
-            // chart settings
-            chart1.title("Soil Moisture and Watering Over Time (Pump 1)");
-            chart1.xAxis().title("Time");
-            chart1.xAxis().labels().format("{%value}{type:date}");
-            chart1.yAxis().title("Soil Moisture");
-            chart1.yAxis(1).title("Watering Amount (ml)").orientation("right");          
-            chart1.tooltip().titleFormat("").separator(false);
-            chart1.container("container_pump1");
-            chart1.legend().enabled(true);
-            chart1.draw();
-
-
-            // line chart for pump 2
-            let chart2 = anychart.line();
-
-            // moisture
-            let pump2Moisture = chart2.line(pump2.map(d => [d.timestamp, d.soil_moisture]));
-            pump2Moisture.name("Soil Moisture");
-
-            // watering
-            let scale2 = anychart.scales.linear();
-            scale2.minimum(0);
-            scale2.maximum(1000);
-
-            let pump2Watering = chart2.column(pump2.map(d => [d.timestamp, d.watering_amount_ml]));
-            pump2Watering.name("Watering (ml)");
-            pump2Watering.yScale(scale2);
-
-            // chart settings
-            chart2.title("Soil Moisture and Watering Over Time (Pump 2)");
-            chart2.xAxis().title("Time");
-            chart2.xAxis().labels().format("{%value}{type:date}");
-            chart2.yAxis().title("Soil Moisture");
-            chart2.yAxis(1).title("Watering Amount (ml)").orientation("right");
-            chart2.tooltip().titleFormat("").separator(false);
-            chart2.container("container_pump2");
-            chart2.legend().enabled(true);
-            chart2.draw();
+                // chart settings
+                chartPump.title(`Soil Moisture and Watering Over Time (Pump ${pumpId})`);
+                chartPump.xAxis().title("Time");
+                chartPump.xAxis().labels().format("{%value}{type:date}");
+                chartPump.yAxis().title("Soil Moisture");
+                chartPump.yAxis(1).title("Watering Amount (ml)").orientation("right");          
+                chartPump.tooltip().titleFormat("").separator(false);
+                chartPump.container("container_pump1");
+                chartPump.legend().enabled(true);
+                chartPump.draw();
+            });
         });
     });
 </script>
