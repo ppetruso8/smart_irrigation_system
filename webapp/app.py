@@ -98,7 +98,6 @@ def index():
         else: 
             flash("Error updating location.")
 
-
         return redirect(url_for("index", _anchor="weather"))
     
     # prefill the form
@@ -205,7 +204,6 @@ def index():
                 else:
                     send_command(f"CHMOD {pump_id} {new_mode.upper()}")
 
-
                 forms[sensor_id] = SensorForm(data=session["sensors_soil"][sensor_id])
 
                 return redirect(url_for("index"))
@@ -215,7 +213,6 @@ def index():
         # updating fertilization setting
         elif request.form.get("fertilization_pump"):
             pump_no = int(request.form.get("fertilization_pump"))
-
             form = FertilizationForm(request.form)
 
             if request.form.get("amount"):
@@ -228,11 +225,12 @@ def index():
                 print("Updating Raspberry Pi")
                 session["pumps_fert"][pump_no]["amount"] = new_amount
                 send_command(f"SET_FERT_AMOUNT {pump_no} {new_amount}")
-                
 
                 session["pumps_fert"][pump_no] = FertilizationForm(data=session["pumps_fert"][pump_no])
 
                 return redirect(url_for("index"))
+            else:
+                flash(f"There was a problem while updating data: {form.errors}")
 
     return render_template("index.html", weather=weather_current, sensors=sensors, hourly=forecast_hourly, 
                            daily=forecast_daily, forms=forms, city=city, country=country,
@@ -286,6 +284,7 @@ def login():
         else:   # login successful
             user_obj = User(user["id"], user["username"], user["email"], user["country"], user["password"], user["has_node_red_permission"])
             login_user(user_obj, remember=True)
+
             next_page = request.args.get("next")
             if not next_page:
                 next_page = url_for("index")
@@ -423,23 +422,19 @@ def send_command(command = None):
         if "GET_ALL" in command:
             send_node_red_command("GET_ALL")
             msg = get_data()
+            return redirect(url_for("index"))
 
         elif "WATER" in command:
             sensor = int(command.split()[1])
-
             pump = session["sensors_soil"][sensor]["pump"]
             command = f"WATER {pump} {sensor}"
-            msg = send_node_red_command(command)
 
         elif "FERTILIZE" in command:
             pump = int(command.split()[1])
             command = f"FERTILIZE {pump}"
-            msg = send_node_red_command(command)
 
-        else:
-            msg = send_node_red_command(command)
+        msg = send_node_red_command(command)
 
-        
         if msg:
             print("Command sent successfully.")
         else:
@@ -540,7 +535,7 @@ def get_forecast(lat, long):
         if response.status_code == 200:
             data = response.json()
             
-            # 48-hours hourly forecast
+            # 2-day hourly forecast
             data["hourly"]["time"] = data["hourly"]["time"][:48]
             data["hourly"]["temperature_2m"] = data["hourly"]["temperature_2m"][:48]
             data["hourly"]["relative_humidity_2m"] = data["hourly"]["relative_humidity_2m"][:48]
@@ -697,7 +692,7 @@ def get_location():
         longitude = data.get("longitude")
 
         session["city"] = city
-        
+
         return city, country, latitude, longitude
     
     elif response.status_code == 404:
@@ -715,7 +710,6 @@ def get_pairing_code():
     if response.status_code == 200:
         data = response.json()
         code = data.get("code", 000000)
-
         return code
     else:
         flash(f"Error fetching pairing code from Node-Red: {response.status_code}")

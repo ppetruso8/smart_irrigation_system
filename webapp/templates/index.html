@@ -16,35 +16,35 @@
 
         <section class="sensors_container">
             {% if sensors %}
-                {% for sensor_no, sensor in sensors.items() %}
+                {% for sensor_id, sensor in sensors.items() %}
                 <div class="sensor">
-                    <h4>Sensor {{ sensor_no }}</h4>
+                    <h4>Sensor {{ sensor_id }}</h4>
                     <p>Soil Moisture: {{ sensor.moisture }}</p>
                     <p>Pump: {{ sensor.pump }}</p>
                     <p>DHT Sensor: {{ sensor.dht }}</p>
 
                     <form class="func_buttons"  action="/send_command" method="post">
-                        <input type="hidden" name="command" value="WATER, {{ sensor_no }}">
+                        <input type="hidden" name="command" value="WATER, {{ sensor_id }}">
                         <button class=submit_button type ="submit">Manual Watering</button>
                     </form>
             
                     <h5>Settings</h5>
                     <form action="" method="POST" novalidate>
-                        {{ forms[sensor_no].hidden_tag() }}
-                        <input type="hidden" name="sensor" value="{{ sensor_no }}">
-                        {{ forms[sensor_no].env.label }}
-                        {{ forms[sensor_no].env() }}
+                        {{ forms[sensor_id].hidden_tag() }}
+                        <input type="hidden" name="sensor" value="{{ sensor_id }}">
+                        {{ forms[sensor_id].env.label }}
+                        {{ forms[sensor_id].env() }}
                         </br>
-                        {{ forms[sensor_no].mode.label }}
-                        {{ forms[sensor_no].mode(onchange="toggleCustomAmount(this, {{ sensor_no }})") }}
+                        {{ forms[sensor_id].mode.label }}
+                        {{ forms[sensor_id].mode() }} 
                         </br>
-                        <div id="custom_amount_{{ sensor_no }}" style="display: none;">
-                            {{ forms[sensor_no].custom_amount.label }}
-                            {{ forms[sensor_no].custom_amount() }}
+                        <div id="custom_amount_{{ sensor_id }}" style="display: none;">
+                            {{ forms[sensor_id].custom_amount.label }}
+                            {{ forms[sensor_id].custom_amount() }}
                         </div>
                         </br>
                         <div class="submit_button">
-                            {{ forms[sensor_no].submit() }}
+                            {{ forms[sensor_id].submit() }}
                         </div>
                     </form>
                 </div>
@@ -56,9 +56,9 @@
 
         <section class="sensors_container">
             {% if dht_sensors %}
-                {% for sensor_no, dht_sensor in dht_sensors.items() %}
+                {% for sensor_id, dht_sensor in dht_sensors.items() %}
                 <div class="sensor">
-                    <h4>DHT Sensor {{ sensor_no }}</h4>
+                    <h4>DHT Sensor {{ sensor_id }}</h4>
                     <p>Temperature: {{ dht_sensor.temperature }}°C</p>
                     <p>Humidity: {{ dht_sensor.humidity }}%</p>
                 </div>

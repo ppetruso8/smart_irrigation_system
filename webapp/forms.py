@@ -1,4 +1,3 @@
-# from email.policy import default
 from flask_wtf import FlaskForm
 from wtforms import SubmitField, StringField, PasswordField, SelectField, TextAreaField, IntegerField
 from wtforms.validators import InputRequired, EqualTo, Length, NumberRange

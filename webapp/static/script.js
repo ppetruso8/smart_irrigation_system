@@ -3,6 +3,7 @@ let curTime;
 let hourlyItem;
 let hourlyContainer = document.getElementById('hourly_container');
 let wateringMode = document.querySelectorAll('select[name$="mode"]');
+let hourlyItems = document.querySelectorAll('.hourly_item');
 
 document.addEventListener("DOMContentLoaded", init, false);
 
@@ -19,8 +20,8 @@ function init() {
         hour12: false
     }).replace(",", "");
 
-    // find an item in HTML and scroll to its beginning
-    hourlyItem = Array.from(document.querySelectorAll('.hourly_item')).find(el => el.querySelector('.time')?.textContent.trim() === curTime);
+    // find correct hourly item in HTML and scroll to its beginning
+    hourlyItem = Array.from(hourlyItems).find(item => item.querySelector('.time').textContent.trim() === curTime);
 
     if (hourlyItem) {
         hourlyContainer.scrollTo({
