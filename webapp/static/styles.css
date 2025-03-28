@@ -389,3 +389,65 @@ button:hover, #submit:hover {
 #custom_amount {
     width: 3em;
 }
+
+@media screen and (max-width: 1000px) {
+    body {
+        font-size: 18px;
+    }
+
+    h1 {
+        font-size: 32px;
+    }
+
+    h2 {
+        font-size: 20px;
+    }
+
+    h3, h4 {
+        font-size: 18px;
+    }
+
+    #current_weather h4 {
+        font-size: 38px;
+    }
+
+    #hourly_forecast h4, #daily_forecast h4 {
+        font-size: 12px;
+    }
+
+    .sensor h4 {
+        font-size: 20px;
+    }
+
+    h5, #current_weather p, .hourly_item p, .daily_item p .sensor p, .fertilization_pump p, label, input, select {
+        font-size: 20px;
+    }
+
+    p a {
+        font-size: 8px;
+    }
+
+    .stats_p, #pair p, #account_info p {
+        font-size: 10px;
+    }
+
+    .login_p, .login_p a {
+        font-size: 16px;
+    }
+
+    .login_h2 {
+        font-size: 26px;
+    }
+
+    button, select .submit_button input, input[type="submit"] {
+        font-size: 18px;
+    }
+
+    .navbar a {
+        font-size: 20px;
+    }
+
+    footer {
+        font-size: 12px;
+    }
+}
