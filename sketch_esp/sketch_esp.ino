@@ -141,34 +141,34 @@ void callback(char* topic, byte* payload, unsigned int length) {
   } else if (command.startsWith("IDLE")) {
     currentStatus = IDLE;
 
-  } else if (command.startsWith("CHMOD")) {  // change watering mode
+  } else if (command.startsWith("CHMOD")) {     // change watering mode
     int pump_id = command.substring(6, 7).toInt();
     int pump_index = getPumpIndex(pump_id);
     String wateringMode = command.substring(8);
     setWaterMode(wateringMode, false, pump_index);
 
-  } else if (command.startsWith("SET_ENV")) {  // change environment
+  } else if (command.startsWith("SET_ENV")) {     // change environment
     int pump_id = command.substring(8, 9).toInt();
     int pump_index = getPumpIndex(pump_id);
     String envMode = command.substring(10);
     setEnvMode(envMode, pump_index);
 
-  } else if (command.startsWith("SET_FERT_AMOUNT")) {
+  } else if (command.startsWith("SET_FERT_AMOUNT")) {     // set fertilization amount
     int pump_id = command.substring(16, 17).toInt();
     int pump_index = getPumpIndex(pump_id);
     int amount = command.substring(18).toInt();
     setFertAmount(pump_index, amount);
 
-  } else if (command.startsWith("CH_PUMP")) {
+  } else if (command.startsWith("CH_PUMP")) {     // change sensor x pump assignment
     int sensor_id = command.substring(8, 9).toInt();
     int pump_id = command.substring(10, 11).toInt();
     int pump_index = getPumpIndex(pump_id);
     changePump(sensor_id, pump_index);
 
-  } else if (command == "GET_ALL") {
+  } else if (command == "GET_ALL") {      // send all sensor and pump data
     sendAllData();
 
-  } else if (command.startsWith("SET_STATUS")) {
+  } else if (command.startsWith("SET_STATUS")) {      // activate or deactivate pump or sensor
     // SET_STATUS 0/1 P/S id
     bool activate = command.substring(11,12).toInt();
     String type = command.substring(13,14);
@@ -216,7 +216,7 @@ void setup() {
   WiFi.begin(ssid, password);
 
   Serial.print("Connecting to WiFi");
-  while (WiFi.status() != WL_CONNECTED) {  // wait until connected
+  while (WiFi.status() != WL_CONNECTED) { 
     delay(500);
     Serial.print(".");
   }
@@ -234,8 +234,8 @@ void setup() {
 void loop() {
   // Ensure MQTT connection is established
   if (!client.connected()) {
-    reconnect();
     Serial.println("Reconnecting MQTT...");
+    reconnect();
   }
   client.loop();
 
@@ -273,7 +273,6 @@ void loop() {
         case CUSTOM:
           pumps[last_pump].pulses = pumps[last_pump].amount / 10;  // 1 pulse = approx. 10ml
           break;
-          
       }
 
       water(pumps[last_pump].pulses, last_pump, last_sensor);
@@ -377,7 +376,6 @@ void takeReading() {
 
   client.publish("irrigation/readings", msg.c_str());
 }
-
 
 // Watering
 void water(int pulses, int pump_i, int sensor_id) {
@@ -552,14 +550,12 @@ void setFertAmount(int pump_i, int amount) {
   msg += ",";
   msg += amount;
   msg += ")\"}";
-
   client.publish("irrigation/notice", msg.c_str());
 }
 
 // Change pump assignment for the sensor
 void changePump(int sensor_id, int pump_i) {
   int sensor_index = getSensorIndex(sensor_id);
-
   int old_pump = sensors[sensor_index].pump;
 
   activatePump(pump_i);
@@ -613,7 +609,6 @@ void sendAllData() {
   }
 
   msg_pumps += "]}";
-
   client.publish("irrigation/data", msg_pumps.c_str());
 
   // Sensors
@@ -656,13 +651,12 @@ void sendAllData() {
     
       msg_sensors += "\"humidity\":" + String(humidity) + ",";
       msg_sensors += "\"temperature\":" + String(temperature) + "}";
-      
     }
   }
 
   msg_sensors += "]}";
 
-  delay(2000);
+  delay(1000);
   client.publish("irrigation/data", msg_sensors.c_str());
 }
 
@@ -743,7 +737,9 @@ void reconnect() {
   while (!client.connected()) {
     if (client.connect("ESP32Client")) {
       client.setBufferSize(1024);
+      
       Serial.println("MQTT connection established");
+
       client.subscribe("irrigation/control");
       client.subscribe("irrigation/sleep");
     } else {
