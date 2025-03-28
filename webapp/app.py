@@ -224,7 +224,7 @@ def index():
             if form.validate_on_submit():
                 new_amount = int(form.amount.data)
 
-                # update Node-Red
+                # update session and Node-Red
                 print("Updating Raspberry Pi")
                 session["pumps_fert"][pump_no]["amount"] = new_amount
                 send_command(f"SET_FERT_AMOUNT {pump_no} {new_amount}")
@@ -468,7 +468,6 @@ def stats_data():
     avg_moisture = avg_moisture["soil_moisture"].mean().reset_index()
     avg_moisture = avg_moisture.to_dict(orient="records")
     
-
     # total watering
     watering = data["watering_amount_ml"].sum()
 
@@ -484,7 +483,6 @@ def set_fert_schedule():
     interval = int(request.form.get("interval"))
 
     if interval > 0:
-        # send command to Node-RED
         command = f"SET_SCHEDULE {pump_id} {interval}"
         send_command(command)
     
@@ -627,11 +625,11 @@ def get_data():
         # extract all pumps
         pump_data = {pump["id"]: pump for pump in data.get("pumps") if pump.get("active") == 1}
 
-        # categorize sensors
+        # categorise sensors
         for sensor in data.get("sensors"):
             if sensor.get("active") == 1:
                 if sensor["type"] == "SOIL":
-                    pump = pump_data.get(sensor["pump"])    # pump object
+                    pump = pump_data.get(sensor["pump"]) 
                     dht_mapping = sensor_mapping.get(str(sensor["id"]), "No Data")
                     
                     sensors_soil[sensor["id"]] = {
@@ -647,7 +645,7 @@ def get_data():
                         "humidity": sensor["humidity"]
                     }
 
-        # categorize pumps
+        # categorise pumps
         for pump_id, pump in pump_data.items():
             if pump["type"] == "WATERING":
                 pumps_water[pump_id] = {

@@ -26,23 +26,25 @@
         fetch("/stats_data")
         .then(response => response.json())
         .then(data => {
-            // GENERAL
+            /* ---- General ---- */
             let wateringTotal = "Total Watering Amount (Last 10 Days): " + data.watering.toString() + " ml";
             document.getElementById("watering_total").innerText = wateringTotal;
 
-            // AVERAGE SOIL MOISTURE
+            /* ---- Average Soil Moisture ---- */
             data.avg_moisture.forEach(d => d.timestamp = new Date(d.timestamp));
             let chartAvgMoisture = anychart.line();
 
             // handle each sensor separately
             let sensors = [...new Set(data.avg_moisture.map(d => d.sensor))];
             sensors.forEach(sensor => {
+                // prepare data for chart
                 let sensorData = data.avg_moisture.filter(d => d.sensor === sensor).map(d => [d.timestamp.getTime(), d.soil_moisture]);
                 let series = chartAvgMoisture.line(sensorData);
                 let sensorName = "Sensor " + sensor.toString();
                 series.name(sensorName);
             });
 
+            // chart settings
             chartAvgMoisture.title("Average Soil Moisture (Last 10 Days)");
             chartAvgMoisture.xScale().mode("continuous");
             chartAvgMoisture.xAxis().labels().format("{%value}{type:date}");
@@ -59,7 +61,7 @@
             chartAvgMoisture.draw();
 
 
-            // SOIL MOISTURE X WATERING
+            /* ---- Soil Moisture X Watering ---- */
             data.data.forEach(d => d.timestamp = new Date(d.timestamp));
 
             // handle each pump separately

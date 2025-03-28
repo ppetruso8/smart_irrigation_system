@@ -7,7 +7,7 @@ class SensorForm(FlaskForm):
     sensor = IntegerField()
     env = SelectField("Environment:", choices=["Indoor", "Outdoor"])
     mode = SelectField("Watering Mode:", choices=["Automatic", "Light", "Normal", "Heavy", "Custom"])
-    custom_amount = StringField("Watering Amount (ml):")
+    custom_amount = StringField("Watering Amount (ml):")    # SringField to avoid errors caused by empty input
     submit = SubmitField("Update Settings")
 
 class FertilizationForm(FlaskForm):

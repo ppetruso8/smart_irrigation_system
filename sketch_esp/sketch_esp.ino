@@ -123,7 +123,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
     last_pump = pump_index;
     last_sensor = command.substring(8,9).toInt();
 
-    // automatic watering from Node-RED
+    // Automatic watering from Node-RED
     if (command.length() > 10) {
       pumps[pump_index].isTempWater = true;
       String tempWatering = command.substring(10);
@@ -188,7 +188,6 @@ void callback(char* topic, byte* payload, unsigned int length) {
 }
 
 void setup() {
-  // Initialize serial communication for debugging
   Serial.begin(115200);
 
   // Set station mode (ESP connecting to access point)
@@ -667,7 +666,7 @@ void sendAllData() {
   client.publish("irrigation/data", msg_sensors.c_str());
 }
 
-// Activate pump if not active
+// Activate pump 
 void activatePump(int pump_i) {
   if (!pumps[pump_i].active) {
       pinMode(pumps[pump_i].pin, OUTPUT);
@@ -714,7 +713,7 @@ int getSensorIndex(int sensor_id) {
   return -1;
 }
 
-// Activate or Deactivate pump or sensor
+// Activate or deactivate pump or sensor
 void changeStatus(bool activate, String type, int id) {
   if (type == "P") {  // pump
     int pump_i = getPumpIndex(id);
