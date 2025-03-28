@@ -38,14 +38,20 @@ function init() {
         if (sensorId) {
             // display/hide custom amount field if selected mode is "Custom"
             let customAmountField = document.getElementById(`custom_amount_${sensorId}`);
-
-            if (selectElement.value === "Custom") {
+            
+            if (mode.value === "Custom") {
                 customAmountField.style.display = "block";
             } else {
                 customAmountField.style.display = "none";
             }
 
-            mode.addEventListener("change", () => toggleCustomAmount(mode, sensorId));
+            mode.addEventListener("change", () => {
+                if (mode.value === "Custom") {
+                    customAmountField.style.display = "block";
+                } else {
+                    customAmountField.style.display = "none";
+                }
+            });            
         }
     });
 }
