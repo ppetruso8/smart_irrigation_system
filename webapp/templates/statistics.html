@@ -67,6 +67,8 @@
             // handle each pump separately
             let pumpIds = [...new Set(data.data.map(d => d.pump))];
             pumpIds.forEach(pumpId => {
+                let pumpData = data.data.filter(d => d.pump === pumpId);
+
                 // add HTML container
                 let pumpDiv= document.createElement("div");
                 pumpDiv.innerHTML = `
@@ -74,9 +76,6 @@
                     `;
 
                 document.getElementById("container_pumps").appendChild(pumpDiv);
-                
-                // extract pump 
-                let pumpData = data.data.filter(d => d.pump === pumpId);
                 
                 // create chart
                 let chartPump = anychart.line();
