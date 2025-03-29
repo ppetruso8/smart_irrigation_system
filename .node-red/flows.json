@@ -167,6 +167,33 @@
         }
     },
     {
+        "id": "9822daba911d8846",
+        "type": "ui_tab",
+        "name": "Monitoring",
+        "icon": "dashboard",
+        "order": 1,
+        "disabled": false,
+        "hidden": false
+    },
+    {
+        "id": "41c4ceb8772de4c3",
+        "type": "ui_tab",
+        "name": "Pairing",
+        "icon": "dashboard",
+        "order": 2,
+        "disabled": false,
+        "hidden": false
+    },
+    {
+        "id": "34fb54e7a9e5bb5b",
+        "type": "ui_tab",
+        "name": "Advanced Options",
+        "icon": "dashboard",
+        "order": 3,
+        "disabled": false,
+        "hidden": false
+    },
+    {
         "id": "89221f1b3e1e0dd1",
         "type": "ui_group",
         "name": "Sensor Data",
@@ -242,33 +269,6 @@
         "width": 6,
         "collapse": false,
         "className": ""
-    },
-    {
-        "id": "9822daba911d8846",
-        "type": "ui_tab",
-        "name": "Monitoring",
-        "icon": "dashboard",
-        "order": 1,
-        "disabled": false,
-        "hidden": false
-    },
-    {
-        "id": "41c4ceb8772de4c3",
-        "type": "ui_tab",
-        "name": "Pairing",
-        "icon": "dashboard",
-        "order": 2,
-        "disabled": false,
-        "hidden": false
-    },
-    {
-        "id": "34fb54e7a9e5bb5b",
-        "type": "ui_tab",
-        "name": "Advanced Options",
-        "icon": "dashboard",
-        "order": 3,
-        "disabled": false,
-        "hidden": false
     },
     {
         "id": "0f25c96d5a604298",
@@ -1428,15 +1428,15 @@
         "id": "23c22e858afbd25b",
         "type": "inject",
         "z": "d27ff7acba5e037e",
-        "name": "At Start",
+        "name": "Generate code",
         "props": [],
         "repeat": "",
-        "crontab": "",
+        "crontab": "00 07 * * *",
         "once": true,
         "onceDelay": 0.1,
         "topic": "",
-        "x": 80,
-        "y": 1240,
+        "x": 100,
+        "y": 1280,
         "wires": [
             [
                 "42b1edcf235f3245"
@@ -1456,7 +1456,7 @@
         "finalize": "",
         "libs": [],
         "x": 320,
-        "y": 1240,
+        "y": 1280,
         "wires": [
             [
                 "51ac4a909c09cb26"
@@ -1608,7 +1608,7 @@
         ],
         "repeat": "",
         "crontab": "",
-        "once": false,
+        "once": true,
         "onceDelay": 0.1,
         "topic": "",
         "payload": "Cork",
@@ -2217,7 +2217,7 @@
         "fontSize": 16,
         "color": "#000000",
         "x": 560,
-        "y": 1240,
+        "y": 1280,
         "wires": []
     },
     {

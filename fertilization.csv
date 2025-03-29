@@ -13,3 +13,9 @@ timestamp,pumpId,amount
 timestamp,pumpId,amount
 27/03/2025 17:43,5,50
 27/03/2025 17:43,5,40
+timestamp,pumpId,amount
+29/03/2025 11:51,5,50
+timestamp,pumpId,amount
+29/03/2025 14:10,5,50
+29/03/2025 14:10,5,20
+29/03/2025 14:18,5,20

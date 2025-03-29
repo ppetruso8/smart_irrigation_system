@@ -167,6 +167,33 @@
         }
     },
     {
+        "id": "9822daba911d8846",
+        "type": "ui_tab",
+        "name": "Monitoring",
+        "icon": "dashboard",
+        "order": 1,
+        "disabled": false,
+        "hidden": false
+    },
+    {
+        "id": "41c4ceb8772de4c3",
+        "type": "ui_tab",
+        "name": "Pairing",
+        "icon": "dashboard",
+        "order": 2,
+        "disabled": false,
+        "hidden": false
+    },
+    {
+        "id": "34fb54e7a9e5bb5b",
+        "type": "ui_tab",
+        "name": "Advanced Options",
+        "icon": "dashboard",
+        "order": 3,
+        "disabled": false,
+        "hidden": false
+    },
+    {
         "id": "89221f1b3e1e0dd1",
         "type": "ui_group",
         "name": "Sensor Data",
@@ -242,33 +269,6 @@
         "width": 6,
         "collapse": false,
         "className": ""
-    },
-    {
-        "id": "9822daba911d8846",
-        "type": "ui_tab",
-        "name": "Monitoring",
-        "icon": "dashboard",
-        "order": 1,
-        "disabled": false,
-        "hidden": false
-    },
-    {
-        "id": "41c4ceb8772de4c3",
-        "type": "ui_tab",
-        "name": "Pairing",
-        "icon": "dashboard",
-        "order": 2,
-        "disabled": false,
-        "hidden": false
-    },
-    {
-        "id": "34fb54e7a9e5bb5b",
-        "type": "ui_tab",
-        "name": "Advanced Options",
-        "icon": "dashboard",
-        "order": 3,
-        "disabled": false,
-        "hidden": false
     },
     {
         "id": "0f25c96d5a604298",
@@ -897,8 +897,7 @@
         "wires": [
             [
                 "675b189997db0a03",
-                "9b790e487fcb9bfd",
-                "67dd47eb0cf057c7"
+                "9b790e487fcb9bfd"
             ]
         ]
     },
@@ -1046,8 +1045,7 @@
         "y": 1480,
         "wires": [
             [
-                "e7b8a7e5248a2028",
-                "67dd47eb0cf057c7"
+                "e7b8a7e5248a2028"
             ]
         ]
     },
@@ -1071,8 +1069,7 @@
         "y": 1480,
         "wires": [
             [
-                "8c12922e37e7e7f5",
-                "67dd47eb0cf057c7"
+                "8c12922e37e7e7f5"
             ]
         ]
     },
@@ -1092,27 +1089,10 @@
         "y": 1480,
         "wires": [
             [
-                "67dd47eb0cf057c7",
                 "e4c34d33ac3f7cc8",
                 "abe6a850fc4de9a0"
             ]
         ]
-    },
-    {
-        "id": "67dd47eb0cf057c7",
-        "type": "debug",
-        "z": "d27ff7acba5e037e",
-        "name": "debug 9",
-        "active": false,
-        "tosidebar": true,
-        "console": false,
-        "tostatus": false,
-        "complete": "false",
-        "statusVal": "",
-        "statusType": "auto",
-        "x": 680,
-        "y": 1360,
-        "wires": []
     },
     {
         "id": "4897ae51d0ceb2e6",
@@ -1172,7 +1152,7 @@
         "finalize": "",
         "libs": [],
         "x": 1000,
-        "y": 1520,
+        "y": 1500,
         "wires": [
             [
                 "c0388066fca0e290"
@@ -1628,7 +1608,7 @@
         ],
         "repeat": "",
         "crontab": "",
-        "once": false,
+        "once": true,
         "onceDelay": 0.1,
         "topic": "",
         "payload": "Cork",
