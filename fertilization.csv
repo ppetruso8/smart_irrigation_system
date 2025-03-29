@@ -1,21 +1,15 @@
 timestamp,pumpId,amount
 19 Mar 2025 09:54,4,50
-timestamp,pumpId,amount
 19 Mar 2025 11:06,4,50
-timestamp,pumpId,amount
 20/03/2025 22:43,4,50
-timestamp,pumpId,amount
 21/03/2025 13:18,4,50
-timestamp,pumpId,amount
 22/03/2025 16:35,4,50
-timestamp,pumpId,amount
 27/03/2025 17:28,5,50
-timestamp,pumpId,amount
 27/03/2025 17:43,5,50
 27/03/2025 17:43,5,40
-timestamp,pumpId,amount
 29/03/2025 11:51,5,50
-timestamp,pumpId,amount
 29/03/2025 14:10,5,50
 29/03/2025 14:10,5,20
 29/03/2025 14:18,5,20
+timestamp,pumpId,amount
+29/03/2025 16:23,5,20
