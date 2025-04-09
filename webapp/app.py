@@ -505,7 +505,7 @@ def get_current_weather(lat, long):
     # use cached data if request made within 30 minutes from last request
     if "last_cur_weather_update" in session and session["last_cur_weather_update"]:
         last_update = datetime.strptime(session["last_cur_weather_update"], "%Y-%m-%dT%H:%M:%S")
-        if datetime.now() - last_update < timedelta(minutes=30):
+        if datetime.now() - last_update < timedelta(hours=1):
             return session["cur_weather"]
 
     # Weather information is provided by https://open-meteo.com, (CC BY 4.0) https://creativecommons.org/licenses/by/4.0/, with changes to output format
@@ -534,7 +534,7 @@ def get_forecast(lat, long):
     # use cached data if request made within 30 minutes from last request
     if "last_weather_update" in session and session["last_weather_update"]:
         last_update = datetime.strptime(session["last_weather_update"], "%Y-%m-%dT%H:%M:%S")
-        if datetime.now() - last_update < timedelta(minutes=30):
+        if datetime.now() - last_update < timedelta(hours=1):
             return session["weather_hourly"], session["weather_daily"]  
 
     # Weather information is provided by https://open-meteo.com, (CC BY 4.0) https://creativecommons.org/licenses/by/4.0/, with changes to output format 
@@ -604,128 +604,158 @@ def send_node_red_command(command):
     """ Send command to Node-Red using HTTP POST request
     """
     payload = {"command": command}
-    response = requests.post(f"{NODE_RED}control", json=payload)
+    response = None
 
-    if response.status_code == 200:
-        return "Success"
-    else:
-        print(f"Error sending command to Node-Red: {response.status_code}")
-    return None
+    try:
+        response = requests.post(f"{NODE_RED}control", json=payload)
+        if response.status_code == 200:
+            return "Success"
+    except Exception as e:
+        if response and response.status_code == 200:
+            return "Success"
+        else:
+            print(f"Error sending command to Node-Red: {response.status_code}")
+            return None
 
 def get_data():
     """ Retrieve sensor data from Node-Red using HTTP GET request
     """
-    response = requests.get(f"{NODE_RED}data")
+    response = None
 
-    if response.status_code == 200:
-        data = response.json()
+    try:
+        response = requests.get(f"{NODE_RED}data")
 
-        sensors_soil = {}
-        sensors_dht = {}
-        pumps_water = {}
-        pumps_fert = {}
+        if response.status_code == 200:
+            data = response.json()
 
-        next_fert = data.get("fertSchedule", {})
-        last_fert = data.get("fert", {})
-        sensor_mapping = data.get("mappings", {})
+            sensors_soil = {}
+            sensors_dht = {}
+            pumps_water = {}
+            pumps_fert = {}
 
-        # extract all pumps
-        pump_data = {pump["id"]: pump for pump in data.get("pumps") if pump.get("active") == 1}
+            next_fert = data.get("fertSchedule", {})
+            last_fert = data.get("fert", {})
+            sensor_mapping = data.get("mappings", {})
 
-        # categorise sensors
-        for sensor in data.get("sensors"):
-            if sensor.get("active") == 1:
-                if sensor["type"] == "SOIL":
-                    pump = pump_data.get(sensor["pump"]) 
-                    dht_mapping = sensor_mapping.get(str(sensor["id"]), "No Data")
-                    
-                    sensors_soil[sensor["id"]] = {
-                        "moisture": sensor["moisture"],
-                        "pump": sensor["pump"],
-                        "env": pump["env"],
+            # extract all pumps
+            pump_data = {pump["id"]: pump for pump in data.get("pumps") if pump.get("active") == 1}
+
+            # categorise sensors
+            for sensor in data.get("sensors"):
+                if sensor.get("active") == 1:
+                    if sensor["type"] == "SOIL":
+                        pump = pump_data.get(sensor["pump"]) 
+                        dht_mapping = sensor_mapping.get(str(sensor["id"]), "No Data")
+                        
+                        sensors_soil[sensor["id"]] = {
+                            "moisture": sensor["moisture"],
+                            "pump": sensor["pump"],
+                            "env": pump["env"],
+                            "mode": pump["currentWaterMode"],
+                            "dht": dht_mapping
+                        }
+                    elif sensor["type"] == "DHT_SENSOR":
+                        sensors_dht[sensor["id"]] = {
+                            "temperature": sensor["temperature"],
+                            "humidity": sensor["humidity"]
+                        }
+
+            # categorise pumps
+            for pump_id, pump in pump_data.items():
+                if pump["type"] == "WATERING":
+                    pumps_water[pump_id] = {
+                        "type": pump["type"],
                         "mode": pump["currentWaterMode"],
-                        "dht": dht_mapping
+                        "amount": pump["amount"],
+                        "env": pump["env"] 
                     }
-                elif sensor["type"] == "DHT_SENSOR":
-                    sensors_dht[sensor["id"]] = {
-                        "temperature": sensor["temperature"],
-                        "humidity": sensor["humidity"]
+                elif pump["type"] == "FERTILIZATION":             
+                    last = None
+                    next = None
+
+                    if last_fert != {}:
+                        last = last_fert.get(str(pump_id), {}).get("timestamp", "No data")
+                    
+                    if next_fert != {}:
+                        next = next_fert.get(str(pump_id)).get("next", None)
+
+                        if next:
+                            next = datetime.strptime(next, "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%d/%m/%Y")
+
+                    pumps_fert[pump_id] = {
+                        "amount": pump["amount"],
+                        "last": last,
+                        "env": pump["env"],
+                        "next": next
                     }
 
-        # categorise pumps
-        for pump_id, pump in pump_data.items():
-            if pump["type"] == "WATERING":
-                pumps_water[pump_id] = {
-                    "type": pump["type"],
-                    "mode": pump["currentWaterMode"],
-                    "amount": pump["amount"],
-                    "env": pump["env"] 
-                }
-            elif pump["type"] == "FERTILIZATION":             
-                last = None
-                next = None
+            session["sensors_soil"] = sensors_soil
+            session["sensors_dht"] = sensors_dht
+            session["pumps_water"] = pumps_water
+            session["pumps_fert"] = pumps_fert
 
-                if last_fert != {}:
-                    last = last_fert.get(str(pump_id), {}).get("timestamp", "No data")
-                
-                if next_fert != {}:
-                    next = next_fert.get(str(pump_id)).get("next", None)
-
-                    if next:
-                        next = datetime.strptime(next, "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%d/%m/%Y")
-
-                pumps_fert[pump_id] = {
-                    "amount": pump["amount"],
-                    "last": last,
-                    "env": pump["env"],
-                    "next": next
-                }
-
-        session["sensors_soil"] = sensors_soil
-        session["sensors_dht"] = sensors_dht
-        session["pumps_water"] = pumps_water
-        session["pumps_fert"] = pumps_fert
-
-        return sensors_soil, sensors_dht, pumps_water, pumps_fert
-    else:
-        flash(f"Error fetching sensor data from Node-Red: {response.status_code}")
-        return {}, {}, {}, {}
+            return sensors_soil, sensors_dht, pumps_water, pumps_fert
+    except Exception as e:
+        if response and response.status_code == 200:
+            return "Success"
+        elif response and response.status_code != 200:
+            flash(f"Error fetching sensor data from Node-Red: {response.status_code}")
+            return {}, {}, {}, {}
+        else:
+            flash(f"Error fetching sensor data from Node-Red: {e}")
+            return {}, {}, {}, {}
 
 def get_location():
     """ Get selected location for forecast from Node-Red
     """
-    response = requests.get(f"{NODE_RED}location")
+    response = None
+    try:
+        response = requests.get(f"{NODE_RED}location")
 
-    if response.status_code == 200:
-        data = response.json()
-        city = data.get("city")
-        country = data.get("country")
-        latitude = data.get("latitude")
-        longitude = data.get("longitude")
+        if response.status_code == 200:
+            data = response.json()
+            city = data.get("city")
+            country = data.get("country")
+            latitude = data.get("latitude")
+            longitude = data.get("longitude")
 
-        session["city"] = city
+            session["city"] = city
 
-        return city, country, latitude, longitude
-    
-    elif response.status_code == 404:
-        print("No location set in Node-Red. Location set to default - Cork")
-        return None, None, None, None
-    else:
-        flash(f"Failed to retrieve location from Node-RED: {response.status_code}")
-        return None, None, None, None
+            return city, country, latitude, longitude
+        
+        elif response.status_code == 404:
+            print("No location set in Node-Red. Location set to default - Cork")
+            return None, None, None, None
+        
+    except Exception as e:
+        if response and response.status_code == 200:
+            return "Success"
+        elif response and response.status_code != 200:
+            flash(f"Failed to retrieve location from Node-RED: {response.status_code}")
+            return None, None, None, None
+        else:
+            flash(f"Failed to retrieve location from Node-RED: {e}")
+            return None, None, None, None
 
 def get_pairing_code():
     """Obtain pairing code from Raspberry Pi
     """
-    response = requests.get(f"{NODE_RED}pair")
+    response = None
+    
+    try:
+        response = requests.get(f"{NODE_RED}pair")
 
-    if response.status_code == 200:
-        data = response.json()
-        code = data.get("code", 000000)
-        return code
-    else:
-        flash(f"Error fetching pairing code from Node-Red: {response.status_code}")
-    return None
+        if response.status_code == 200:
+            data = response.json()
+            code = data.get("code", 000000)
+            return code
+    except Exception as e:
+        if response and response.status_code != 200:
+            flash(f"Error fetching pairing code from Node-Red: {response.status_code}")
+            return None
+        else:
+            flash(f"Error fetching pairing code from Node-Red: {e}")
+            return None
 
 def is_default_code_used():
     """Read file containing usage status of default code

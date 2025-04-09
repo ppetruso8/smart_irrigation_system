@@ -92,9 +92,9 @@ void changeStatus(bool activate, String type, int id);
 int getSensorIndex(int sensor_id);
 
 // WiFi and MQTT setup
-const char* ssid = "Pity";
-const char* password = "";
-const char* mqtt = "192.168.8.140";
+const char* ssid = "WIFI-NAME";
+const char* password = "WIFI-PASSWORD";
+const char* mqtt = "RASPBERRY-PI-IP";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -177,9 +177,9 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
   } else if (String(topic) == "irrigation/sleep") {
     if (command == "SLEEP") {
-      // Put ESP into sleep mode between midnight and 4am
-      Serial.println("Starting deep sleep until 4am");
-      esp_sleep_enable_timer_wakeup(4*3600*1000000);
+      // Put ESP into sleep mode between midnight and 5am
+      Serial.println("Starting deep sleep until 5am");
+      esp_sleep_enable_timer_wakeup(5*3600*1000000);
       esp_deep_sleep_start();
     }
   } else {
@@ -234,7 +234,6 @@ void setup() {
 void loop() {
   // Ensure MQTT connection is established
   if (!client.connected()) {
-    Serial.println("Reconnecting MQTT...");
     reconnect();
   }
   client.loop();
@@ -267,7 +266,7 @@ void loop() {
           break;
 
         case HEAVY:
-          pumps[last_pump].pulses = (pumps[last_pump].env == INDOOR) ? 10 : 70;
+          pumps[last_pump].pulses = (pumps[last_pump].env == INDOOR) ? 10 : 50;
           break;
 
         case CUSTOM:
@@ -309,16 +308,8 @@ void takeReading() {
       }
 
     } else if (sensors[i].type == DHT_SENSOR && sensors[i].dht != nullptr) {
-      // // SAMPLE DATA REMOVE
-      // float humidity;
-      // float temperature;
-      // if (sensors[i].id == 5) {
-      //   humidity = 40.0;
-      //   temperature = 20.1;
-      // } else {
       float humidity = sensors[i].dht->readHumidity();
       float temperature = sensors[i].dht->readTemperature();
-      // }
 
       if (!isnan(humidity) && !isnan(temperature)) {
         sensors[i].active = true;
@@ -346,24 +337,12 @@ void takeReading() {
         msg += moistureValue;
 
       } else if (sensors[i].type == DHT_SENSOR && sensors[i].dht != nullptr) {
-        // // sample data REMOVE
-        // if (sensors[i].id == 5) {
-        //   float humidity = 40.0;
-        //   float temperature = 20.1;
-        //   msg += ",\"humidity\":";
-        //   msg += humidity;
-        //   msg += ",\"temperature\":";
-        //   msg += temperature;
-        // }
-
-        // else {
         float humidity = sensors[i].dht->readHumidity();
         float temperature = sensors[i].dht->readTemperature();
         msg += ",\"humidity\":";
         msg += humidity;
         msg += ",\"temperature\":";
         msg += temperature;
-        // }
       }
 
     msg += "}";
@@ -473,7 +452,7 @@ void setWaterMode(String mode, bool temp, int pump_i) {
   } else if (mode.startsWith("CUSTOM")) {
     // If custom amount is provided
     if (mode.length() > 6) {
-      String wateringAmount = mode.substring(7);  //extract the amount of ml for watering
+      String wateringAmount = mode.substring(7);
       int amount = wateringAmount.toInt();
 
       if (amount < 10) {
@@ -632,15 +611,8 @@ void sendAllData() {
       msg_sensors += "\"moisture\":" + String(analogRead(sensors[i].pin)) + "}";
 
     } else if (sensors[i].type == DHT_SENSOR && sensors[i].dht != nullptr) {
-      // SAMPLE DATA REMOVE
-      // if (sensors[i].id == 5) {
-      //   humidity = 40.0;
-      //   temperature = 20.1;
-      // }
-      // else {
       humidity = sensors[i].dht->readHumidity();
       temperature = sensors[i].dht->readTemperature();
-      // }
       
       if (isnan(humidity)) {
         humidity = -1;
