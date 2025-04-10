@@ -8,7 +8,7 @@ enum StatusMode : byte { IDLE,
                          READ,
                          WATER,
                          FERTILIZE };
-StatusMode currentStatus = IDLE;
+StatusMode current_status = IDLE;
 
 // Watering modes
 enum WaterMode : byte { LIGHT,
@@ -29,9 +29,9 @@ struct Pump {
   PumpType type;
   int pin;
   bool active;
-  WaterMode currentWaterMode;
-  WaterMode tempWaterMode;
-  bool isTempWater;
+  WaterMode current_water_mode;
+  WaterMode temp_water_mode;
+  bool is_temp_water;
   EnvMode env;
   int amount;
   int pulses;
@@ -81,6 +81,11 @@ Sensor sensors[max_num_sensors] = {
   { 6, 5, DHT_SENSOR, false, 0, nullptr } 
 };
 
+// Store time of the last obtained command
+unsigned long last_command_time = 0;
+// Store timeout for when the ESP should be prompted by Node-RED
+const unsigned long timeout = 24*60*60*1000; // 24 hours
+
 // Function prototypes
 int getPumpIndex(int pump_id);
 void reconnect();
@@ -101,6 +106,9 @@ PubSubClient client(espClient);
 
 // MQTT callback function
 void callback(char* topic, byte* payload, unsigned int length) {
+  // Store the time of last obtained command
+  last_command_time = millis();
+
   // Read the obtained message
   String command = "";
   for (unsigned int i = 0; i < length; i++) {
@@ -115,7 +123,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
   // Change mode or execute command
   if (command == "READ") {
-    currentStatus = READ;
+    current_status = READ;
 
   } else if (command.startsWith("WATER")) {
     int pump_id = command.substring(6,7).toInt();
@@ -125,21 +133,21 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
     // Automatic watering from Node-RED
     if (command.length() > 10) {
-      pumps[pump_index].isTempWater = true;
+      pumps[pump_index].is_temp_water = true;
       String tempWatering = command.substring(10);
       setWaterMode(tempWatering, true, pump_index);
     }
 
-    currentStatus = WATER;
+    current_status = WATER;
 
   } else if (command.startsWith("FERTILIZE")) {
     int pump_id = command.substring(10, 11).toInt();
     int pump_index = getPumpIndex(pump_id);
     last_pump = pump_index;
-    currentStatus = FERTILIZE;
+    current_status = FERTILIZE;
 
   } else if (command.startsWith("IDLE")) {
-    currentStatus = IDLE;
+    current_status = IDLE;
 
   } else if (command.startsWith("CHMOD")) {     // change watering mode
     int pump_id = command.substring(6, 7).toInt();
@@ -178,9 +186,9 @@ void callback(char* topic, byte* payload, unsigned int length) {
   } else if (String(topic) == "irrigation/sleep") {
     if (command == "SLEEP") {
       // Put ESP into sleep mode between midnight and 5am
-      Serial.println("Starting deep sleep until 5am");
+      Serial.println("Starting light sleep until 5am");
       esp_sleep_enable_timer_wakeup(5*3600*1000000);
-      esp_deep_sleep_start();
+      esp_light_sleep_start();
     }
   } else {
     client.publish("irrigation/notice", "{\"error\":\"invalid_command\"}");
@@ -227,8 +235,8 @@ void setup() {
   client.setCallback(callback);
   reconnect();
 
-  // Subscribe to topic
-  client.subscribe("irrigation/control");
+  // Set initial last command time based on setup time
+  last_command_time = millis();
 }
 
 void loop() {
@@ -238,22 +246,34 @@ void loop() {
   }
   client.loop();
 
+  // Trigger irrigation if no command received for more than 24 hours
+  if (millis() - last_command_time >= timeout) {
+    for (int i = 0; i < max_num_pumps; i++) {
+      if (pumps[i].type == WATERING && pumps[i].active) {
+        last_pump = i;
+        pumps[i].is_temp_water = true;
+        setWaterMode("MEDIUM", true, i);
+        current_status = WATER;
+      }
+    }
+  }
+
   // Perform action based on set mode
-  switch (currentStatus) {
+  switch (current_status) {
     case READ:
       takeReading();
-      currentStatus = IDLE;
+      current_status = IDLE;
       break;
 
     case WATER:
       WaterMode modeToUse;
 
-      if (pumps[last_pump].isTempWater) {
-        modeToUse = pumps[last_pump].tempWaterMode;
-        pumps[last_pump].isTempWater = false;
+      if (pumps[last_pump].is_temp_water) {
+        modeToUse = pumps[last_pump].temp_water_mode;
+        pumps[last_pump].is_temp_water = false;
 
       } else {
-        modeToUse = pumps[last_pump].currentWaterMode;
+        modeToUse = pumps[last_pump].current_water_mode;
       }
 
       switch (modeToUse) {
@@ -275,12 +295,12 @@ void loop() {
       }
 
       water(pumps[last_pump].pulses, last_pump, last_sensor);
-      currentStatus = IDLE;
+      current_status = IDLE;
       break;
 
     case FERTILIZE:
       fertilize(last_pump);
-      currentStatus = IDLE;
+      current_status = IDLE;
       break;
 
     case IDLE:
@@ -425,28 +445,28 @@ void fertilize(int pump_i) {
 void setWaterMode(String mode, bool temp, int pump_i) {
   if (mode == "LIGHT") {
     if (!temp) {
-      pumps[pump_i].currentWaterMode = LIGHT;
+      pumps[pump_i].current_water_mode = LIGHT;
     } else {
-      pumps[pump_i].tempWaterMode = LIGHT;
+      pumps[pump_i].temp_water_mode = LIGHT;
     }
 
   } else if (mode == "MEDIUM") {
     if (!temp) {
-      pumps[pump_i].currentWaterMode = MEDIUM;
+      pumps[pump_i].current_water_mode = MEDIUM;
     } else {
-      pumps[pump_i].tempWaterMode = MEDIUM;
+      pumps[pump_i].temp_water_mode = MEDIUM;
     }
 
   } else if (mode == "HEAVY") {
     if (!temp) {
-      pumps[pump_i].currentWaterMode = HEAVY;
+      pumps[pump_i].current_water_mode = HEAVY;
     } else {
-      pumps[pump_i].tempWaterMode = HEAVY;
+      pumps[pump_i].temp_water_mode = HEAVY;
     }
   }
     else if (mode == "AUTO") {
     if (!temp) {
-      pumps[pump_i].currentWaterMode = AUTO;
+      pumps[pump_i].current_water_mode = AUTO;
     }
 
   } else if (mode.startsWith("CUSTOM")) {
@@ -470,9 +490,9 @@ void setWaterMode(String mode, bool temp, int pump_i) {
     }
 
     if (!temp) {
-      pumps[pump_i].currentWaterMode = CUSTOM;
+      pumps[pump_i].current_water_mode = CUSTOM;
     } else {
-      pumps[pump_i].tempWaterMode = CUSTOM;
+      pumps[pump_i].temp_water_mode = CUSTOM;
     }
 
   } else {
@@ -578,11 +598,11 @@ void sendAllData() {
     msg_pumps += "\"type\":\"" + String((pumps[i].type == WATERING) ? "WATERING" : "FERTILIZATION") + "\",";
     msg_pumps += "\"pin\":" + String(pumps[i].pin) + ",";
     msg_pumps += "\"active\":" + String(pumps[i].active) + ",";
-    msg_pumps += "\"currentWaterMode\":\"" + String(
-        (pumps[i].currentWaterMode == LIGHT) ? "LIGHT" :
-        (pumps[i].currentWaterMode == MEDIUM) ? "MEDIUM" :
-        (pumps[i].currentWaterMode == HEAVY) ? "HEAVY" : 
-        (pumps[i].currentWaterMode == AUTO) ? "AUTO" : "CUSTOM") + "\",";
+    msg_pumps += "\"current_water_mode\":\"" + String(
+        (pumps[i].current_water_mode == LIGHT) ? "LIGHT" :
+        (pumps[i].current_water_mode == MEDIUM) ? "MEDIUM" :
+        (pumps[i].current_water_mode == HEAVY) ? "HEAVY" : 
+        (pumps[i].current_water_mode == AUTO) ? "AUTO" : "CUSTOM") + "\",";
     msg_pumps += "\"env\":\"" + String((pumps[i].env == INDOOR) ? "INDOOR" : "OUTDOOR") + "\",";
     msg_pumps += "\"amount\":" + String(pumps[i].amount) + "}";
   }
@@ -635,14 +655,14 @@ void sendAllData() {
 // Activate pump 
 void activatePump(int pump_i) {
   if (!pumps[pump_i].active) {
-      pinMode(pumps[pump_i].pin, OUTPUT);
-      digitalWrite(pumps[pump_i].pin, HIGH);
-      pumps[pump_i].active = true;
+    pinMode(pumps[pump_i].pin, OUTPUT);
+    digitalWrite(pumps[pump_i].pin, HIGH);
+    pumps[pump_i].active = true;
 
-      String msg = "{\"notice\":\"pump_set(";
-      msg += pumps[pump_i].id;
-      msg += ")\"}";
-      client.publish("irrigation/notice", msg.c_str());
+    String msg = "{\"notice\":\"pump_set(";
+    msg += pumps[pump_i].id;
+    msg += ")\"}";
+    client.publish("irrigation/notice", msg.c_str());
   }
 }
 
@@ -712,8 +732,9 @@ void reconnect() {
       
       Serial.println("MQTT connection established");
 
-      client.subscribe("irrigation/control");
-      client.subscribe("irrigation/sleep");
+      client.subscribe("irrigation/control", 2);
+      client.subscribe("irrigation/sleep", 1);
+      client.subscribe("irrigation/request", 1);
     } else {
       Serial.print("MQTT connection failed, rc=");
       Serial.println(client.state());

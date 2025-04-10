@@ -1,3 +1,6 @@
+"""Following code has been provided as a part of the Web Development 2 (CS1116) module at UCC,
+which is led by Dr. Derek Bridge."""
+
 from flask import g 
 import os
 import sqlite3

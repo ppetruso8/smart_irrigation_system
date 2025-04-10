@@ -3,7 +3,6 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 from werkzeug.security import generate_password_hash, check_password_hash
 from database import get_db, close_db
 from flask_session import Session
-from functools import wraps
 import requests
 
 from forms import SensorForm, LocationForm, RegistrationForm, LoginForm, FertilizationForm, PairingForm, UserDetailsForm, ChangePasswordForm
@@ -15,9 +14,6 @@ import json, os
 NODE_RED = "http://127.0.0.1:1880/"
 
 DEFAULT_CODE = 123987
-
-# REMOVE
-def_data = """{"sensors":[{"id":1,"pin":32,"active":1,"type":"SOIL","pump":1,"moisture":3063},{"id":2,"pin":33,"active":1,"type":"SOIL","pump":2,"moisture":3038},{"id":3,"pin":34,"active":0,"type":"SOIL","pump":3,"moisture":253},{"id":4,"pin":35,"active":0,"type":"SOIL","pump":1,"moisture":0},{"id":1,"pin":4,"active":1,"type":"DHT_SENSOR","humidity":43,"temperature":20},{"id":2,"pin":16,"active":0,"type":"DHT_SENSOR","humidity":-1,"temperature":-1}],"pumps":[{"id":1,"type":"WATERING","pin":25,"active":1,"currentWaterMode":"LIGHT","env":"INDOOR","amount":1},{"id":2,"type":"WATERING","pin":26,"active":1,"currentWaterMode":"AUTO","env":"INDOOR","amount":1},{"id":3,"type":"WATERING","pin":27,"active":0,"currentWaterMode":"AUTO","env":"INDOOR","amount":1},{"id":4,"type":"FERTILIZATION","pin":18,"active":1,"currentWaterMode":"MEDIUM","env":"INDOOR","amount":1},{"id":5,"type":"FERTILIZATION","pin":19,"active":0,"currentWaterMode":"MEDIUM","env":"INDOOR","amount":1}]}"""
 
 app = Flask(__name__)
 app.teardown_appcontext(close_db)      
@@ -758,7 +754,7 @@ def get_pairing_code():
             return None
 
 def is_default_code_used():
-    """Read file containing usage status of default code
+    """Read file containing usage status of default code used for pairing the Raspberry Pi device
     """
     with open("../device_pairing.json", "r") as f:
         data = json.load(f)
@@ -766,5 +762,7 @@ def is_default_code_used():
     return data.get("default_used", False)
 
 def set_default_code_used(used):
+    """Set the usage status of default code used for pairing the Raspberry Pi device as True
+    """
     with open("../device_pairing.json", "w") as f:
         json.dump({"default_used": True}, f)
