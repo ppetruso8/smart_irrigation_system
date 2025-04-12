@@ -635,7 +635,7 @@
         "z": "d27ff7acba5e037e",
         "name": "",
         "topic": "irrigation/control",
-        "qos": "2",
+        "qos": "1",
         "retain": "",
         "respTopic": "",
         "contentType": "",
@@ -754,7 +754,7 @@
         "wires": [
             [
                 "e69f0536b5689826",
-                "a55d7ae0f26b5a9d"
+                "35a8bc56db8a3151"
             ]
         ]
     },
@@ -973,7 +973,7 @@
         "y": 1060,
         "wires": [
             [
-                "e06b4fe6a1bc4caa"
+                "35124ee8f6663b10"
             ],
             [
                 "d4601369666ff4e4"
@@ -1644,7 +1644,7 @@
         "y": 340,
         "wires": [
             [
-                "a55d7ae0f26b5a9d"
+                "35a8bc56db8a3151"
             ],
             [
                 "35a8bc56db8a3151"
@@ -2512,30 +2512,12 @@
         "wires": []
     },
     {
-        "id": "a55d7ae0f26b5a9d",
-        "type": "mqtt out",
-        "z": "d27ff7acba5e037e",
-        "name": "",
-        "topic": "irrigation/request",
-        "qos": "1",
-        "retain": "",
-        "respTopic": "",
-        "contentType": "",
-        "userProps": "",
-        "correl": "",
-        "expiry": "",
-        "broker": "5d42f12891b474f7",
-        "x": 1250,
-        "y": 300,
-        "wires": []
-    },
-    {
         "id": "b55b365079106738",
         "type": "mqtt out",
         "z": "d27ff7acba5e037e",
         "name": "",
         "topic": "irrigation/control",
-        "qos": "2",
+        "qos": "1",
         "retain": "",
         "respTopic": "",
         "contentType": "",
@@ -2553,24 +2535,6 @@
         "z": "d27ff7acba5e037e",
         "name": "",
         "topic": "irrigation/control",
-        "qos": "2",
-        "retain": "",
-        "respTopic": "",
-        "contentType": "",
-        "userProps": "",
-        "correl": "",
-        "expiry": "",
-        "broker": "5d42f12891b474f7",
-        "x": 1000,
-        "y": 1040,
-        "wires": []
-    },
-    {
-        "id": "e06b4fe6a1bc4caa",
-        "type": "mqtt out",
-        "z": "d27ff7acba5e037e",
-        "name": "",
-        "topic": "irrigation/request",
         "qos": "1",
         "retain": "",
         "respTopic": "",
@@ -2579,8 +2543,8 @@
         "correl": "",
         "expiry": "",
         "broker": "5d42f12891b474f7",
-        "x": 1010,
-        "y": 1000,
+        "x": 1000,
+        "y": 1020,
         "wires": []
     }
 ]

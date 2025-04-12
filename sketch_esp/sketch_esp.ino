@@ -81,10 +81,15 @@ Sensor sensors[max_num_sensors] = {
   { 6, 5, DHT_SENSOR, false, 0, nullptr } 
 };
 
-// Store time of the last obtained command
+// Last obtained command
+String last_command = "";
+// Time of the last obtained command
 unsigned long last_command_time = 0;
-// Store timeout for when the ESP should be prompted by Node-RED
+// Timeout for when the ESP should be prompted by Node-RED
 const unsigned long timeout = 24*60*60*1000; // 24 hours
+// Timeout for ingoring duplicate messages
+const unsigned long timeout_duplicates = 2*60*1000; // 2 minutes
+
 
 // Function prototypes
 int getPumpIndex(int pump_id);
@@ -104,10 +109,9 @@ const char* mqtt = "RASPBERRY-PI-IP";
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-// MQTT callback function
+// MQTT message handling
 void callback(char* topic, byte* payload, unsigned int length) {
-  // Store the time of last obtained command
-  last_command_time = millis();
+  unsigned long now = millis();
 
   // Read the obtained message
   String command = "";
@@ -116,6 +120,16 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
 
   command.trim();
+
+  // Handle duplicate command receipt
+  if (command != "READ" && command != "GET_ALL" && command == last_command && (now - last_command_time) < timeout_duplicates) {
+    Serial.println("Duplicate command ignored");
+    return;
+  }
+
+  // Store last command and arrival time
+  last_command = command;
+  last_command_time = now;
 
   // Confirm command on serial
   Serial.print("Received command: ");
@@ -131,7 +145,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
     last_pump = pump_index;
     last_sensor = command.substring(8,9).toInt();
 
-    // Automatic watering from Node-RED
+    // Automated watering from Node-RED
     if (command.length() > 10) {
       pumps[pump_index].is_temp_water = true;
       String tempWatering = command.substring(10);
@@ -732,9 +746,8 @@ void reconnect() {
       
       Serial.println("MQTT connection established");
 
-      client.subscribe("irrigation/control", 2);
+      client.subscribe("irrigation/control", 1);
       client.subscribe("irrigation/sleep", 1);
-      client.subscribe("irrigation/request", 1);
     } else {
       Serial.print("MQTT connection failed, rc=");
       Serial.println(client.state());

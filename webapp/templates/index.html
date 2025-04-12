@@ -23,7 +23,7 @@
                     <p>Pump: {{ sensor.pump }}</p>
                     <p>DHT Sensor: {{ sensor.dht }}</p>
 
-                    <form class="func_buttons"  action="/send_command" method="post">
+                    <form class="func_buttons" action="/send_command" method="post">
                         <input type="hidden" name="command" value="WATER, {{ sensor_id }}">
                         <button class=submit_button type ="submit">Manual Watering</button>
                     </form>
