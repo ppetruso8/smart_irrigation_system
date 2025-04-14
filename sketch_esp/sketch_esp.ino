@@ -7,7 +7,8 @@
 enum StatusMode : byte { IDLE,
                          READ,
                          WATER,
-                         FERTILIZE };
+                         FERTILIZE,
+                         SLEEP };
 StatusMode current_status = IDLE;
 
 // Watering modes
@@ -199,10 +200,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
   } else if (String(topic) == "irrigation/sleep") {
     if (command == "SLEEP") {
-      // Put ESP into sleep mode between midnight and 5am
-      Serial.println("Starting light sleep until 5am");
-      esp_sleep_enable_timer_wakeup(5*3600*1000000);
-      esp_light_sleep_start();
+      current_status = SLEEP;
     }
   } else {
     client.publish("irrigation/notice", "{\"error\":\"invalid_command\"}");
@@ -315,6 +313,12 @@ void loop() {
     case FERTILIZE:
       fertilize(last_pump);
       current_status = IDLE;
+      break;
+
+    case SLEEP:
+      Serial.println("Starting light sleep until 5am");
+      esp_sleep_enable_timer_wakeup(5*3600*1000000);
+      esp_light_sleep_start();
       break;
 
     case IDLE:
